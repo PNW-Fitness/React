@@ -2,6 +2,7 @@ import { ChevronRight } from 'lucide-react'
 
 const coaches = [
   {
+    photo: '/coaches/keith.jpg',
     initial: 'K',
     name: 'Keith',
     cert: 'NASM-CPT',
@@ -11,6 +12,7 @@ const coaches = [
     classes: ['Strength & Conditioning', 'Power Hour'],
   },
   {
+    photo: '/coaches/dave.jpg',
     initial: 'D',
     name: 'Dave',
     cert: 'NASM-CPT',
@@ -20,6 +22,7 @@ const coaches = [
     classes: ['HIIT Bootcamp', 'Functional Fitness'],
   },
   {
+    photo: '/coaches/joel.jpg',
     initial: 'J',
     name: 'Joel',
     cert: 'NASM-CSCS',
@@ -29,6 +32,7 @@ const coaches = [
     classes: ['Boxing Fundamentals', 'Athletic Performance', 'Power Hour'],
   },
   {
+    photo: '/coaches/bee.jpg',
     initial: 'B',
     name: 'Bee',
     cert: 'RYT-500, NASM',
@@ -38,6 +42,7 @@ const coaches = [
     classes: ['Yoga Flow', 'Pilates Core', 'Barre', 'Yoga Restore'],
   },
   {
+    photo: '/coaches/prabh.jpg',
     initial: 'P',
     name: 'Prabh',
     cert: 'NASM-CNC',
@@ -72,64 +77,11 @@ export default function CoachesPage({ onJoinClick }) {
         </button>
       </div>
 
-      {/* Coach cards */}
+      {/* Coach cards — 3-column grid */}
       <div style={{ padding: '0 56px 100px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {coaches.map((c, i) => (
-            <div
-              key={c.name}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '200px 1fr',
-                background: i % 2 === 0 ? '#0d1117' : '#0E2340',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '24px',
-                overflow: 'hidden',
-                transition: 'border-color 0.25s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(201,168,76,0.35)')}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)')}
-            >
-              {/* Left column — avatar */}
-              <div style={{ background: i % 2 === 0 ? '#0E2340' : '#071829', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#071829', border: '2px solid rgba(201,168,76,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '36px', fontWeight: 900, color: '#C9A84C', marginBottom: '14px' }}>
-                  {c.initial}
-                </div>
-                <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '22px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px', textAlign: 'center' }}>
-                  {c.name}
-                </div>
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', textAlign: 'center' }}>
-                  {c.cert}
-                </div>
-              </div>
-
-              {/* Right column — details */}
-              <div style={{ padding: '36px 40px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '6px' }}>
-                  {c.specialty}
-                </div>
-                <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, margin: '0 0 20px', maxWidth: '640px' }}>
-                  {c.bio}
-                </p>
-
-                {/* Tags */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '20px' }}>
-                  {c.tags.map(tag => (
-                    <span key={tag} style={{ fontSize: '9px', fontWeight: 700, padding: '4px 10px', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '50px', color: '#C9A84C', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Classes taught */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
-                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: '12px' }}>Teaches</span>
-                  {c.classes.map(cl => (
-                    <span key={cl} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginRight: '16px' }}>{cl}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          {coaches.map((c) => (
+            <CoachCard key={c.name} c={c} />
           ))}
         </div>
 
@@ -149,6 +101,145 @@ export default function CoachesPage({ onJoinClick }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+function CoachCard({ c }) {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        height: '520px',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.06)',
+        transition: 'border-color 0.25s, transform 0.25s',
+        cursor: 'default',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.35)'
+        e.currentTarget.style.transform = 'translateY(-4px)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}
+    >
+      {/* Background photo */}
+      <PhotoBackground photo={c.photo} initial={c.initial} />
+
+      {/* Gradient overlay — taller on coaches page to cover bio text */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: 'linear-gradient(to top, #000 0%, rgba(0,0,0,0.92) 45%, rgba(0,0,0,0.3) 65%, transparent 100%)',
+      }} />
+
+      {/* Text at bottom */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '24px 22px' }}>
+        <div style={{
+          fontFamily: 'Barlow Condensed, sans-serif',
+          fontSize: '26px',
+          fontWeight: 900,
+          color: '#fff',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          marginBottom: '2px',
+        }}>
+          {c.name}
+        </div>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '4px' }}>
+          {c.cert}
+        </div>
+        <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+          {c.specialty}
+        </div>
+
+        {/* Bio */}
+        <p style={{
+          fontSize: '12px',
+          color: 'rgba(255,255,255,0.6)',
+          lineHeight: 1.7,
+          margin: '0 0 12px',
+          display: '-webkit-box',
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}>
+          {c.bio}
+        </p>
+
+        {/* Tags */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
+          {c.tags.map(tag => (
+            <span
+              key={tag}
+              style={{
+                fontSize: '9px',
+                fontWeight: 700,
+                padding: '3px 8px',
+                background: 'rgba(201,168,76,0.15)',
+                border: '1px solid rgba(201,168,76,0.3)',
+                borderRadius: '50px',
+                color: '#C9A84C',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        {/* Classes taught */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+          <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: '8px' }}>Teaches</span>
+          {c.classes.map(cl => (
+            <span key={cl} style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', marginRight: '10px' }}>{cl}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PhotoBackground({ photo, initial }) {
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt=""
+        onError={e => { e.currentTarget.style.display = 'none' }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'top center',
+        }}
+      />
+    )
+  }
+  return (
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      background: 'linear-gradient(135deg, #071829 0%, #0E2340 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <span style={{
+        fontFamily: 'Barlow Condensed, sans-serif',
+        fontSize: '140px',
+        fontWeight: 900,
+        color: 'rgba(201,168,76,0.1)',
+        lineHeight: 1,
+      }}>
+        {initial}
+      </span>
     </div>
   )
 }
