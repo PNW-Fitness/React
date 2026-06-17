@@ -1,6 +1,6 @@
 const coaches = [
   {
-    photo: '/coaches/keith.jpg',
+    photo: '/coaches/Keith.jpg',
     initial: 'K',
     name: 'Keith',
     cert: 'NASM-CPT',
@@ -8,7 +8,7 @@ const coaches = [
     tags: ['Strength', 'Longevity', 'Rehab'],
   },
   {
-    photo: '/coaches/dave.jpg',
+    photo: '/coaches/Dave.jpg',
     initial: 'D',
     name: 'Dave',
     cert: 'NASM-CPT',
@@ -16,7 +16,7 @@ const coaches = [
     tags: ['Functional', 'Mobility', 'Athletic'],
   },
   {
-    photo: '/coaches/joel.jpg',
+    photo: '/coaches/Joel.jpg',
     initial: 'J',
     name: 'Joel',
     cert: 'NASM-CSCS',
@@ -24,7 +24,7 @@ const coaches = [
     tags: ['Performance', 'Speed', 'Power'],
   },
   {
-    photo: '/coaches/bee.jpg',
+    photo: '/coaches/Bee.jpg',
     initial: 'B',
     name: 'Bee',
     cert: 'RYT-500, NASM',
@@ -32,7 +32,7 @@ const coaches = [
     tags: ['Yoga', 'Pilates', 'Recovery'],
   },
   {
-    photo: '/coaches/prabh.jpg',
+    photo: '/coaches/Prabh.jpg',
     initial: 'P',
     name: 'Prabh',
     cert: 'NASM-CNC',

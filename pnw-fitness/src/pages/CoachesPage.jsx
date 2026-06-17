@@ -2,7 +2,7 @@ import { ChevronRight } from 'lucide-react'
 
 const coaches = [
   {
-    photo: '/coaches/keith.jpg',
+    photo: '/coaches/Keith.jpg',
     initial: 'K',
     name: 'Keith',
     cert: 'NASM-CPT',
@@ -12,7 +12,7 @@ const coaches = [
     classes: ['Strength & Conditioning', 'Power Hour'],
   },
   {
-    photo: '/coaches/dave.jpg',
+    photo: '/coaches/Dave.jpg',
     initial: 'D',
     name: 'Dave',
     cert: 'NASM-CPT',
@@ -22,7 +22,7 @@ const coaches = [
     classes: ['HIIT Bootcamp', 'Functional Fitness'],
   },
   {
-    photo: '/coaches/joel.jpg',
+    photo: '/coaches/Joel.jpg',
     initial: 'J',
     name: 'Joel',
     cert: 'NASM-CSCS',
@@ -32,7 +32,7 @@ const coaches = [
     classes: ['Boxing Fundamentals', 'Athletic Performance', 'Power Hour'],
   },
   {
-    photo: '/coaches/bee.jpg',
+    photo: '/coaches/Bee.jpg',
     initial: 'B',
     name: 'Bee',
     cert: 'RYT-500, NASM',
@@ -42,7 +42,7 @@ const coaches = [
     classes: ['Yoga Flow', 'Pilates Core', 'Barre', 'Yoga Restore'],
   },
   {
-    photo: '/coaches/prabh.jpg',
+    photo: '/coaches/Prabh.jpg',
     initial: 'P',
     name: 'Prabh',
     cert: 'NASM-CNC',
