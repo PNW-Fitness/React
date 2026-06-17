@@ -1,8 +1,10 @@
 import { ChevronRight } from 'lucide-react'
 
+const BASE = import.meta.env.BASE_URL
+
 const coaches = [
   {
-    photo: '/coaches/Keith.jpg',
+    photo: `${BASE}coaches/Keith.jpg`,
     initial: 'K',
     name: 'Keith',
     cert: 'NASM-CPT',
@@ -12,7 +14,7 @@ const coaches = [
     classes: ['Strength & Conditioning', 'Power Hour'],
   },
   {
-    photo: '/coaches/Dave.jpg',
+    photo: `${BASE}coaches/Dave.jpg`,
     initial: 'D',
     name: 'Dave',
     cert: 'NASM-CPT',
@@ -22,7 +24,7 @@ const coaches = [
     classes: ['HIIT Bootcamp', 'Functional Fitness'],
   },
   {
-    photo: '/coaches/Joel.jpg',
+    photo: `${BASE}coaches/Joel.jpg`,
     initial: 'J',
     name: 'Joel',
     cert: 'NASM-CSCS',
@@ -32,7 +34,7 @@ const coaches = [
     classes: ['Boxing Fundamentals', 'Athletic Performance', 'Power Hour'],
   },
   {
-    photo: '/coaches/Bee.jpg',
+    photo: `${BASE}coaches/Bee.jpg`,
     initial: 'B',
     name: 'Bee',
     cert: 'RYT-500, NASM',
@@ -42,7 +44,7 @@ const coaches = [
     classes: ['Yoga Flow', 'Pilates Core', 'Barre', 'Yoga Restore'],
   },
   {
-    photo: '/coaches/Prabh.jpg',
+    photo: `${BASE}coaches/Prabh.jpg`,
     initial: 'P',
     name: 'Prabh',
     cert: 'NASM-CNC',

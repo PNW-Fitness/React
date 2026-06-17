@@ -1,6 +1,8 @@
+const BASE = import.meta.env.BASE_URL
+
 const coaches = [
   {
-    photo: '/coaches/Keith.jpg',
+    photo: `${BASE}coaches/Keith.jpg`,
     initial: 'K',
     name: 'Keith',
     cert: 'NASM-CPT',
@@ -8,7 +10,7 @@ const coaches = [
     tags: ['Strength', 'Longevity', 'Rehab'],
   },
   {
-    photo: '/coaches/Dave.jpg',
+    photo: `${BASE}coaches/Dave.jpg`,
     initial: 'D',
     name: 'Dave',
     cert: 'NASM-CPT',
@@ -16,7 +18,7 @@ const coaches = [
     tags: ['Functional', 'Mobility', 'Athletic'],
   },
   {
-    photo: '/coaches/Joel.jpg',
+    photo: `${BASE}coaches/Joel.jpg`,
     initial: 'J',
     name: 'Joel',
     cert: 'NASM-CSCS',
@@ -24,7 +26,7 @@ const coaches = [
     tags: ['Performance', 'Speed', 'Power'],
   },
   {
-    photo: '/coaches/Bee.jpg',
+    photo: `${BASE}coaches/Bee.jpg`,
     initial: 'B',
     name: 'Bee',
     cert: 'RYT-500, NASM',
@@ -32,7 +34,7 @@ const coaches = [
     tags: ['Yoga', 'Pilates', 'Recovery'],
   },
   {
-    photo: '/coaches/Prabh.jpg',
+    photo: `${BASE}coaches/Prabh.jpg`,
     initial: 'P',
     name: 'Prabh',
     cert: 'NASM-CNC',
@@ -136,7 +138,7 @@ function CoachCard({ c }) {
         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }}>
           {c.specialty}
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', minHeight: '46px', alignContent: 'flex-start' }}>
           {c.tags.map(tag => (
             <span
               key={tag}
