@@ -108,104 +108,87 @@ function getWeek() {
 const SHORT_DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 // ─── Individual class event row ───────────────────────────────────────────────
-function ClassEventCard({ evt, i }) {
-  const [showDesc, setShowDesc] = useState(false)
-
-  const isAllDay  = !evt.start.dateTime
-  const type      = detectType(evt.summary || '')
-  const color     = TYPE_COLOR[type]
-  const coach     = parseCoachFromTitle(evt.summary || '')
-  const title     = cleanTitle(evt.summary || '')
-  const cap       = parseCap(evt.description || '')
-  const desc      = evt.description ? stripHtml(evt.description).replace(/capped at \d+ attendees\.?\s*/i, '').trim() : null
-  const time      = isAllDay ? 'All Day' : formatTime(evt.start.dateTime)
-  const duration  = (!isAllDay && evt.end?.dateTime) ? calcDuration(evt.start.dateTime, evt.end.dateTime) : null
+function ClassEventCard({ evt }) {
+  const isAllDay = !evt.start.dateTime
+  const type     = detectType(evt.summary || '')
+  const color    = TYPE_COLOR[type]
+  const coach    = parseCoachFromTitle(evt.summary || '')
+  const title    = cleanTitle(evt.summary || '')
+  const cap      = parseCap(evt.description || '')
+  const desc     = evt.description
+    ? stripHtml(evt.description).replace(/capped at \d+ attendees\.?\s*/i, '').trim()
+    : null
+  const time     = isAllDay ? 'All Day' : formatTime(evt.start.dateTime)
+  const duration = (!isAllDay && evt.end?.dateTime) ? calcDuration(evt.start.dateTime, evt.end.dateTime) : null
+  const hasRight = !!(desc || cap)
 
   return (
-    <div style={{ position: 'relative' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '110px 1fr auto',
-          alignItems: 'center',
-          gap: '20px',
-          background: '#0d1117',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '16px',
-          padding: '20px 28px',
-          transition: 'border-color 0.2s, transform 0.2s',
-          cursor: desc ? 'pointer' : 'default',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)'
-          e.currentTarget.style.transform = 'translateX(4px)'
-          if (desc) setShowDesc(true)
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
-          e.currentTarget.style.transform = 'translateX(0)'
-          setShowDesc(false)
-        }}
-      >
-        {/* Time */}
-        <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#C9A84C' }}>
-          {time}
-        </div>
-
-        {/* Info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '50px', background: `${color}22`, border: `1px solid ${color}55`, color, whiteSpace: 'nowrap' }}>
-            {type}
-          </span>
-          <div>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{title}</div>
-            <div style={{ fontSize: '12px', color: '#C9A84C', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {coach && <span>with {coach}</span>}
-              {coach && duration && <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
-              {duration && <span style={{ color: 'rgba(255,255,255,0.4)' }}>{duration}</span>}
-            </div>
-          </div>
-        </div>
-
-        {/* Limited spots badge */}
-        {cap && (
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '50px', padding: '4px 10px', marginBottom: '4px' }}>
-              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-              <span style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Limited</span>
-            </div>
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>{cap} spots · Members incl.</div>
-          </div>
-        )}
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: hasRight ? '100px 1fr 260px' : '100px 1fr',
+        alignItems: 'center',
+        gap: '0',
+        background: '#0d1117',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        transition: 'border-color 0.2s, transform 0.2s',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)'
+        e.currentTarget.style.transform = 'translateX(4px)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+        e.currentTarget.style.transform = 'translateX(0)'
+      }}
+    >
+      {/* Time */}
+      <div style={{ padding: '20px 0 20px 28px', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#C9A84C', whiteSpace: 'nowrap' }}>
+        {time}
       </div>
 
-      {/* Description popover — pulls straight from Google Calendar */}
-      {showDesc && desc && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 'calc(100% + 8px)',
-            left: '20px',
-            zIndex: 200,
-            background: '#111820',
-            border: '1px solid rgba(201,168,76,0.3)',
-            borderRadius: '14px',
-            padding: '16px 20px',
-            maxWidth: '420px',
-            minWidth: '200px',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.7)',
-            pointerEvents: 'none',
-          }}
-        >
+      {/* Title + coach + type badge */}
+      <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '50px', background: `${color}22`, border: `1px solid ${color}55`, color, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          {type}
+        </span>
+        <div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{title}</div>
+          <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {coach    && <span style={{ color: '#C9A84C' }}>with {coach}</span>}
+            {coach && duration && <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
+            {duration && <span style={{ color: 'rgba(255,255,255,0.35)' }}>{duration}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Description + limited spots — always visible on the right */}
+      {hasRight && (
+        <div style={{ padding: '16px 24px 16px 20px', borderLeft: '1px solid rgba(255,255,255,0.06)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '8px', boxSizing: 'border-box' }}>
+          {desc && (
+            <p style={{
+              fontSize: '12px',
+              color: 'rgba(255,255,255,0.42)',
+              lineHeight: 1.65,
+              margin: 0,
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}>
+              {desc}
+            </p>
+          )}
           {cap && (
-            <div style={{ fontSize: '10px', fontWeight: 800, color: '#ef4444', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Limited to {cap} spots
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+              <span style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Limited — {cap} spots · Members incl.
+              </span>
             </div>
           )}
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.7, margin: 0 }}>{desc}</p>
-          {/* Caret arrow */}
-          <div style={{ position: 'absolute', top: '100%', left: '32px', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '7px solid rgba(201,168,76,0.3)' }} />
-          <div style={{ position: 'absolute', top: 'calc(100% - 1px)', left: '32px', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '7px solid #111820' }} />
         </div>
       )}
     </div>
