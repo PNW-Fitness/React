@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+﻿import { ChevronRight } from 'lucide-react'
 
 const BASE = import.meta.env.BASE_URL
 
@@ -57,24 +57,24 @@ const coaches = [
 
 export default function CoachesPage({ onJoinClick }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#080C10', paddingTop: '100px' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', paddingTop: '100px' }}>
 
       {/* Page header */}
       <div style={{ padding: '60px 56px 72px', maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '40px', flexWrap: 'wrap' }}>
         <div>
-          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
             The Team
           </span>
           <h1 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(56px,9vw,110px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.9, margin: '0 0 20px', color: '#fff' }}>
             MEET THE<br />
-            <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>COACHES.</span>
+            <span style={{ color: '#2563EB', fontStyle: 'italic' }}>COACHES.</span>
           </h1>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, maxWidth: '520px', margin: 0 }}>
             Every coach at PNW Fitness holds NASM credentials and builds programs around you — not a template.
             Get to know the team, then book your first session.
           </p>
         </div>
-        <button onClick={onJoinClick} style={{ background: '#C9A84C', color: '#0E2340', border: 'none', padding: '16px 36px', borderRadius: '50px', fontWeight: 800, fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', flexShrink: 0 }}>
+        <button onClick={onJoinClick} style={{ background: '#2563EB', color: '#fff', border: 'none', padding: '16px 36px', borderRadius: '50px', fontWeight: 800, fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', flexShrink: 0 }}>
           Book a Session <ChevronRight size={14} />
         </button>
       </div>
@@ -88,8 +88,8 @@ export default function CoachesPage({ onJoinClick }) {
         </div>
 
         {/* CTA banner */}
-        <div style={{ marginTop: '64px', background: 'linear-gradient(135deg,#071829,#0E2340)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '20px', padding: '56px 48px', textAlign: 'center' }}>
-          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+        <div style={{ marginTop: '64px', background: 'linear-gradient(135deg,#0d0d0d,#141414)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: '20px', padding: '56px 48px', textAlign: 'center' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
             Ready to Start?
           </span>
           <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(36px,5vw,64px)', fontWeight: 900, textTransform: 'uppercase', color: '#fff', margin: '0 0 16px' }}>
@@ -98,7 +98,7 @@ export default function CoachesPage({ onJoinClick }) {
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', margin: '0 auto 32px', maxWidth: '480px' }}>
             Book your first session or join today and get unlimited access to all group classes.
           </p>
-          <button onClick={onJoinClick} style={{ background: '#C9A84C', color: '#0E2340', border: 'none', padding: '16px 40px', borderRadius: '50px', fontWeight: 800, fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+          <button onClick={onJoinClick} style={{ background: '#2563EB', color: '#fff', border: 'none', padding: '16px 40px', borderRadius: '50px', fontWeight: 800, fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
             Join Now <ChevronRight size={14} />
           </button>
         </div>
@@ -120,7 +120,7 @@ function CoachCard({ c }) {
         cursor: 'default',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.35)'
+        e.currentTarget.style.borderColor = 'rgba(37,99,235,0.35)'
         e.currentTarget.style.transform = 'translateY(-4px)'
       }}
       onMouseLeave={e => {
@@ -151,7 +151,7 @@ function CoachCard({ c }) {
         }}>
           {c.name}
         </div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '4px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '4px' }}>
           {c.cert}
         </div>
         <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
@@ -181,10 +181,10 @@ function CoachCard({ c }) {
                 fontSize: '9px',
                 fontWeight: 700,
                 padding: '3px 8px',
-                background: 'rgba(201,168,76,0.15)',
-                border: '1px solid rgba(201,168,76,0.3)',
+                background: 'rgba(37,99,235,0.15)',
+                border: '1px solid rgba(37,99,235,0.3)',
                 borderRadius: '50px',
-                color: '#C9A84C',
+                color: '#2563EB',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
               }}
@@ -228,7 +228,7 @@ function PhotoBackground({ photo, initial }) {
     <div style={{
       position: 'absolute',
       inset: 0,
-      background: 'linear-gradient(135deg, #071829 0%, #0E2340 100%)',
+      background: 'linear-gradient(135deg, #0d0d0d 0%, #141414 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -237,7 +237,7 @@ function PhotoBackground({ photo, initial }) {
         fontFamily: 'Barlow Condensed, sans-serif',
         fontSize: '140px',
         fontWeight: 900,
-        color: 'rgba(201,168,76,0.1)',
+        color: 'rgba(37,99,235,0.1)',
         lineHeight: 1,
       }}>
         {initial}

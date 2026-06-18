@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 
 const faqs = [
   {
@@ -34,14 +34,14 @@ export default function FAQ() {
     <section
       style={{
         padding: '100px 56px',
-        background: '#0d1117',
+        background: '#111111',
       }}
     >
       <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '80px', alignItems: 'start' }}>
 
         {/* Left */}
         <div>
-          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
             FAQ
           </span>
           <h2
@@ -63,8 +63,8 @@ export default function FAQ() {
             href="#booking"
             style={{
               display: 'inline-block',
-              background: '#C9A84C',
-              color: '#0E2340',
+              background: '#2563EB',
+              color: '#fff',
               padding: '14px 32px',
               borderRadius: '50px',
               fontWeight: 800,
@@ -109,7 +109,7 @@ export default function FAQ() {
                     fontWeight: 800,
                     textTransform: 'uppercase',
                     letterSpacing: '0.02em',
-                    color: open === i ? '#C9A84C' : '#fff',
+                    color: open === i ? '#2563EB' : '#fff',
                     transition: 'color 0.2s',
                   }}
                 >
@@ -121,12 +121,12 @@ export default function FAQ() {
                     height: '28px',
                     borderRadius: '50%',
                     border: 'none',
-                    background: open === i ? '#C9A84C' : 'rgba(255,255,255,0.08)',
+                    background: open === i ? '#2563EB' : 'rgba(255,255,255,0.08)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
-                    color: open === i ? '#0E2340' : 'rgba(255,255,255,0.5)',
+                    color: open === i ? '#141414' : 'rgba(255,255,255,0.5)',
                     fontSize: '18px',
                     fontWeight: 700,
                     transition: 'all 0.2s',
@@ -152,7 +152,7 @@ export default function FAQ() {
             </span>
             <a
               href="/faq"
-              style={{ fontSize: '11px', fontWeight: 800, color: '#C9A84C', letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}
+              style={{ fontSize: '11px', fontWeight: 800, color: '#2563EB', letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}
             >
               View All →
             </a>

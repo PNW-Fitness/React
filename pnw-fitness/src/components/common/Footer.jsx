@@ -1,22 +1,22 @@
-export default function Footer() {
+﻿export default function Footer() {
   const links = {
     'Quick Links': ['Home', 'About', 'Programs', 'Coaches', 'Pricing'],
     'Services': ['Group Fitness', 'Personal Training', 'Yoga & Pilates', 'Boxing & HIIT', 'Corporate Wellness', 'Temp Passes'],
   }
 
   return (
-    <footer style={{ background: '#0E2340', borderTop: '1px solid rgba(201,168,76,0.15)' }}>
+    <footer style={{ background: '#141414', borderTop: '1px solid rgba(37,99,235,0.15)' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '64px 56px 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: '48px', paddingBottom: '56px', borderBottom: '1px solid rgba(201,168,76,0.1)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr 1fr', gap: '48px', paddingBottom: '56px', borderBottom: '1px solid rgba(37,99,235,0.1)' }}>
 
           {/* Brand */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <div style={{ width: '38px', height: '38px', background: '#C9A84C', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, color: '#0E2340' }}>
+              <div style={{ width: '38px', height: '38px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, color: '#fff' }}>
                 PNW
               </div>
               <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 800, color: '#fff' }}>
-                FITNESS<span style={{ color: '#C9A84C' }}>ZONE</span>
+                PNW<span style={{ color: '#2563EB' }}>FITNESS</span>
               </span>
             </div>
             <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', lineHeight: 1.8, marginBottom: '24px' }}>
@@ -30,7 +30,7 @@ export default function Footer() {
                   style={{
                     width: '36px',
                     height: '36px',
-                    border: '1px solid rgba(201,168,76,0.2)',
+                    border: '1px solid rgba(37,99,235,0.2)',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -40,8 +40,8 @@ export default function Footer() {
                     fontSize: '13px',
                     transition: 'all 0.2s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#C9A84C'; e.currentTarget.style.color = '#0E2340'; e.currentTarget.style.borderColor = '#C9A84C' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#2563EB'; e.currentTarget.style.color = '#141414'; e.currentTarget.style.borderColor = '#2563EB' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.2)' }}
                 >
                   {icon}
                 </a>
@@ -54,7 +54,7 @@ export default function Footer() {
             <div key={heading}>
               <h3 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#fff', marginBottom: '20px', paddingBottom: '12px', position: 'relative' }}>
                 {heading}
-                <span style={{ position: 'absolute', bottom: 0, left: 0, width: '24px', height: '2px', background: '#C9A84C' }} />
+                <span style={{ position: 'absolute', bottom: 0, left: 0, width: '24px', height: '2px', background: '#2563EB' }} />
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {items.map(item => (
@@ -70,7 +70,7 @@ export default function Footer() {
                         borderBottom: '1px solid rgba(255,255,255,0.04)',
                         transition: 'color 0.2s, padding-left 0.2s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#C9A84C'; e.currentTarget.style.paddingLeft = '6px' }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#2563EB'; e.currentTarget.style.paddingLeft = '6px' }}
                       onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.paddingLeft = '0px' }}
                     >
                       {item}
@@ -85,7 +85,7 @@ export default function Footer() {
           <div>
             <h3 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#fff', marginBottom: '20px', paddingBottom: '12px', position: 'relative' }}>
               Contact
-              <span style={{ position: 'absolute', bottom: 0, left: 0, width: '24px', height: '2px', background: '#C9A84C' }} />
+              <span style={{ position: 'absolute', bottom: 0, left: 0, width: '24px', height: '2px', background: '#2563EB' }} />
             </h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {[
@@ -110,7 +110,7 @@ export default function Footer() {
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.22)', margin: 0 }}>
             © 2025 Pacific Northwest Fitness · 401 Broadway E, Seattle, WA
           </p>
-          <p style={{ fontSize: '12px', fontWeight: 700, color: '#C9A84C', letterSpacing: '0.1em', margin: 0 }}>
+          <p style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.1em', margin: 0 }}>
             NASM APPROVED · SGN BEST GYM 2025
           </p>
         </div>

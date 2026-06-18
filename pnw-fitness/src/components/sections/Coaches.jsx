@@ -1,4 +1,4 @@
-const BASE = import.meta.env.BASE_URL
+﻿const BASE = import.meta.env.BASE_URL
 
 const coaches = [
   {
@@ -49,14 +49,14 @@ export default function Coaches() {
       id="coaches"
       style={{
         padding: '100px 56px',
-        background: '#0E2340',
+        background: '#141414',
       }}
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
             The Team
           </span>
           <h2
@@ -70,7 +70,7 @@ export default function Coaches() {
             }}
           >
             <span style={{ color: '#fff' }}>MEET THE </span>
-            <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>COACHES.</span>
+            <span style={{ color: '#2563EB', fontStyle: 'italic' }}>COACHES.</span>
           </h2>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', maxWidth: '500px', margin: '0 auto' }}>
             Every coach at PNW Fitness holds NASM credentials and builds programs around you.
@@ -101,7 +101,7 @@ function CoachCard({ c }) {
         cursor: 'default',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)'
+        e.currentTarget.style.borderColor = 'rgba(37,99,235,0.4)'
         e.currentTarget.style.transform = 'translateY(-4px)'
       }}
       onMouseLeave={e => {
@@ -132,7 +132,7 @@ function CoachCard({ c }) {
         }}>
           {c.name}
         </div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
           {c.cert}
         </div>
         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }}>
@@ -146,10 +146,10 @@ function CoachCard({ c }) {
                 fontSize: '9px',
                 fontWeight: 700,
                 padding: '3px 8px',
-                background: 'rgba(201,168,76,0.15)',
-                border: '1px solid rgba(201,168,76,0.3)',
+                background: 'rgba(37,99,235,0.15)',
+                border: '1px solid rgba(37,99,235,0.3)',
                 borderRadius: '50px',
-                color: '#C9A84C',
+                color: '#2563EB',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
               }}
@@ -185,7 +185,7 @@ function PhotoBackground({ photo, initial }) {
     <div style={{
       position: 'absolute',
       inset: 0,
-      background: 'linear-gradient(135deg, #071829 0%, #0E2340 100%)',
+      background: 'linear-gradient(135deg, #0d0d0d 0%, #141414 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -194,7 +194,7 @@ function PhotoBackground({ photo, initial }) {
         fontFamily: 'Barlow Condensed, sans-serif',
         fontSize: '100px',
         fontWeight: 900,
-        color: 'rgba(201,168,76,0.12)',
+        color: 'rgba(37,99,235,0.12)',
         lineHeight: 1,
       }}>
         {initial}

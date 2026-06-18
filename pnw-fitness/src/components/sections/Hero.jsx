@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { ChevronRight, MapPin, Clock } from 'lucide-react'
 
 const slides = [
@@ -108,13 +108,13 @@ export default function Hero({ onJoinClick, onTourClick }) {
   const s = slides[current]
 
   return (
-    <section id="home" style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#071829 0%,#0E2340 50%,#1B3A5C 100%)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 56px 80px' }}>
+    <section id="home" style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0d0d0d 0%,#141414 50%,#222222 100%)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 56px 80px' }}>
 
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1600&q=70)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.18 }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg,rgba(0,0,0,0.88) 40%,rgba(14,35,64,0.3) 100%)' }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg,rgba(0,0,0,0.88) 40%,rgba(20,20,20,0.3) 100%)' }} />
 
       {/* Floating status card — fixed so it stays next to the top bar on scroll */}
-      <div style={{ position: 'fixed', top: '90px', right: '2.5%', zIndex: 500, background: 'rgba(14,35,64,0.92)', backdropFilter: 'blur(16px)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '16px', padding: '18px 22px', minWidth: '230px' }}>
+      <div style={{ position: 'fixed', top: '90px', right: '2.5%', zIndex: 500, background: 'rgba(20,20,20,0.92)', backdropFilter: 'blur(16px)', border: '1px solid rgba(37,99,235,0.25)', borderRadius: '16px', padding: '18px 22px', minWidth: '230px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
           <div style={{ position: 'relative', width: '12px', height: '12px', flexShrink: 0 }}>
@@ -129,7 +129,7 @@ export default function Hero({ onJoinClick, onTourClick }) {
         <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', marginBottom: '14px' }} />
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
-          <MapPin size={14} color="#C9A84C" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <MapPin size={14} color="#2563EB" style={{ flexShrink: 0, marginTop: '2px' }} />
           <div>
             <div style={{ fontSize: '12px', color: '#fff', fontWeight: 600, lineHeight: 1.5 }}>401 Broadway E</div>
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>Seattle, WA 98102</div>
@@ -137,7 +137,7 @@ export default function Hero({ onJoinClick, onTourClick }) {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-          <Clock size={14} color="#C9A84C" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <Clock size={14} color="#2563EB" style={{ flexShrink: 0, marginTop: '2px' }} />
           <div>
             <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '2px' }}>{getTodayLabel()}</div>
             <div style={{ fontSize: '12px', color: '#fff', fontWeight: 600 }}>{getTodayHours()}</div>
@@ -152,7 +152,7 @@ export default function Hero({ onJoinClick, onTourClick }) {
           <span style={{ display: 'block', color: '#fff', fontWeight: 900, fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(72px,12vw,130px)', textTransform: 'uppercase' }}>
             {s.title}
           </span>
-          <span style={{ display: 'block', color: '#C9A84C', fontWeight: 900, fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(72px,12vw,130px)', textTransform: 'uppercase', fontStyle: 'italic' }}>
+          <span style={{ display: 'block', color: '#2563EB', fontWeight: 900, fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(72px,12vw,130px)', textTransform: 'uppercase', fontStyle: 'italic' }}>
             {s.highlight}
           </span>
         </h1>
@@ -162,14 +162,14 @@ export default function Hero({ onJoinClick, onTourClick }) {
         </p>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px' }}>
-          <div style={{ width: '32px', height: '1px', background: '#C9A84C' }} />
-          <span style={{ fontSize: '10px', fontWeight: 800, color: '#C9A84C', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+          <div style={{ width: '32px', height: '1px', background: '#2563EB' }} />
+          <span style={{ fontSize: '10px', fontWeight: 800, color: '#2563EB', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
             {s.author}
           </span>
         </div>
 
         <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-          <button onClick={onJoinClick} style={{ background: '#C9A84C', color: '#0E2340', border: 'none', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button onClick={onJoinClick} style={{ background: '#2563EB', color: '#fff', border: 'none', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
             Join Now <ChevronRight size={14} />
           </button>
           <button onClick={onTourClick} style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.25)', padding: '14px 32px', borderRadius: '50px', fontWeight: 600, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
@@ -182,7 +182,7 @@ export default function Hero({ onJoinClick, onTourClick }) {
         <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', fontWeight: 700 }}>0{current + 1}</span>
         <div style={{ display: 'flex', gap: '6px' }}>
           {slides.map((_, i) => (
-            <button key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? '24px' : '6px', height: '6px', borderRadius: '3px', background: i === current ? '#C9A84C' : 'rgba(255,255,255,0.25)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.3s' }} />
+            <button key={i} onClick={() => setCurrent(i)} style={{ width: i === current ? '24px' : '6px', height: '6px', borderRadius: '3px', background: i === current ? '#2563EB' : 'rgba(255,255,255,0.25)', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.3s' }} />
           ))}
         </div>
       </div>

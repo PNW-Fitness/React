@@ -1,4 +1,4 @@
-const services = [
+﻿const services = [
   {
     icon: '🏋️',
     name: 'Strength Training',
@@ -39,11 +39,11 @@ const services = [
 
 export default function Programs() {
   return (
-    <section id="services" style={{ padding: '100px 56px', background: '#080C10' }}>
+    <section id="services" style={{ padding: '100px 56px', background: '#0a0a0a' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB' }}>
             What We Offer
           </span>
         </div>
@@ -51,7 +51,7 @@ export default function Programs() {
           <h2 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(56px,9vw,110px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.95, margin: 0 }}>
             <span style={{ color: '#fff' }}>OUR</span>
             <br />
-            <span style={{ background: 'linear-gradient(90deg,#C9A84C 0%,#E8D5A0 35%,#0E2340 65%,#C9A84C 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            <span style={{ background: 'linear-gradient(90deg,#2563EB 0%,#93C5FD 35%,#141414 65%,#2563EB 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               SERVICES.
             </span>
           </h2>
@@ -65,14 +65,14 @@ export default function Programs() {
           {services.map(p => (
             <div
               key={p.name}
-              style={{ background: '#111820', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: '32px 28px', transition: 'border-color 0.25s, transform 0.25s', cursor: 'pointer' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
+              style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '24px', padding: '32px 28px', transition: 'border-color 0.25s, transform 0.25s', cursor: 'pointer' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(37,99,235,0.4)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'translateY(0)' }}
             >
-              <div style={{ width: '64px', height: '64px', background: 'rgba(14,35,64,0.8)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', marginBottom: '20px' }}>
+              <div style={{ width: '64px', height: '64px', background: 'rgba(20,20,20,0.8)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', marginBottom: '20px' }}>
                 {p.icon}
               </div>
-              <div style={{ fontSize: '10px', fontWeight: 800, color: '#C9A84C', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: '#2563EB', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
                 {p.sub}
               </div>
               <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '22px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '12px' }}>

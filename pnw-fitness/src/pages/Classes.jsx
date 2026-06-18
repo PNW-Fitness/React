@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, ExternalLink, CalendarDays, Loader2, AlertCircle } from 'lucide-react'
 
@@ -10,7 +10,7 @@ const BASE          = import.meta.env.BASE_URL
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TYPE_COLOR = {
-  Strength:    '#C9A84C',
+  Strength:    '#2563EB',
   HIIT:        '#ef4444',
   Boxing:      '#f97316',
   Yoga:        '#a855f7',
@@ -108,8 +108,76 @@ function getWeek() {
 const SHORT_DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 // ─── Individual class event row ───────────────────────────────────────────────
-function ClassEventCard({ evt }) {
+function ClassEventCard({ evt, onHover, onLeave }) {
   const isAllDay = !evt.start.dateTime
+  const type     = detectType(evt.summary || '')
+  const color    = TYPE_COLOR[type]
+  const coach    = parseCoachFromTitle(evt.summary || '')
+  const title    = cleanTitle(evt.summary || '')
+  const cap      = parseCap(evt.description || '')
+  const time     = isAllDay ? 'All Day' : formatTime(evt.start.dateTime)
+  const duration = (!isAllDay && evt.end?.dateTime) ? calcDuration(evt.start.dateTime, evt.end.dateTime) : null
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '110px 1fr auto',
+        alignItems: 'center',
+        gap: '20px',
+        background: '#111111',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: '16px',
+        padding: '20px 28px',
+        transition: 'border-color 0.2s, transform 0.2s',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'rgba(37,99,235,0.3)'
+        e.currentTarget.style.transform = 'translateX(4px)'
+        onHover(evt)
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+        e.currentTarget.style.transform = 'translateX(0)'
+        onLeave()
+      }}
+    >
+      {/* Time */}
+      <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#2563EB' }}>
+        {time}
+      </div>
+
+      {/* Info */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '50px', background: `${color}22`, border: `1px solid ${color}55`, color, whiteSpace: 'nowrap' }}>
+          {type}
+        </span>
+        <div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{title}</div>
+          <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {coach    && <span style={{ color: '#2563EB' }}>with {coach}</span>}
+            {coach && duration && <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
+            {duration && <span style={{ color: 'rgba(255,255,255,0.35)' }}>{duration}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Limited spots badge */}
+      {cap && (
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '50px', padding: '4px 10px', marginBottom: '4px' }}>
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+            <span style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Limited</span>
+          </div>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>{cap} spots · Members incl.</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Fixed side panel — appears on the right when hovering a class row ────────
+function EventSidePanel({ evt }) {
   const type     = detectType(evt.summary || '')
   const color    = TYPE_COLOR[type]
   const coach    = parseCoachFromTitle(evt.summary || '')
@@ -118,77 +186,69 @@ function ClassEventCard({ evt }) {
   const desc     = evt.description
     ? stripHtml(evt.description).replace(/capped at \d+ attendees\.?\s*/i, '').trim()
     : null
+  const isAllDay = !evt.start.dateTime
   const time     = isAllDay ? 'All Day' : formatTime(evt.start.dateTime)
   const duration = (!isAllDay && evt.end?.dateTime) ? calcDuration(evt.start.dateTime, evt.end.dateTime) : null
-  const hasRight = !!(desc || cap)
 
   return (
     <div
       style={{
-        display: 'grid',
-        gridTemplateColumns: hasRight ? '100px 1fr 260px' : '100px 1fr',
-        alignItems: 'center',
-        gap: '0',
-        background: '#0d1117',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: '16px',
-        overflow: 'hidden',
-        transition: 'border-color 0.2s, transform 0.2s',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)'
-        e.currentTarget.style.transform = 'translateX(4px)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
-        e.currentTarget.style.transform = 'translateX(0)'
+        position: 'fixed',
+        right: '28px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: '280px',
+        background: '#111111',
+        border: '1px solid rgba(37,99,235,0.35)',
+        borderRadius: '20px',
+        padding: '28px 24px',
+        zIndex: 300,
+        boxShadow: '0 24px 64px rgba(0,0,0,0.75)',
+        pointerEvents: 'none',
       }}
     >
-      {/* Time */}
-      <div style={{ padding: '20px 0 20px 28px', fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#C9A84C', whiteSpace: 'nowrap' }}>
-        {time}
-      </div>
-
-      {/* Title + coach + type badge */}
-      <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '50px', background: `${color}22`, border: `1px solid ${color}55`, color, whiteSpace: 'nowrap', flexShrink: 0 }}>
+      {/* Type badge + time */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+        <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '50px', background: `${color}22`, border: `1px solid ${color}55`, color }}>
           {type}
         </span>
-        <div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{title}</div>
-          <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {coach    && <span style={{ color: '#C9A84C' }}>with {coach}</span>}
-            {coach && duration && <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
-            {duration && <span style={{ color: 'rgba(255,255,255,0.35)' }}>{duration}</span>}
-          </div>
-        </div>
+        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '14px', fontWeight: 700, color: '#2563EB' }}>
+          {time}
+        </span>
       </div>
 
-      {/* Description + limited spots — always visible on the right */}
-      {hasRight && (
-        <div style={{ padding: '16px 24px 16px 20px', borderLeft: '1px solid rgba(255,255,255,0.06)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '8px', boxSizing: 'border-box' }}>
-          {desc && (
-            <p style={{
-              fontSize: '12px',
-              color: 'rgba(255,255,255,0.42)',
-              lineHeight: 1.65,
-              margin: 0,
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}>
-              {desc}
-            </p>
-          )}
-          {cap && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-              <span style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                Limited — {cap} spots · Members incl.
-              </span>
-            </div>
-          )}
+      {/* Title */}
+      <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '28px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', margin: '0 0 6px', lineHeight: 1.05 }}>
+        {title}
+      </h3>
+
+      {/* Coach + duration */}
+      {(coach || duration) && (
+        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginBottom: '18px' }}>
+          {coach && `with ${coach}`}
+          {coach && duration && ' · '}
+          {duration}
+        </div>
+      )}
+
+      {/* Description */}
+      {desc ? (
+        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.72, margin: cap ? '0 0 16px' : 0 }}>
+          {desc}
+        </p>
+      ) : (
+        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.22)', fontStyle: 'italic', margin: cap ? '0 0 16px' : 0 }}>
+          No description available.
+        </p>
+      )}
+
+      {/* Cap */}
+      {cap && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 13px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px' }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+          <span style={{ fontSize: '11px', fontWeight: 700, color: '#ef4444' }}>
+            Limited to {cap} spots · Members included
+          </span>
         </div>
       )}
     </div>
@@ -209,7 +269,7 @@ function GroupInstructorCard({ c }) {
         cursor: 'default',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)'
+        e.currentTarget.style.borderColor = 'rgba(37,99,235,0.4)'
         e.currentTarget.style.transform = 'translateY(-4px)'
       }}
       onMouseLeave={e => {
@@ -226,8 +286,8 @@ function GroupInstructorCard({ c }) {
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
         />
       ) : (
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#071829 0%,#0E2340 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '100px', fontWeight: 900, color: 'rgba(201,168,76,0.12)', lineHeight: 1 }}>{c.initial}</span>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#0d0d0d 0%,#141414 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '100px', fontWeight: 900, color: 'rgba(37,99,235,0.12)', lineHeight: 1 }}>{c.initial}</span>
         </div>
       )}
 
@@ -239,7 +299,7 @@ function GroupInstructorCard({ c }) {
         <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '22px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
           {c.name}
         </div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
           {c.cert}
         </div>
         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }}>
@@ -249,7 +309,7 @@ function GroupInstructorCard({ c }) {
           {c.tags.map(tag => (
             <span
               key={tag}
-              style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '50px', color: '#C9A84C', letterSpacing: '0.08em', textTransform: 'uppercase' }}
+              style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: '50px', color: '#2563EB', letterSpacing: '0.08em', textTransform: 'uppercase' }}
             >
               {tag}
             </span>
@@ -266,6 +326,7 @@ export default function ClassesPage() {
   const [loading, setLoading]     = useState(!!API_KEY)
   const [error, setError]         = useState(API_KEY ? null : 'no-key')
   const [activeDay, setActiveDay] = useState(0)
+  const [hoveredEvt, setHoveredEvt] = useState(null)
 
   const week = getWeek()
 
@@ -305,16 +366,16 @@ export default function ClassesPage() {
   const dayEvents = grouped[selectedDateStr] || []
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080C10', paddingTop: '100px' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', paddingTop: '100px' }}>
 
       {/* Page header */}
       <div style={{ padding: '60px 56px 48px', maxWidth: '1200px', margin: '0 auto' }}>
-        <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+        <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
           Schedule
         </span>
         <h1 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(56px,9vw,110px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.9, margin: '0 0 20px', color: '#fff' }}>
           CALENDAR &<br />
-          <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>CLASSES.</span>
+          <span style={{ color: '#2563EB', fontStyle: 'italic' }}>CLASSES.</span>
         </h1>
         <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, maxWidth: '600px', margin: 0 }}>
           Our live schedule is updated in real time. Members get unlimited group classes included as space allows.
@@ -358,11 +419,11 @@ export default function ClassesPage() {
               <button
                 key={i}
                 onClick={() => setActiveDay(i)}
-                style={{ padding: '10px 18px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: isActive ? '#0E2340' : 'transparent', color: isActive ? '#fff' : 'rgba(255,255,255,0.4)', outline: isActive ? '1px solid rgba(201,168,76,0.35)' : 'none', position: 'relative', lineHeight: 1.3, textAlign: 'center' }}
+                style={{ padding: '10px 18px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: isActive ? '#141414' : 'transparent', color: isActive ? '#fff' : 'rgba(255,255,255,0.4)', outline: isActive ? '1px solid rgba(37,99,235,0.35)' : 'none', position: 'relative', lineHeight: 1.3, textAlign: 'center' }}
               >
                 <span style={{ display: 'block', fontSize: '11px' }}>{SHORT_DAY[date.getDay()]}</span>
                 <span style={{ display: 'block', fontSize: '15px', fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 900 }}>{date.getDate()}</span>
-                {isToday && <span style={{ position: 'absolute', top: '4px', right: '4px', width: '5px', height: '5px', borderRadius: '50%', background: '#C9A84C' }} />}
+                {isToday && <span style={{ position: 'absolute', top: '4px', right: '4px', width: '5px', height: '5px', borderRadius: '50%', background: '#2563EB' }} />}
               </button>
             )
           })}
@@ -381,8 +442,8 @@ export default function ClassesPage() {
         )}
 
         {!loading && error === 'no-key' && (
-          <div style={{ background: '#0d1117', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '16px', padding: '40px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-            <AlertCircle size={20} color="#C9A84C" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ background: '#111111', border: '1px solid rgba(37,99,235,0.2)', borderRadius: '16px', padding: '40px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+            <AlertCircle size={20} color="#2563EB" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Google Calendar API key not set</div>
               <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7 }}>
@@ -393,7 +454,7 @@ export default function ClassesPage() {
         )}
 
         {!loading && error && error !== 'no-key' && (
-          <div style={{ background: '#0d1117', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', padding: '32px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ background: '#111111', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', padding: '32px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
             <AlertCircle size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
             <div>
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '6px' }}>Could not load schedule</div>
@@ -411,7 +472,12 @@ export default function ClassesPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {dayEvents.map((evt, i) => (
-                  <ClassEventCard key={evt.id || i} evt={evt} i={i} />
+                  <ClassEventCard
+                    key={evt.id || i}
+                    evt={evt}
+                    onHover={setHoveredEvt}
+                    onLeave={() => setHoveredEvt(null)}
+                  />
                 ))}
               </div>
             )}
@@ -419,13 +485,13 @@ export default function ClassesPage() {
         )}
 
         {/* Personal Training CTA */}
-        <div style={{ marginTop: '56px', background: '#0E2340', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '20px', padding: '40px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '24px' }}>
+        <div style={{ marginTop: '56px', background: '#141414', border: '1px solid rgba(37,99,235,0.2)', borderRadius: '20px', padding: '40px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '24px' }}>
           <div>
-            <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '8px' }}>Personal Training</div>
+            <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#2563EB', marginBottom: '8px' }}>Personal Training</div>
             <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', margin: '0 0 8px' }}>Want a custom program?</h3>
             <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>Work 1-on-1 with one of our certified personal trainers on your schedule.</p>
           </div>
-          <Link to="/coaches" style={{ background: '#C9A84C', color: '#0E2340', textDecoration: 'none', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+          <Link to="/coaches" style={{ background: '#2563EB', color: '#fff', textDecoration: 'none', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
             Meet the Coaches <ChevronRight size={14} />
           </Link>
         </div>
@@ -433,7 +499,7 @@ export default function ClassesPage() {
         {/* Group Fitness Instructors */}
         <div style={{ marginTop: '72px' }}>
           <div style={{ marginBottom: '40px' }}>
-            <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
               Group Classes
             </span>
             <h2
@@ -448,7 +514,7 @@ export default function ClassesPage() {
             >
               <span style={{ color: '#fff' }}>MEET YOUR</span>
               <br />
-              <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>INSTRUCTORS.</span>
+              <span style={{ color: '#2563EB', fontStyle: 'italic' }}>INSTRUCTORS.</span>
             </h2>
             <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', maxWidth: '500px', margin: 0, lineHeight: 1.75 }}>
               World-class instruction across yoga, boxing, cycling, and more — unlimited with membership.
@@ -463,5 +529,8 @@ export default function ClassesPage() {
 
       </div>
     </div>
+
+    {/* Hover description panel — fixed to right side of screen */}
+    {hoveredEvt && <EventSidePanel evt={hoveredEvt} />}
   )
 }

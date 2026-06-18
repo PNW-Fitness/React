@@ -6,18 +6,18 @@ export default {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#C9A84C',   // PNW Gold
-          light:   '#E8D5A0',
-          dark:    '#A07830',
+          DEFAULT: '#2563EB',   // PNW Blue
+          light:   '#93C5FD',
+          dark:    '#1D4ED8',
         },
         navy: {
-          DEFAULT: '#0E2340',   // PNW Navy
-          mid:     '#1B3A5C',
-          deep:    '#071829',
+          DEFAULT: '#141414',   // Near-black
+          mid:     '#222222',
+          deep:    '#0d0d0d',
         },
         background: {
           light: '#FCFCFC',
-          dark:  '#080C10',
+          dark:  '#0a0a0a',
         },
       },
       fontFamily: {

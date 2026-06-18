@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 
 export default function JoinModal({ onClose }) {
   const [step, setStep] = useState('form')
@@ -46,8 +46,8 @@ export default function JoinModal({ onClose }) {
     >
       <div
         style={{
-          background: '#0E2340',
-          border: '1px solid rgba(201,168,76,0.25)',
+          background: '#141414',
+          border: '1px solid rgba(37,99,235,0.25)',
           borderRadius: '24px',
           width: '100%',
           maxWidth: '440px',
@@ -56,7 +56,7 @@ export default function JoinModal({ onClose }) {
         }}
       >
         {/* Gold top bar */}
-        <div style={{ height: '4px', background: '#C9A84C' }} />
+        <div style={{ height: '4px', background: '#2563EB' }} />
 
         <div style={{ padding: '40px' }}>
           <button
@@ -78,7 +78,7 @@ export default function JoinModal({ onClose }) {
 
           {step === 'form' ? (
             <>
-              <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '8px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2563EB', marginBottom: '8px' }}>
                 Membership
               </div>
               <h2
@@ -97,19 +97,19 @@ export default function JoinModal({ onClose }) {
               <div style={{ marginBottom: '16px' }}>
                 <label style={labelStyle}>Full Name</label>
                 <input style={inputStyle} type="text" placeholder="Your name" value={form.name} onChange={set('name')}
-                  onFocus={e => (e.target.style.borderColor = '#C9A84C')}
+                  onFocus={e => (e.target.style.borderColor = '#2563EB')}
                   onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <label style={labelStyle}>Email</label>
                 <input style={inputStyle} type="email" placeholder="your@email.com" value={form.email} onChange={set('email')}
-                  onFocus={e => (e.target.style.borderColor = '#C9A84C')}
+                  onFocus={e => (e.target.style.borderColor = '#2563EB')}
                   onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
               </div>
               <div style={{ marginBottom: '16px' }}>
                 <label style={labelStyle}>Phone</label>
                 <input style={inputStyle} type="tel" placeholder="(206) 000-0000" value={form.phone} onChange={set('phone')}
-                  onFocus={e => (e.target.style.borderColor = '#C9A84C')}
+                  onFocus={e => (e.target.style.borderColor = '#2563EB')}
                   onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
               </div>
               <div style={{ marginBottom: '28px' }}>
@@ -126,8 +126,8 @@ export default function JoinModal({ onClose }) {
                 style={{
                   width: '100%',
                   padding: '15px',
-                  background: '#C9A84C',
-                  color: '#0E2340',
+                  background: '#2563EB',
+                  color: '#fff',
                   border: 'none',
                   borderRadius: '50px',
                   fontWeight: 800,
@@ -145,7 +145,7 @@ export default function JoinModal({ onClose }) {
             </>
           ) : (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '28px', color: '#0E2340', fontWeight: 800 }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '28px', color: '#fff', fontWeight: 800 }}>
                 ✓
               </div>
               <h3
@@ -168,10 +168,10 @@ export default function JoinModal({ onClose }) {
                 style={{
                   marginTop: '24px',
                   padding: '12px 32px',
-                  background: 'rgba(201,168,76,0.15)',
-                  border: '1px solid rgba(201,168,76,0.3)',
+                  background: 'rgba(37,99,235,0.15)',
+                  border: '1px solid rgba(37,99,235,0.3)',
                   borderRadius: '50px',
-                  color: '#C9A84C',
+                  color: '#2563EB',
                   fontWeight: 700,
                   fontSize: '12px',
                   letterSpacing: '0.1em',

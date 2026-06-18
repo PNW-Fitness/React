@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, Dumbbell } from 'lucide-react'
 
@@ -35,9 +35,9 @@ export default function Navbar({ onJoinClick, onTourClick }) {
     zIndex: 1000,
     width: '95%',
     maxWidth: '1100px',
-    background: scrolled ? 'rgba(14,35,64,0.97)' : 'rgba(14,35,64,0.80)',
+    background: scrolled ? 'rgba(20,20,20,0.97)' : 'rgba(20,20,20,0.80)',
     backdropFilter: 'blur(16px)',
-    border: '1px solid rgba(201,168,76,0.25)',
+    border: '1px solid rgba(37,99,235,0.25)',
     borderRadius: '50px',
     padding: '0 12px 0 20px',
     display: 'flex',
@@ -48,8 +48,8 @@ export default function Navbar({ onJoinClick, onTourClick }) {
   }
 
   const btnStyle = {
-    background: '#C9A84C',
-    color: '#0E2340',
+    background: '#2563EB',
+    color: '#fff',
     border: 'none',
     padding: '10px 22px',
     borderRadius: '50px',
@@ -76,14 +76,14 @@ export default function Navbar({ onJoinClick, onTourClick }) {
 
   function renderLink(l, mobile = false) {
     const isActive = l.to ? pathname === l.to : false
-    const baseColor = isActive ? '#C9A84C' : 'rgba(255,255,255,0.65)'
-    const mobileColor = isActive ? '#C9A84C' : 'rgba(255,255,255,0.7)'
+    const baseColor = isActive ? '#2563EB' : 'rgba(255,255,255,0.65)'
+    const mobileColor = isActive ? '#2563EB' : 'rgba(255,255,255,0.7)'
 
     const desktopStyle = { color: baseColor, textDecoration: 'none', fontSize: '13px', fontWeight: 600, letterSpacing: '0.06em', transition: 'color 0.2s' }
     const mobileStyle = { display: 'block', padding: '12px 0', color: mobileColor, textDecoration: 'none', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.06)' }
     const style = mobile ? mobileStyle : desktopStyle
 
-    const hoverOn  = e => { if (!mobile) e.target.style.color = '#C9A84C' }
+    const hoverOn  = e => { if (!mobile) e.target.style.color = '#2563EB' }
     const hoverOff = e => { if (!mobile) e.target.style.color = baseColor }
 
     const closeMenu = mobile ? () => setOpen(false) : undefined
@@ -98,11 +98,11 @@ export default function Navbar({ onJoinClick, onTourClick }) {
     <>
       <nav style={navStyle}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{ width: '36px', height: '36px', background: '#C9A84C', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Dumbbell size={18} color="#0E2340" />
+          <div style={{ width: '36px', height: '36px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Dumbbell size={18} color="#141414" />
           </div>
           <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff' }}>
-            PNW<span style={{ color: '#C9A84C' }}>FITNESS</span>
+            PNW<span style={{ color: '#2563EB' }}>FITNESS</span>
           </span>
         </Link>
 
@@ -119,9 +119,9 @@ export default function Navbar({ onJoinClick, onTourClick }) {
         </div>
 
         {open && (
-          <div style={{ position: 'absolute', top: '68px', left: 0, right: 0, background: 'rgba(14,35,64,0.97)', borderRadius: '20px', padding: '20px', border: '1px solid rgba(201,168,76,0.2)' }}>
+          <div style={{ position: 'absolute', top: '68px', left: 0, right: 0, background: 'rgba(20,20,20,0.97)', borderRadius: '20px', padding: '20px', border: '1px solid rgba(37,99,235,0.2)' }}>
             {navLinks.map(l => renderLink(l, true))}
-            <button onClick={() => { setOpen(false); onTourClick() }} style={{ ...tourBtnStyle, marginTop: '16px', width: '100%', border: '1px solid rgba(201,168,76,0.4)', color: '#C9A84C' }}>
+            <button onClick={() => { setOpen(false); onTourClick() }} style={{ ...tourBtnStyle, marginTop: '16px', width: '100%', border: '1px solid rgba(37,99,235,0.4)', color: '#2563EB' }}>
               Schedule a Tour
             </button>
             <button onClick={() => { setOpen(false); onJoinClick() }} style={{ ...btnStyle, marginTop: '8px', width: '100%' }}>
@@ -141,7 +141,7 @@ export default function Navbar({ onJoinClick, onTourClick }) {
             transform: 'translateX(-50%)',
             width: '95%',
             maxWidth: '1100px',
-            background: 'rgba(201,168,76,0.97)',
+            background: 'rgba(37,99,235,0.97)',
             backdropFilter: 'blur(8px)',
             borderRadius: '12px',
             padding: '10px 16px 10px 20px',
@@ -154,7 +154,7 @@ export default function Navbar({ onJoinClick, onTourClick }) {
             animation: 'slideDown 0.3s ease',
           }}
         >
-          <span style={{ color: '#0E2340', fontSize: '13px', fontWeight: 600, lineHeight: 1.4 }}>
+          <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600, lineHeight: 1.4 }}>
             📣 {ANNOUNCEMENTS[announcementIdx]}
           </span>
           <button
@@ -166,13 +166,13 @@ export default function Navbar({ onJoinClick, onTourClick }) {
               }
             }}
             style={{
-              background: 'rgba(14,35,64,0.15)',
+              background: 'rgba(20,20,20,0.15)',
               border: 'none',
               borderRadius: '50%',
               width: '28px',
               height: '28px',
               cursor: 'pointer',
-              color: '#0E2340',
+              color: '#fff',
               fontSize: '18px',
               fontWeight: 700,
               lineHeight: 1,

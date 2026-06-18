@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import Navbar from './components/common/Navbar'
@@ -44,7 +44,7 @@ export default function App() {
   const openTour  = () => setTourOpen(true)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080C10' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
       <ScrollToTop />
       <Navbar onJoinClick={openModal} onTourClick={openTour} />
       <Routes>

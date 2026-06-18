@@ -1,4 +1,4 @@
-export default function About() {
+﻿export default function About() {
   const features = [
     { num: '01', title: 'NASM Approved', desc: 'The only NASM-Approved Facility in Capitol Hill — the highest standard in fitness.' },
     { num: '02', title: 'Expert Coaches', desc: 'Every trainer holds fitness credentials and builds programs around your specific goals.' },
@@ -18,14 +18,14 @@ export default function About() {
       id="about"
       style={{
         padding: '100px 56px',
-        background: '#0d1117',
+        background: '#111111',
       }}
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ marginBottom: '64px' }}>
-          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
             Who We Are
           </span>
           <h2
@@ -40,7 +40,7 @@ export default function About() {
             }}
           >
             A Welcoming Place<br />
-            <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>To Transform.</span>
+            <span style={{ color: '#2563EB', fontStyle: 'italic' }}>To Transform.</span>
           </h2>
           <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.8, maxWidth: '600px' }}>
             Located at 401 Broadway E in Capitol Hill — above QFC — Pacific Northwest Fitness has been
@@ -61,7 +61,7 @@ export default function About() {
                     fontFamily: 'Barlow Condensed, sans-serif',
                     fontSize: '42px',
                     fontWeight: 900,
-                    color: '#C9A84C',
+                    color: '#2563EB',
                     lineHeight: 1,
                     marginBottom: '8px',
                   }}
@@ -85,7 +85,7 @@ export default function About() {
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(4,1fr)',
-                background: '#C9A84C',
+                background: '#2563EB',
                 marginBottom: '24px',
               }}
             >
@@ -95,13 +95,13 @@ export default function About() {
                   style={{
                     padding: '20px 16px',
                     textAlign: 'center',
-                    borderRight: i < stats.length - 1 ? '1px solid rgba(14,35,64,0.2)' : 'none',
+                    borderRight: i < stats.length - 1 ? '1px solid rgba(255,255,255,0.2)' : 'none',
                   }}
                 >
-                  <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '28px', fontWeight: 900, color: '#0E2340', lineHeight: 1 }}>
+                  <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '28px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>
                     {s.n}
                   </div>
-                  <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(14,35,64,0.6)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '4px' }}>
+                  <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '4px' }}>
                     {s.l}
                   </div>
                 </div>
@@ -111,12 +111,12 @@ export default function About() {
             {/* Hours card */}
             <div
               style={{
-                background: '#0E2340',
+                background: '#141414',
                 padding: '32px',
-                border: '1px solid rgba(201,168,76,0.15)',
+                border: '1px solid rgba(37,99,235,0.15)',
               }}
             >
-              <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '24px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2563EB', marginBottom: '24px' }}>
                 Hours of Operation
               </div>
               {[
@@ -148,7 +148,7 @@ export default function About() {
                   Seattle, WA 98102<br />
                   <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>Above QFC · Capitol Hill</span>
                 </div>
-                <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#C9A84C', marginTop: '10px' }}>
+                <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 700, color: '#2563EB', marginTop: '10px' }}>
                   (206) 322-2322
                 </div>
               </div>

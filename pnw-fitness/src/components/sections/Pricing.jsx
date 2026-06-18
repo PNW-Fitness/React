@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 
 const MONTHLY     = 99.99
 const YEARLY      = 899
@@ -33,14 +33,14 @@ export default function Pricing({ onJoinClick }) {
       id="pricing"
       style={{
         padding: '100px 56px',
-        background: '#080C10',
+        background: '#0a0a0a',
       }}
     >
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
             Membership
           </span>
           <h2
@@ -54,12 +54,12 @@ export default function Pricing({ onJoinClick }) {
             }}
           >
             <span style={{ color: '#fff' }}>SIMPLE </span>
-            <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>PRICING.</span>
+            <span style={{ color: '#2563EB', fontStyle: 'italic' }}>PRICING.</span>
           </h2>
 
           {/* Toggle — affects Month to Month card only */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '8px 20px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: !yearly ? '#C9A84C' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: !yearly ? '#2563EB' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s' }}>
               Monthly
             </span>
             <button
@@ -70,7 +70,7 @@ export default function Pricing({ onJoinClick }) {
                 height: '28px',
                 borderRadius: '50px',
                 border: 'none',
-                background: '#C9A84C',
+                background: '#2563EB',
                 cursor: 'pointer',
                 position: 'relative',
                 flexShrink: 0,
@@ -83,13 +83,13 @@ export default function Pricing({ onJoinClick }) {
                 width: '22px',
                 height: '22px',
                 borderRadius: '50%',
-                background: '#0E2340',
+                background: '#141414',
                 transition: 'left 0.2s',
               }} />
             </button>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: yearly ? '#C9A84C' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: yearly ? '#2563EB' : 'rgba(255,255,255,0.4)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }}>
               Yearly
-              <span style={{ fontSize: '10px', background: 'rgba(201,168,76,0.15)', color: '#C9A84C', padding: '2px 8px', borderRadius: '50px', border: '1px solid rgba(201,168,76,0.3)' }}>
+              <span style={{ fontSize: '10px', background: 'rgba(37,99,235,0.15)', color: '#2563EB', padding: '2px 8px', borderRadius: '50px', border: '1px solid rgba(37,99,235,0.3)' }}>
                 Save {SAVINGS_PCT}%
               </span>
             </span>
@@ -106,7 +106,7 @@ export default function Pricing({ onJoinClick }) {
             borderRadius: '32px',
             padding: '40px 32px',
           }}>
-            <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '8px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563EB', marginBottom: '8px' }}>
               Results
             </div>
             <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '24px' }}>
@@ -128,7 +128,7 @@ export default function Pricing({ onJoinClick }) {
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px' }}>
               {resultsFeatures.map(f => (
                 <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>
-                  <span style={{ color: '#C9A84C', fontWeight: 800, fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>✓</span>
+                  <span style={{ color: '#2563EB', fontWeight: 800, fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>✓</span>
                   {f}
                 </li>
               ))}
@@ -151,9 +151,9 @@ export default function Pricing({ onJoinClick }) {
                 transition: 'all 0.2s',
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = '#C9A84C'
-                e.currentTarget.style.color = '#0E2340'
-                e.currentTarget.style.borderColor = '#C9A84C'
+                e.currentTarget.style.background = '#2563EB'
+                e.currentTarget.style.color = '#141414'
+                e.currentTarget.style.borderColor = '#2563EB'
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.background = 'transparent'
@@ -167,12 +167,12 @@ export default function Pricing({ onJoinClick }) {
 
           {/* Month to Month / Annual */}
           <div style={{
-            background: '#0E2340',
-            border: '1px solid #C9A84C',
+            background: '#141414',
+            border: '1px solid #2563EB',
             borderRadius: '32px',
             padding: '40px 32px',
             position: 'relative',
-            boxShadow: '0 40px 80px rgba(201,168,76,0.12)',
+            boxShadow: '0 40px 80px rgba(37,99,235,0.12)',
           }}>
             {/* Most Popular badge */}
             <div style={{
@@ -180,8 +180,8 @@ export default function Pricing({ onJoinClick }) {
               top: '-14px',
               left: '50%',
               transform: 'translateX(-50%)',
-              background: '#C9A84C',
-              color: '#0E2340',
+              background: '#2563EB',
+              color: '#fff',
               fontSize: '9px',
               fontWeight: 800,
               letterSpacing: '0.18em',
@@ -193,7 +193,7 @@ export default function Pricing({ onJoinClick }) {
               Most Popular
             </div>
 
-            <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '8px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#2563EB', marginBottom: '8px' }}>
               {yearly ? 'Paid in Full' : 'Month to Month'}
             </div>
             <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '24px' }}>
@@ -242,7 +242,7 @@ export default function Pricing({ onJoinClick }) {
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px' }}>
               {monthlyFeatures.map(f => (
                 <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
-                  <span style={{ color: '#C9A84C', fontWeight: 800, fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>✓</span>
+                  <span style={{ color: '#2563EB', fontWeight: 800, fontSize: '14px', flexShrink: 0, marginTop: '1px' }}>✓</span>
                   {f}
                 </li>
               ))}
@@ -255,8 +255,8 @@ export default function Pricing({ onJoinClick }) {
                 padding: '14px',
                 borderRadius: '50px',
                 border: 'none',
-                background: '#C9A84C',
-                color: '#0E2340',
+                background: '#2563EB',
+                color: '#fff',
                 fontWeight: 800,
                 fontSize: '11px',
                 letterSpacing: '0.14em',
@@ -270,15 +270,15 @@ export default function Pricing({ onJoinClick }) {
         </div>
 
         {/* In-person incentive callout */}
-        <div style={{ marginTop: '24px', padding: '20px 28px', background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ marginTop: '24px', padding: '20px 28px', background: 'rgba(37,99,235,0.07)', border: '1px solid rgba(37,99,235,0.25)', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span style={{ fontSize: '28px', flexShrink: 0 }}>🏛️</span>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#C9A84C', marginBottom: '4px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#2563EB', marginBottom: '4px' }}>
               Promotions &amp; short-term access are only available in person.
             </div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
               Day passes, week passes, month memberships, and any active promotions must be purchased at the front desk.{' '}
-              <a href="#booking" style={{ color: '#C9A84C', fontWeight: 600, textDecoration: 'none' }}>
+              <a href="#booking" style={{ color: '#2563EB', fontWeight: 600, textDecoration: 'none' }}>
                 Make an appointment today →
               </a>
             </div>

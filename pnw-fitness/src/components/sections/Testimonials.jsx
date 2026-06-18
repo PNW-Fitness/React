@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 
 const testimonials = [
   {
@@ -41,7 +41,7 @@ export default function Testimonials() {
     <section
       style={{
         padding: '100px 56px',
-        background: '#0E2340',
+        background: '#141414',
         position: 'relative',
         overflow: 'hidden',
         textAlign: 'center',
@@ -57,13 +57,13 @@ export default function Testimonials() {
           width: '600px',
           height: '600px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle,rgba(201,168,76,0.06) 0%,transparent 70%)',
+          background: 'radial-gradient(circle,rgba(37,99,235,0.06) 0%,transparent 70%)',
           pointerEvents: 'none',
         }}
       />
 
       <div style={{ maxWidth: '760px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
-        <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+        <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
           Member Stories
         </span>
         <h2
@@ -77,7 +77,7 @@ export default function Testimonials() {
           }}
         >
           <span style={{ color: '#fff' }}>RESULTS THAT </span>
-          <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>SPEAK.</span>
+          <span style={{ color: '#2563EB', fontStyle: 'italic' }}>SPEAK.</span>
         </h2>
 
         {/* Quote mark */}
@@ -86,7 +86,7 @@ export default function Testimonials() {
             fontFamily: 'Georgia, serif',
             fontSize: '80px',
             lineHeight: 0.6,
-            color: '#C9A84C',
+            color: '#2563EB',
             opacity: 0.35,
             marginBottom: '16px',
           }}
@@ -112,7 +112,7 @@ export default function Testimonials() {
         {/* Stars */}
         <div style={{ marginBottom: '12px' }}>
           {Array.from({ length: t.stars }).map((_, i) => (
-            <span key={i} style={{ color: '#C9A84C', fontSize: '16px' }}>★</span>
+            <span key={i} style={{ color: '#2563EB', fontSize: '16px' }}>★</span>
           ))}
         </div>
 
@@ -124,7 +124,7 @@ export default function Testimonials() {
             fontWeight: 800,
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
-            color: '#C9A84C',
+            color: '#2563EB',
           }}
         >
           {t.name}
@@ -146,7 +146,7 @@ export default function Testimonials() {
                 borderRadius: '2px',
                 transition: 'all 0.3s',
                 width: i === active ? '36px' : '12px',
-                background: i === active ? '#C9A84C' : 'rgba(255,255,255,0.15)',
+                background: i === active ? '#2563EB' : 'rgba(255,255,255,0.15)',
               }}
             />
           ))}
