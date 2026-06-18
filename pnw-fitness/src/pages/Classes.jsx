@@ -366,6 +366,7 @@ export default function ClassesPage() {
   const dayEvents = grouped[selectedDateStr] || []
 
   return (
+    <>
     <div style={{ minHeight: '100vh', background: '#0a0a0a', paddingTop: '100px' }}>
 
       {/* Page header */}
@@ -532,5 +533,6 @@ export default function ClassesPage() {
 
     {/* Hover description panel — fixed to right side of screen */}
     {hoveredEvt && <EventSidePanel evt={hoveredEvt} />}
+    </>
   )
 }
