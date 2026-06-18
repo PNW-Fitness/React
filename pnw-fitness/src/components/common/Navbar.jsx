@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, Dumbbell } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 
 const navLinks = [
   { name: 'Home',               to: '/'        },
@@ -98,9 +98,7 @@ export default function Navbar({ onJoinClick, onTourClick }) {
     <>
       <nav style={navStyle}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{ width: '36px', height: '36px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Dumbbell size={18} color="#141414" />
-          </div>
+          <img src="/PNW Logo.png" alt="PNW Fitness" style={{ height: '36px', width: 'auto', display: 'block' }} />
           <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff' }}>
             PNW<span style={{ color: '#2563EB' }}>FITNESS</span>
           </span>
