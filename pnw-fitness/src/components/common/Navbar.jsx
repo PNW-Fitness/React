@@ -9,9 +9,16 @@ const navLinks = [
   { name: 'About Us',           href: '/#about'},
 ]
 
-export default function Navbar({ onJoinClick }) {
+// Update this array to add, edit, or remove announcements.
+const ANNOUNCEMENTS = [
+  'Summer Special — Short-term day, week & month passes now available in person. Visit us to learn more!',
+]
+
+export default function Navbar({ onJoinClick, onTourClick }) {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [announcementIdx, setAnnouncementIdx] = useState(0)
+  const [announcementVisible, setAnnouncementVisible] = useState(ANNOUNCEMENTS.length > 0)
   const { pathname } = useLocation()
 
   useEffect(() => {
@@ -53,6 +60,20 @@ export default function Navbar({ onJoinClick }) {
     cursor: 'pointer',
   }
 
+  const tourBtnStyle = {
+    background: 'transparent',
+    color: 'rgba(255,255,255,0.8)',
+    border: '1px solid rgba(255,255,255,0.25)',
+    padding: '9px 18px',
+    borderRadius: '50px',
+    fontWeight: 600,
+    fontSize: '11px',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  }
+
   function renderLink(l, mobile = false) {
     const isActive = l.to ? pathname === l.to : false
     const baseColor = isActive ? '#C9A84C' : 'rgba(255,255,255,0.65)'
@@ -74,33 +95,97 @@ export default function Navbar({ onJoinClick }) {
   }
 
   return (
-    <nav style={navStyle}>
-      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-        <div style={{ width: '36px', height: '36px', background: '#C9A84C', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Dumbbell size={18} color="#0E2340" />
+    <>
+      <nav style={navStyle}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <div style={{ width: '36px', height: '36px', background: '#C9A84C', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Dumbbell size={18} color="#0E2340" />
+          </div>
+          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff' }}>
+            PNW<span style={{ color: '#C9A84C' }}>FITNESS</span>
+          </span>
+        </Link>
+
+        <div style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
+          {navLinks.map(l => renderLink(l))}
         </div>
-        <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff' }}>
-          PNW<span style={{ color: '#C9A84C' }}>FITNESS</span>
-        </span>
-      </Link>
 
-      <div style={{ display: 'flex', gap: '28px', alignItems: 'center' }}>
-        {navLinks.map(l => renderLink(l))}
-      </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button onClick={onTourClick} style={tourBtnStyle}>Schedule a Tour</button>
+          <button onClick={onJoinClick} style={btnStyle}>Join Now</button>
+          <button onClick={() => setOpen(!open)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '8px' }}>
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <button onClick={onJoinClick} style={btnStyle}>Join Now</button>
-        <button onClick={() => setOpen(!open)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '8px' }}>
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
+        {open && (
+          <div style={{ position: 'absolute', top: '68px', left: 0, right: 0, background: 'rgba(14,35,64,0.97)', borderRadius: '20px', padding: '20px', border: '1px solid rgba(201,168,76,0.2)' }}>
+            {navLinks.map(l => renderLink(l, true))}
+            <button onClick={() => { setOpen(false); onTourClick() }} style={{ ...tourBtnStyle, marginTop: '16px', width: '100%', border: '1px solid rgba(201,168,76,0.4)', color: '#C9A84C' }}>
+              Schedule a Tour
+            </button>
+            <button onClick={() => { setOpen(false); onJoinClick() }} style={{ ...btnStyle, marginTop: '8px', width: '100%' }}>
+              Join Now
+            </button>
+          </div>
+        )}
+      </nav>
 
-      {open && (
-        <div style={{ position: 'absolute', top: '68px', left: 0, right: 0, background: 'rgba(14,35,64,0.97)', borderRadius: '20px', padding: '20px', border: '1px solid rgba(201,168,76,0.2)' }}>
-          {navLinks.map(l => renderLink(l, true))}
-          <button onClick={onJoinClick} style={{ ...btnStyle, marginTop: '16px', width: '100%' }}>Join Now</button>
+      {/* Announcements banner — drops down from top bar, dismissible with × */}
+      {announcementVisible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '82px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '95%',
+            maxWidth: '1100px',
+            background: 'rgba(201,168,76,0.97)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '12px',
+            padding: '10px 16px 10px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            zIndex: 999,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
+            animation: 'slideDown 0.3s ease',
+          }}
+        >
+          <span style={{ color: '#0E2340', fontSize: '13px', fontWeight: 600, lineHeight: 1.4 }}>
+            📣 {ANNOUNCEMENTS[announcementIdx]}
+          </span>
+          <button
+            onClick={() => {
+              if (announcementIdx < ANNOUNCEMENTS.length - 1) {
+                setAnnouncementIdx(i => i + 1)
+              } else {
+                setAnnouncementVisible(false)
+              }
+            }}
+            style={{
+              background: 'rgba(14,35,64,0.15)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '28px',
+              height: '28px',
+              cursor: 'pointer',
+              color: '#0E2340',
+              fontSize: '18px',
+              fontWeight: 700,
+              lineHeight: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
         </div>
       )}
-    </nav>
+    </>
   )
 }

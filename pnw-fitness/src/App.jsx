@@ -12,6 +12,7 @@ import Testimonials from './components/sections/Testimonials'
 import FAQ from './components/sections/FAQ'
 import Booking from './components/sections/Booking'
 import JoinModal from './components/common/JoinModal'
+import TourModal from './components/common/TourModal'
 import ClassesPage from './pages/Classes'
 import CoachesPage from './pages/CoachesPage'
 
@@ -21,10 +22,10 @@ function ScrollToTop() {
   return null
 }
 
-function HomePage({ onJoinClick }) {
+function HomePage({ onJoinClick, onTourClick }) {
   return (
     <>
-      <Hero onJoinClick={onJoinClick} />
+      <Hero onJoinClick={onJoinClick} onTourClick={onTourClick} />
       <About />
       <Programs />
       <Coaches />
@@ -38,19 +39,22 @@ function HomePage({ onJoinClick }) {
 
 export default function App() {
   const [modalOpen, setModalOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
   const openModal = () => setModalOpen(true)
+  const openTour  = () => setTourOpen(true)
 
   return (
     <div style={{ minHeight: '100vh', background: '#080C10' }}>
       <ScrollToTop />
-      <Navbar onJoinClick={openModal} />
+      <Navbar onJoinClick={openModal} onTourClick={openTour} />
       <Routes>
-        <Route path="/" element={<HomePage onJoinClick={openModal} />} />
+        <Route path="/" element={<HomePage onJoinClick={openModal} onTourClick={openTour} />} />
         <Route path="/classes" element={<ClassesPage />} />
         <Route path="/coaches" element={<CoachesPage onJoinClick={openModal} />} />
       </Routes>
       <Footer />
       {modalOpen && <JoinModal onClose={() => setModalOpen(false)} />}
+      {tourOpen  && <TourModal onClose={() => setTourOpen(false)} />}
     </div>
   )
 }

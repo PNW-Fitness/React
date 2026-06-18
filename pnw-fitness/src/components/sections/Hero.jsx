@@ -96,7 +96,7 @@ function getTodayHours() {
   return `${formatMins(window.openAt)} – ${formatMins(window.closeAt)}`
 }
 
-export default function Hero({ onJoinClick }) {
+export default function Hero({ onJoinClick, onTourClick }) {
   const [current, setCurrent] = useState(0)
   const status = getStatus()
 
@@ -113,8 +113,8 @@ export default function Hero({ onJoinClick }) {
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1600&q=70)', backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.18 }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(100deg,rgba(0,0,0,0.88) 40%,rgba(14,35,64,0.3) 100%)' }} />
 
-      {/* Floating status card */}
-      <div style={{ position: 'absolute', top: '100px', right: '56px', zIndex: 10, background: 'rgba(14,35,64,0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '16px', padding: '18px 22px', minWidth: '230px' }}>
+      {/* Floating status card — fixed so it stays next to the top bar on scroll */}
+      <div style={{ position: 'fixed', top: '90px', right: '2.5%', zIndex: 500, background: 'rgba(14,35,64,0.92)', backdropFilter: 'blur(16px)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '16px', padding: '18px 22px', minWidth: '230px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
           <div style={{ position: 'relative', width: '12px', height: '12px', flexShrink: 0 }}>
@@ -170,11 +170,11 @@ export default function Hero({ onJoinClick }) {
 
         <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
           <button onClick={onJoinClick} style={{ background: '#C9A84C', color: '#0E2340', border: 'none', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            Start Training <ChevronRight size={14} />
+            Join Now <ChevronRight size={14} />
           </button>
-          <a href="#services" style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.25)', padding: '14px 32px', borderRadius: '50px', fontWeight: 600, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none', display: 'inline-block' }}>
-            View Services
-          </a>
+          <button onClick={onTourClick} style={{ background: 'transparent', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.25)', padding: '14px 32px', borderRadius: '50px', fontWeight: 600, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+            Schedule a Tour
+          </button>
         </div>
       </div>
 

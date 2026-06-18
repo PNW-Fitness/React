@@ -8,6 +8,11 @@
 }
 .status-pulse { animation: status-pulse 2s ease-in-out infinite; }
 
+@keyframes slideDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 @layer base {
   body {
     font-family: 'Inter', sans-serif;

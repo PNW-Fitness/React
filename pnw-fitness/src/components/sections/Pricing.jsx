@@ -269,7 +269,23 @@ export default function Pricing({ onJoinClick }) {
           </div>
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '32px' }}>
+        {/* In-person incentive callout */}
+        <div style={{ marginTop: '24px', padding: '20px 28px', background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span style={{ fontSize: '28px', flexShrink: 0 }}>🏛️</span>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#C9A84C', marginBottom: '4px' }}>
+              Promotions &amp; short-term access are only available in person.
+            </div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
+              Day passes, week passes, month memberships, and any active promotions must be purchased at the front desk.{' '}
+              <a href="#booking" style={{ color: '#C9A84C', fontWeight: 600, textDecoration: 'none' }}>
+                Make an appointment today →
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <p style={{ textAlign: 'center', fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginTop: '20px' }}>
           No hidden fees. No long-term contracts on monthly plans.
         </p>
       </div>

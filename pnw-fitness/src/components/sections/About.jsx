@@ -3,11 +3,11 @@ export default function About() {
     { num: '01', title: 'NASM Approved', desc: 'The only NASM-Approved Facility in Capitol Hill — the highest standard in fitness.' },
     { num: '02', title: 'Expert Coaches', desc: 'Every trainer holds fitness credentials and builds programs around your specific goals.' },
     { num: '03', title: 'Community First', desc: 'We believe fitness is better together. Every member is known by name here.' },
-    { num: '04', title: 'Largest Facility', desc: 'Over 12,000 sq ft of training space — the biggest independent gym in the neighborhood.' },
+    { num: '04', title: 'Largest Facility', desc: 'Over 22,000 sq ft of training space — the biggest independent gym in the neighborhood.' },
   ]
 
   const stats = [
-    { n: '12K+', l: 'Sq Ft' },
+    { n: '22K+', l: 'Sq Ft' },
     { n: '15+', l: 'Years' },
     { n: 'NASM', l: 'Approved' },
     { n: '#1', l: 'SGN 2025' },

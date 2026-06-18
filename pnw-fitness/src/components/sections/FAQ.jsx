@@ -144,6 +144,19 @@ export default function FAQ() {
               )}
             </div>
           ))}
+
+          {/* Link to full FAQ & policies page */}
+          <div style={{ marginTop: '28px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
+              More questions? View our full policies and FAQ page.
+            </span>
+            <a
+              href="/faq"
+              style={{ fontSize: '11px', fontWeight: 800, color: '#C9A84C', letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }}
+            >
+              View All →
+            </a>
+          </div>
         </div>
       </div>
     </section>

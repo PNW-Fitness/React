@@ -2,38 +2,38 @@ const services = [
   {
     icon: '🏋️',
     name: 'Strength Training',
-    sub: 'All Levels',
-    desc: 'Build raw strength and muscle with progressive overload programs. Barbells, dumbbells, machines — everything you need.',
+    sub: 'Full Gym Access',
+    desc: 'Free weights, machines, cables, and more across 22,000 sq ft of premium equipment — built for every level.',
   },
   {
-    icon: '🔥',
-    name: 'Cardio & HIIT',
-    sub: 'Group Class',
-    desc: 'Boost endurance and burn fat with high-intensity interval training. Classes capped at 20 — every spot coached.',
-  },
-  {
-    icon: '🥊',
-    name: 'Boxing',
-    sub: 'Limited Spots',
-    desc: 'Fundamentals through advanced combinations with Coach Marcus. Mon / Wed at 5:30 PM — only 12 spots per session.',
-  },
-  {
-    icon: '🧘',
-    name: 'Yoga & Pilates',
-    sub: 'Group Class',
-    desc: 'Coach Bee brings RYT-500 expertise to daily yoga flow, barre, and Pilates sessions focused on movement quality.',
-  },
-  {
-    icon: '🚴',
-    name: 'Spin Class',
-    sub: 'Group Class',
-    desc: 'High-energy cycling with Coach Dana. Tue / Thu / Sat at 6:00 PM in our dedicated 22-bike spin studio.',
+    icon: '🤸',
+    name: 'Group Fitness',
+    sub: 'Group Classes',
+    desc: 'HIIT, Boxing, Yoga, Pilates, Spin, and more. Unlimited classes are included with every membership.',
   },
   {
     icon: '⭐',
     name: 'Personal Training',
     sub: '1-on-1',
-    desc: 'Get a customized roadmap to your goals with one of our NASM-certified coaches. Your schedule, your program.',
+    desc: 'NASM-certified coaches build a custom program around your goals, schedule, and fitness history.',
+  },
+  {
+    icon: '☀️',
+    name: 'Tanning',
+    sub: 'UV Beds & Spray',
+    desc: 'Premium UV tanning beds and spray-tan booth available for members and short-term guests.',
+  },
+  {
+    icon: '🥤',
+    name: 'Grab & Go',
+    sub: 'Snacks & Drinks',
+    desc: 'Protein bars, shakes, electrolytes, and cold drinks — everything you need to fuel and recover.',
+  },
+  {
+    icon: '🎟️',
+    name: 'Short-Term Access',
+    sub: 'Day · Week · Month',
+    desc: 'Not ready to commit? Day, week, and month passes are available in person at the front desk.',
   },
 ]
 

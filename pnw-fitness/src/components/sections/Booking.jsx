@@ -2,7 +2,12 @@ import { useState } from 'react'
 
 export default function Booking() {
   const [status, setStatus] = useState('idle')
-  const [form, setForm] = useState({ name: '', email: '', phone: '', interest: 'General Membership', message: '' })
+  const [form, setForm] = useState({
+    name: '', email: '', phone: '',
+    type: 'Tour of the Facility',
+    date: '', time: 'Morning (6am – 11am)',
+    notes: '',
+  })
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -53,7 +58,7 @@ export default function Booking() {
         {/* Left */}
         <div>
           <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
-            Get In Touch
+            Make an Appointment
           </span>
           <h2
             style={{
@@ -65,12 +70,12 @@ export default function Booking() {
               margin: '0 0 24px',
             }}
           >
-            <span style={{ color: '#fff' }}>READY TO</span>
+            <span style={{ color: '#fff' }}>BOOK YOUR</span>
             <br />
-            <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>START?</span>
+            <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>VISIT.</span>
           </h2>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.75, marginBottom: '40px' }}>
-            Fill out the form and we will get back to you within 24 hours. Or stop by anytime during staffed hours — walk-ins are always welcome.
+            Schedule an appointment and we'll make sure you have a personalized experience — whether it's a tour, a membership consult, or your first personal training session. Walk-ins are always welcome too.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {[
@@ -88,7 +93,7 @@ export default function Booking() {
           </div>
         </div>
 
-        {/* Right — form */}
+        {/* Right — appointment form */}
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '24px', padding: '40px' }}>
           {status === 'success' ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -96,13 +101,13 @@ export default function Booking() {
                 ✓
               </div>
               <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '32px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', margin: '0 0 12px' }}>
-                Message Sent!
+                Appointment Requested!
               </h3>
               <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7 }}>
-                We will reach out within 24 hours. Welcome to the PNW Fitness family.
+                We'll confirm your appointment within 24 hours. Can't wait to see you!
               </p>
               <button onClick={() => setStatus('idle')} style={{ marginTop: '24px', padding: '12px 32px', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '50px', color: '#C9A84C', fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                Send Another
+                Book Another
               </button>
             </div>
           ) : (
@@ -115,31 +120,49 @@ export default function Booking() {
                     onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Email</label>
-                  <input style={inputStyle} type="email" placeholder="your@email.com" value={form.email} onChange={set('email')} required
+                  <label style={labelStyle}>Phone</label>
+                  <input style={inputStyle} type="tel" placeholder="(206) 000-0000" value={form.phone} onChange={set('phone')}
                     onFocus={e => (e.target.style.borderColor = '#C9A84C')}
                     onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
                 </div>
               </div>
               <div style={{ marginBottom: '14px' }}>
-                <label style={labelStyle}>Phone</label>
-                <input style={inputStyle} type="tel" placeholder="(206) 000-0000" value={form.phone} onChange={set('phone')}
+                <label style={labelStyle}>Email</label>
+                <input style={inputStyle} type="email" placeholder="your@email.com" value={form.email} onChange={set('email')} required
                   onFocus={e => (e.target.style.borderColor = '#C9A84C')}
                   onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
               </div>
               <div style={{ marginBottom: '14px' }}>
-                <label style={labelStyle}>I am interested in</label>
-                <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.interest} onChange={set('interest')}>
-                  <option>General Membership</option>
-                  <option>Personal Training</option>
-                  <option>Group Classes</option>
-                  <option>Corporate Wellness</option>
-                  <option>Day / Week Pass</option>
+                <label style={labelStyle}>Appointment Type</label>
+                <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.type} onChange={set('type')}>
+                  <option>Tour of the Facility</option>
+                  <option>Membership Consultation</option>
+                  <option>Personal Training Session</option>
+                  <option>Tanning Services</option>
+                  <option>Short-Term Pass</option>
+                  <option>Other</option>
                 </select>
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div>
+                  <label style={labelStyle}>Preferred Date</label>
+                  <input style={{ ...inputStyle, colorScheme: 'dark' }} type="date" value={form.date} onChange={set('date')}
+                    onFocus={e => (e.target.style.borderColor = '#C9A84C')}
+                    onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Preferred Time</label>
+                  <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.time} onChange={set('time')}>
+                    <option>Morning (6am – 11am)</option>
+                    <option>Midday (11am – 2pm)</option>
+                    <option>Afternoon (2pm – 5pm)</option>
+                    <option>Evening (5pm – 9pm)</option>
+                  </select>
+                </div>
+              </div>
               <div style={{ marginBottom: '24px' }}>
-                <label style={labelStyle}>Message (optional)</label>
-                <textarea style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }} placeholder="Any questions or info you want to share..." value={form.message} onChange={set('message')}
+                <label style={labelStyle}>Notes (optional)</label>
+                <textarea style={{ ...inputStyle, minHeight: '90px', resize: 'vertical' }} placeholder="Any questions or details you'd like to share..." value={form.notes} onChange={set('notes')}
                   onFocus={e => (e.target.style.borderColor = '#C9A84C')}
                   onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
               </div>
@@ -161,7 +184,7 @@ export default function Booking() {
                   opacity: status === 'loading' ? 0.7 : 1,
                 }}
               >
-                {status === 'loading' ? 'Sending...' : 'Send Message'}
+                {status === 'loading' ? 'Booking...' : 'Book Appointment'}
               </button>
             </form>
           )}
