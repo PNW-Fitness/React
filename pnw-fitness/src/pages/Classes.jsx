@@ -6,6 +6,7 @@ import { ChevronRight, ExternalLink, CalendarDays, Loader2, AlertCircle } from '
 const CALENDAR_ID   = '635db07ce214c29c1c6549a9a9b3161c727af1ecac59904c3ac27f47863d26ec@group.calendar.google.com'
 const API_KEY       = import.meta.env.VITE_GOOGLE_CAL_API_KEY
 const CLASSPASS_URL = 'https://classpass.com/studios/pacific-northwest-fitness-seattle'
+const BASE          = import.meta.env.BASE_URL
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TYPE_COLOR = {
@@ -20,6 +21,34 @@ const TYPE_COLOR = {
   Nutrition:   '#14b8a6',
   Performance: '#64748b',
 }
+
+// Add / edit group fitness instructors here
+const GROUP_INSTRUCTORS = [
+  {
+    photo: `${BASE}coaches/Bee.jpg`,
+    initial: 'B',
+    name: 'Bee',
+    cert: 'RYT-500 · NASM',
+    specialty: 'Yoga, Pilates & Barre',
+    tags: ['Yoga', 'Pilates', 'Barre', 'Recovery'],
+  },
+  {
+    photo: `${BASE}coaches/Marcus.jpg`,
+    initial: 'M',
+    name: 'Marcus',
+    cert: 'NASM-CPT',
+    specialty: 'Boxing & Conditioning',
+    tags: ['Boxing', 'HIIT', 'Conditioning'],
+  },
+  {
+    photo: `${BASE}coaches/Dana.jpg`,
+    initial: 'D',
+    name: 'Dana',
+    cert: 'Certified Spin Instructor',
+    specialty: 'Indoor Cycling',
+    tags: ['Spin', 'Cardio', 'Endurance'],
+  },
+]
 
 function detectType(title = '') {
   const t = title.toLowerCase()
@@ -43,18 +72,15 @@ function stripHtml(html = '') {
     .replace(/\s+/g, ' ').trim()
 }
 
-// Coach name lives in the title: "Class Name w/Bee" or "Class Name with Bee"
 function parseCoachFromTitle(title = '') {
   const m = title.match(/(?:with|w\/)\s*([A-Za-z]+)\s*$/i)
   return m ? m[1] : null
 }
 
-// Strip the coach suffix so the displayed title is clean
 function cleanTitle(title = '') {
   return title.replace(/\s+(?:with|w\/)\s*[A-Za-z]+\s*$/i, '').trim()
 }
 
-// Parse cap from HTML description: "capped at 25 attendees"
 function parseCap(desc = '') {
   const m = stripHtml(desc).match(/capped at (\d+)/i)
   return m ? m[1] : null
@@ -71,7 +97,6 @@ function calcDuration(start, end) {
   return m ? `${h}h ${m}m` : `${h} hr`
 }
 
-// Returns next 7 days starting from today
 function getWeek() {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
@@ -82,9 +107,180 @@ function getWeek() {
 
 const SHORT_DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+// ─── Individual class event row ───────────────────────────────────────────────
+function ClassEventCard({ evt, i }) {
+  const [showDesc, setShowDesc] = useState(false)
+
+  const isAllDay  = !evt.start.dateTime
+  const type      = detectType(evt.summary || '')
+  const color     = TYPE_COLOR[type]
+  const coach     = parseCoachFromTitle(evt.summary || '')
+  const title     = cleanTitle(evt.summary || '')
+  const cap       = parseCap(evt.description || '')
+  const desc      = evt.description ? stripHtml(evt.description).replace(/capped at \d+ attendees\.?\s*/i, '').trim() : null
+  const time      = isAllDay ? 'All Day' : formatTime(evt.start.dateTime)
+  const duration  = (!isAllDay && evt.end?.dateTime) ? calcDuration(evt.start.dateTime, evt.end.dateTime) : null
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '110px 1fr auto',
+          alignItems: 'center',
+          gap: '20px',
+          background: '#0d1117',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '16px',
+          padding: '20px 28px',
+          transition: 'border-color 0.2s, transform 0.2s',
+          cursor: desc ? 'pointer' : 'default',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)'
+          e.currentTarget.style.transform = 'translateX(4px)'
+          if (desc) setShowDesc(true)
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
+          e.currentTarget.style.transform = 'translateX(0)'
+          setShowDesc(false)
+        }}
+      >
+        {/* Time */}
+        <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#C9A84C' }}>
+          {time}
+        </div>
+
+        {/* Info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '50px', background: `${color}22`, border: `1px solid ${color}55`, color, whiteSpace: 'nowrap' }}>
+            {type}
+          </span>
+          <div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{title}</div>
+            <div style={{ fontSize: '12px', color: '#C9A84C', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {coach && <span>with {coach}</span>}
+              {coach && duration && <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
+              {duration && <span style={{ color: 'rgba(255,255,255,0.4)' }}>{duration}</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Limited spots badge */}
+        {cap && (
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '50px', padding: '4px 10px', marginBottom: '4px' }}>
+              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+              <span style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Limited</span>
+            </div>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)' }}>{cap} spots · Members incl.</div>
+          </div>
+        )}
+      </div>
+
+      {/* Description popover — pulls straight from Google Calendar */}
+      {showDesc && desc && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 8px)',
+            left: '20px',
+            zIndex: 200,
+            background: '#111820',
+            border: '1px solid rgba(201,168,76,0.3)',
+            borderRadius: '14px',
+            padding: '16px 20px',
+            maxWidth: '420px',
+            minWidth: '200px',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.7)',
+            pointerEvents: 'none',
+          }}
+        >
+          {cap && (
+            <div style={{ fontSize: '10px', fontWeight: 800, color: '#ef4444', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>
+              Limited to {cap} spots
+            </div>
+          )}
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.7, margin: 0 }}>{desc}</p>
+          {/* Caret arrow */}
+          <div style={{ position: 'absolute', top: '100%', left: '32px', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '7px solid rgba(201,168,76,0.3)' }} />
+          <div style={{ position: 'absolute', top: 'calc(100% - 1px)', left: '32px', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '7px solid #111820' }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Instructor card (mirrors the personal trainer card style) ────────────────
+function GroupInstructorCard({ c }) {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        height: '380px',
+        borderRadius: '20px',
+        overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.07)',
+        transition: 'border-color 0.25s, transform 0.25s',
+        cursor: 'default',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)'
+        e.currentTarget.style.transform = 'translateY(-4px)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}
+    >
+      {/* Background photo */}
+      {c.photo ? (
+        <img
+          src={c.photo}
+          alt=""
+          onError={e => { e.currentTarget.style.display = 'none' }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
+        />
+      ) : (
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#071829 0%,#0E2340 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '100px', fontWeight: 900, color: 'rgba(201,168,76,0.12)', lineHeight: 1 }}>{c.initial}</span>
+        </div>
+      )}
+
+      {/* Gradient overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,#000 0%,rgba(0,0,0,0.75) 40%,rgba(0,0,0,0.1) 70%,transparent 100%)' }} />
+
+      {/* Text at bottom */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px 18px' }}>
+        <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '22px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
+          {c.name}
+        </div>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: '#C9A84C', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
+          {c.cert}
+        </div>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }}>
+          {c.specialty}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', minHeight: '46px', alignContent: 'flex-start' }}>
+          {c.tags.map(tag => (
+            <span
+              key={tag}
+              style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '50px', color: '#C9A84C', letterSpacing: '0.08em', textTransform: 'uppercase' }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ClassesPage() {
   const [grouped, setGrouped]     = useState({})
-  const [loading, setLoading]     = useState(!!API_KEY)  // skip loading if no key
+  const [loading, setLoading]     = useState(!!API_KEY)
   const [error, setError]         = useState(API_KEY ? null : 'no-key')
   const [activeDay, setActiveDay] = useState(0)
 
@@ -137,9 +333,9 @@ export default function ClassesPage() {
           CALENDAR &<br />
           <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>CLASSES.</span>
         </h1>
-        <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, maxWidth: '560px', margin: 0 }}>
-          Our live schedule — updated in real time. Members get unlimited group classes included.
-          Don't have a membership? Book a single class through ClassPass.
+        <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, maxWidth: '600px', margin: 0 }}>
+          Our live schedule is updated in real time. Members get unlimited group classes included as space allows.
+          Don't have a membership? We offer day and week passes for drop-ins!
         </p>
       </div>
 
@@ -151,8 +347,8 @@ export default function ClassesPage() {
               <CalendarDays size={22} color="#a78bfa" />
             </div>
             <div>
-              <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#a78bfa', marginBottom: '3px' }}>No Membership? No Problem.</div>
-              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', marginBottom: '2px' }}>We're on ClassPass</div>
+              <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#a78bfa', marginBottom: '3px' }}>Already on ClassPass?</div>
+              <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', marginBottom: '2px' }}>Try us out!</div>
               <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Drop in to any class — no commitment, pay per visit.</div>
             </div>
           </div>
@@ -173,7 +369,7 @@ export default function ClassesPage() {
       <div style={{ padding: '0 56px', maxWidth: '1200px', margin: '0 auto 32px' }}>
         <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.04)', borderRadius: '16px', padding: '6px', width: 'fit-content' }}>
           {week.map((date, i) => {
-            const isToday = i === 0
+            const isToday  = i === 0
             const isActive = i === activeDay
             return (
               <button
@@ -191,9 +387,8 @@ export default function ClassesPage() {
       </div>
 
       {/* Class list */}
-      <div style={{ padding: '0 56px 80px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ padding: '0 56px 100px', maxWidth: '1200px', margin: '0 auto' }}>
 
-        {/* Loading */}
         {loading && (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.3)' }}>
             <Loader2 size={32} style={{ margin: '0 auto 12px', display: 'block', animation: 'spin 1s linear infinite' }} />
@@ -202,7 +397,6 @@ export default function ClassesPage() {
           </div>
         )}
 
-        {/* No API key */}
         {!loading && error === 'no-key' && (
           <div style={{ background: '#0d1117', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '16px', padding: '40px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
             <AlertCircle size={20} color="#C9A84C" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -215,7 +409,6 @@ export default function ClassesPage() {
           </div>
         )}
 
-        {/* API error */}
         {!loading && error && error !== 'no-key' && (
           <div style={{ background: '#0d1117', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '16px', padding: '32px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
             <AlertCircle size={20} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -226,7 +419,6 @@ export default function ClassesPage() {
           </div>
         )}
 
-        {/* Events */}
         {!loading && !error && (
           <>
             {dayEvents.length === 0 ? (
@@ -235,71 +427,58 @@ export default function ClassesPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {dayEvents.map((evt, i) => {
-                  const isAllDay = !evt.start.dateTime
-                  const type     = detectType(evt.summary || '')
-                  const color    = TYPE_COLOR[type]
-                  const coach    = parseCoachFromTitle(evt.summary || '')
-                  const title    = cleanTitle(evt.summary || '')
-                  const cap      = parseCap(evt.description || '')
-                  const time     = isAllDay ? 'All Day' : formatTime(evt.start.dateTime)
-                  const duration = (!isAllDay && evt.end?.dateTime) ? calcDuration(evt.start.dateTime, evt.end.dateTime) : null
-
-                  return (
-                    <div
-                      key={evt.id || i}
-                      style={{ display: 'grid', gridTemplateColumns: '110px 1fr auto', alignItems: 'center', gap: '20px', background: '#0d1117', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '20px 28px', transition: 'border-color 0.2s, transform 0.2s' }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)'; e.currentTarget.style.transform = 'translateX(4px)' }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = 'translateX(0)' }}
-                    >
-                      {/* Time */}
-                      <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#C9A84C' }}>
-                        {time}
-                      </div>
-
-                      {/* Info */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '50px', background: `${color}22`, border: `1px solid ${color}55`, color, whiteSpace: 'nowrap' }}>
-                          {type}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>{title}</div>
-                          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)' }}>
-                            {coach && <>with {coach}</>}
-                            {coach && duration && <>&nbsp;·&nbsp;</>}
-                            {duration && <>{duration}</>}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Cap */}
-                      {cap && (
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>{cap} spots</div>
-                          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', marginTop: '2px' }}>Members incl.</div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                {dayEvents.map((evt, i) => (
+                  <ClassEventCard key={evt.id || i} evt={evt} i={i} />
+                ))}
               </div>
             )}
           </>
         )}
 
-        {/* Personal training CTA */}
+        {/* Personal Training CTA */}
         <div style={{ marginTop: '56px', background: '#0E2340', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '20px', padding: '40px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '24px' }}>
           <div>
             <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '8px' }}>Personal Training</div>
             <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', margin: '0 0 8px' }}>Want a custom program?</h3>
-            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>Work 1-on-1 with one of our NASM-certified coaches on your schedule.</p>
+            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>Work 1-on-1 with one of our certified personal trainers on your schedule.</p>
           </div>
           <Link to="/coaches" style={{ background: '#C9A84C', color: '#0E2340', textDecoration: 'none', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
             Meet the Coaches <ChevronRight size={14} />
           </Link>
         </div>
-      </div>
 
+        {/* Group Fitness Instructors */}
+        <div style={{ marginTop: '72px' }}>
+          <div style={{ marginBottom: '40px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#C9A84C', display: 'block', marginBottom: '12px' }}>
+              Group Classes
+            </span>
+            <h2
+              style={{
+                fontFamily: 'Barlow Condensed, sans-serif',
+                fontSize: 'clamp(40px,6vw,72px)',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                lineHeight: 0.95,
+                margin: '0 0 16px',
+              }}
+            >
+              <span style={{ color: '#fff' }}>MEET YOUR</span>
+              <br />
+              <span style={{ color: '#C9A84C', fontStyle: 'italic' }}>INSTRUCTORS.</span>
+            </h2>
+            <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', maxWidth: '500px', margin: 0, lineHeight: 1.75 }}>
+              World-class instruction across yoga, boxing, cycling, and more — unlimited with membership.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
+            {GROUP_INSTRUCTORS.map(c => (
+              <GroupInstructorCard key={c.name} c={c} />
+            ))}
+          </div>
+        </div>
+
+      </div>
     </div>
   )
 }
