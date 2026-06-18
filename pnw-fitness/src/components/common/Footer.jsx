@@ -11,13 +11,8 @@
 
           {/* Brand */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-              <div style={{ width: '38px', height: '38px', background: '#2563EB', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, color: '#fff' }}>
-                PNW
-              </div>
-              <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '20px', fontWeight: 800, color: '#fff' }}>
-                PNW<span style={{ color: '#2563EB' }}>FITNESS</span>
-              </span>
+            <div style={{ marginBottom: '20px' }}>
+              <img src="/pnw-logo.png" alt="PNW Fitness" style={{ height: '40px', width: 'auto', display: 'block' }} />
             </div>
             <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.38)', lineHeight: 1.8, marginBottom: '24px' }}>
               Seattle's premier health and fitness club in Capitol Hill. NASM-certified trainers, group classes daily, and a community that shows up for you.
