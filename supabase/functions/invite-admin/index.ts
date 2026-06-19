@@ -6,7 +6,6 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -16,12 +15,10 @@ Deno.serve(async (req) => {
     if (!email) throw new Error('Email is required')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!  // set via: supabase secrets set
+    const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const anonKey     = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    // Verify the calling user is a staff_admin before doing anything.
-    // We use their JWT (passed automatically by supabase.functions.invoke)
-    // and the is_staff_admin() RPC which runs SECURITY DEFINER server-side.
+    // Verify the caller is a staff admin
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -39,30 +36,42 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Service-role client bypasses all RLS — only used here, never in the browser.
     const adminClient = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    // Invite the user. Supabase sends them an email to set their password.
-    // inviteUserByEmail returns the new user record immediately with their UUID,
-    // so we can add them to staff_admins before they even click the link.
+    let userId: string
+    let userEmail: string
+
+    // Try to invite. If the user is already registered, look them up instead
+    // so we can still grant access without sending a duplicate invite email.
     const { data: invite, error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(email)
-    if (inviteErr) throw inviteErr
 
-    const userId = invite.user.id
+    if (inviteErr) {
+      if (inviteErr.message.toLowerCase().includes('already registered') ||
+          inviteErr.message.toLowerCase().includes('already been registered')) {
+        const { data: existingId, error: lookupErr } = await adminClient
+          .rpc('get_user_id_by_email', { p_email: email })
+        if (lookupErr || !existingId) throw new Error(`Could not find existing user: ${email}`)
+        userId    = existingId
+        userEmail = email
+      } else {
+        throw inviteErr
+      }
+    } else {
+      userId    = invite.user.id
+      userEmail = invite.user.email ?? email
+    }
 
-    // Add to staff_admins (grants write access on the public site data)
+    // Grant admin access
     const { error: saErr } = await adminClient
       .from('staff_admins')
       .insert({ user_id: userId })
-    // Ignore duplicate — re-inviting an existing admin is harmless
     if (saErr && saErr.code !== '23505') throw saErr
 
-    // Add to admin_profiles (for human-readable display in the Manage Admins screen)
     const { error: apErr } = await adminClient
       .from('admin_profiles')
-      .insert({ user_id: userId, email: invite.user.email })
+      .insert({ user_id: userId, email: userEmail })
     if (apErr && apErr.code !== '23505') throw apErr
 
     return new Response(JSON.stringify({ success: true }), {

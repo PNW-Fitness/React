@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
@@ -7,17 +8,24 @@ const NAV = [
   { to: '/testimonials', label: 'Testimonials'  },
   { to: '/faq',          label: 'FAQ'           },
   { to: '/holidays',     label: 'Holiday Hours' },
-  { to: '/admins',       label: 'Admins'        },
-  { to: '/activity',     label: 'Activity Log'  },
+  { to: '/admins',       label: 'Admins',        adminOnly: true },
+  { to: '/activity',     label: 'Activity Log',  adminOnly: true },
 ]
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    supabase.rpc('is_staff_admin').then(({ data }) => setIsAdmin(!!data))
+  }, [])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
     navigate('/login')
   }
+
+  const visibleNav = NAV.filter(item => !item.adminOnly || isAdmin)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -32,7 +40,7 @@ export default function Layout({ children }) {
           </button>
         </div>
         <nav className="max-w-5xl mx-auto px-4 pb-0 flex gap-1 overflow-x-auto">
-          {NAV.map(({ to, label }) => (
+          {visibleNav.map(({ to, label }) => (
             <NavLink
               key={to}
               to={to}
