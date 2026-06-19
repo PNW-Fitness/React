@@ -1,12 +1,14 @@
 ﻿import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, ExternalLink, CalendarDays, Loader2, AlertCircle } from 'lucide-react'
+import StaffCard from '../components/common/StaffCard'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const CALENDAR_ID   = '635db07ce214c29c1c6549a9a9b3161c727af1ecac59904c3ac27f47863d26ec@group.calendar.google.com'
 const API_KEY       = import.meta.env.VITE_GOOGLE_CAL_API_KEY
 const CLASSPASS_URL = 'https://classpass.com/studios/pacific-northwest-fitness-seattle'
 const BASE          = import.meta.env.BASE_URL
+const API_URL       = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TYPE_COLOR = {
@@ -22,33 +24,6 @@ const TYPE_COLOR = {
   Performance: '#64748b',
 }
 
-// Add / edit group fitness instructors here
-const GROUP_INSTRUCTORS = [
-  {
-    photo: `${BASE}coaches/Bee.jpg`,
-    initial: 'B',
-    name: 'Bee',
-    cert: 'RYT-500 · NASM',
-    specialty: 'Yoga, Pilates & Barre',
-    tags: ['Yoga', 'Pilates', 'Barre', 'Recovery'],
-  },
-  {
-    photo: `${BASE}coaches/Marcus.jpg`,
-    initial: 'M',
-    name: 'Marcus',
-    cert: 'NASM-CPT',
-    specialty: 'Boxing & Conditioning',
-    tags: ['Boxing', 'HIIT', 'Conditioning'],
-  },
-  {
-    photo: `${BASE}coaches/Dana.jpg`,
-    initial: 'D',
-    name: 'Dana',
-    cert: 'Certified Spin Instructor',
-    specialty: 'Indoor Cycling',
-    tags: ['Spin', 'Cardio', 'Endurance'],
-  },
-]
 
 function detectType(title = '') {
   const t = title.toLowerCase()
@@ -255,80 +230,24 @@ function EventSidePanel({ evt }) {
   )
 }
 
-// ─── Instructor card (mirrors the personal trainer card style) ────────────────
-function GroupInstructorCard({ c }) {
-  return (
-    <div
-      style={{
-        position: 'relative',
-        height: '380px',
-        borderRadius: '20px',
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.07)',
-        transition: 'border-color 0.25s, transform 0.25s',
-        cursor: 'default',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(37,99,235,0.4)'
-        e.currentTarget.style.transform = 'translateY(-4px)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
-        e.currentTarget.style.transform = 'translateY(0)'
-      }}
-    >
-      {/* Background photo */}
-      {c.photo ? (
-        <img
-          src={c.photo}
-          alt=""
-          onError={e => { e.currentTarget.style.display = 'none' }}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
-        />
-      ) : (
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#0d0d0d 0%,#141414 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '100px', fontWeight: 900, color: 'rgba(37,99,235,0.12)', lineHeight: 1 }}>{c.initial}</span>
-        </div>
-      )}
-
-      {/* Gradient overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,#000 0%,rgba(0,0,0,0.75) 40%,rgba(0,0,0,0.1) 70%,transparent 100%)' }} />
-
-      {/* Text at bottom */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px 18px' }}>
-        <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '22px', fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>
-          {c.name}
-        </div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
-          {c.cert}
-        </div>
-        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }}>
-          {c.specialty}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', minHeight: '46px', alignContent: 'flex-start' }}>
-          {c.tags.map(tag => (
-            <span
-              key={tag}
-              style={{ fontSize: '9px', fontWeight: 700, padding: '3px 8px', background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.3)', borderRadius: '50px', color: '#2563EB', letterSpacing: '0.08em', textTransform: 'uppercase' }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ClassesPage() {
-  const [grouped, setGrouped]     = useState({})
-  const [loading, setLoading]     = useState(!!API_KEY)
-  const [error, setError]         = useState(API_KEY ? null : 'no-key')
-  const [activeDay, setActiveDay] = useState(0)
-  const [hoveredEvt, setHoveredEvt] = useState(null)
+  const [grouped, setGrouped]               = useState({})
+  const [loading, setLoading]               = useState(!!API_KEY)
+  const [error, setError]                   = useState(API_KEY ? null : 'no-key')
+  const [activeDay, setActiveDay]           = useState(0)
+  const [hoveredEvt, setHoveredEvt]         = useState(null)
+  const [groupInstructors, setGroupInstructors] = useState([])
 
   const week = getWeek()
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/staff?role=group_instructor`)
+      .then(r => r.json())
+      .then(setGroupInstructors)
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!API_KEY) return
@@ -522,8 +441,8 @@ export default function ClassesPage() {
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px' }}>
-            {GROUP_INSTRUCTORS.map(c => (
-              <GroupInstructorCard key={c.name} c={c} />
+            {groupInstructors.map(c => (
+              <StaffCard key={c.id} staff={c} variant="teaser" />
             ))}
           </div>
         </div>

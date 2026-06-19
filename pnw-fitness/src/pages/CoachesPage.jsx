@@ -1,61 +1,21 @@
-﻿import { ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ChevronRight } from 'lucide-react'
+import StaffCard from '../components/common/StaffCard'
 
-const BASE = import.meta.env.BASE_URL
-
-const coaches = [
-  {
-    photo: `${BASE}coaches/Keith.jpg`,
-    initial: 'K',
-    name: 'Keith',
-    cert: 'NASM-CPT',
-    specialty: 'Strength & Longevity',
-    bio: 'Specializes in building long-term strength and sustainable fitness habits. Keith works with clients of all ages, including those returning to fitness later in life. His programming focuses on progressive overload, joint health, and building routines that stick for the long haul.',
-    tags: ['Strength', 'Longevity', 'Rehab'],
-    classes: ['Strength & Conditioning', 'Power Hour'],
-  },
-  {
-    photo: `${BASE}coaches/Dave.jpg`,
-    initial: 'D',
-    name: 'Dave',
-    cert: 'NASM-CPT',
-    specialty: 'Functional Movement',
-    bio: 'Focuses on movement quality and functional fitness. Dave helps clients move better, feel better, and perform better in everyday life. His sessions combine mobility work, corrective exercise, and sport-inspired training to build bodies that are both strong and resilient.',
-    tags: ['Functional', 'Mobility', 'Athletic'],
-    classes: ['HIIT Bootcamp', 'Functional Fitness'],
-  },
-  {
-    photo: `${BASE}coaches/Joel.jpg`,
-    initial: 'J',
-    name: 'Joel',
-    cert: 'NASM-CSCS',
-    specialty: 'Athletic Performance',
-    bio: 'A Certified Strength and Conditioning Specialist with a background in competitive athletics. Joel builds sport-specific programs for competitive and recreational athletes focused on speed, power, and peak performance — and coaches the only boxing program in Capitol Hill.',
-    tags: ['Performance', 'Speed', 'Boxing'],
-    classes: ['Boxing Fundamentals', 'Athletic Performance', 'Power Hour'],
-  },
-  {
-    photo: `${BASE}coaches/Bee.jpg`,
-    initial: 'B',
-    name: 'Bee',
-    cert: 'RYT-500, NASM',
-    specialty: 'Yoga, Pilates & Barre',
-    bio: 'Brings a holistic approach to movement through yoga, Pilates, and barre. With her RYT-500 certification and NASM credentials, Bee focuses on fascia health, body awareness, and recovery — helping members feel as good between sessions as they do during them.',
-    tags: ['Yoga', 'Pilates', 'Barre', 'Recovery'],
-    classes: ['Yoga Flow', 'Pilates Core', 'Barre', 'Yoga Restore'],
-  },
-  {
-    photo: `${BASE}coaches/Prabh.jpg`,
-    initial: 'P',
-    name: 'Prabh',
-    cert: 'NASM-CNC',
-    specialty: 'Nutrition & Conditioning',
-    bio: 'A Certified Nutrition Coach who combines smart eating strategies with effective conditioning programs for total body transformation. Prabh runs our weekly Nutrition Workshop and coaches Spin, bringing the same data-driven mindset to both cardio and plate.',
-    tags: ['Nutrition', 'Conditioning', 'Spin'],
-    classes: ['Spin Class', 'Nutrition Workshop'],
-  },
-]
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 export default function CoachesPage({ onJoinClick }) {
+  const [coaches, setCoaches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState(null)
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/staff?role=personal_trainer`)
+      .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json() })
+      .then(data => { setCoaches(data); setLoading(false) })
+      .catch(err => { setError(err.message); setLoading(false) })
+  }, [])
+
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', paddingTop: '100px' }}>
 
@@ -79,13 +39,28 @@ export default function CoachesPage({ onJoinClick }) {
         </button>
       </div>
 
-      {/* Coach cards — 3-column grid */}
+      {/* Coach cards */}
       <div style={{ padding: '0 56px 100px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-          {coaches.map((c) => (
-            <CoachCard key={c.name} c={c} />
-          ))}
-        </div>
+
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>
+            Loading coaches…
+          </div>
+        )}
+
+        {!loading && error && (
+          <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(239,68,68,0.7)', fontSize: '13px' }}>
+            Could not load coaches — is the API server running?
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+            {coaches.map(c => (
+              <StaffCard key={c.id} staff={c} variant="full" />
+            ))}
+          </div>
+        )}
 
         {/* CTA banner */}
         <div style={{ marginTop: '64px', background: 'linear-gradient(135deg,#0d0d0d,#141414)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: '20px', padding: '56px 48px', textAlign: 'center' }}>
@@ -103,145 +78,6 @@ export default function CoachesPage({ onJoinClick }) {
           </button>
         </div>
       </div>
-    </div>
-  )
-}
-
-function CoachCard({ c }) {
-  return (
-    <div
-      style={{
-        position: 'relative',
-        height: '520px',
-        borderRadius: '24px',
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.06)',
-        transition: 'border-color 0.25s, transform 0.25s',
-        cursor: 'default',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(37,99,235,0.35)'
-        e.currentTarget.style.transform = 'translateY(-4px)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'
-        e.currentTarget.style.transform = 'translateY(0)'
-      }}
-    >
-      {/* Background photo */}
-      <PhotoBackground photo={c.photo} initial={c.initial} />
-
-      {/* Gradient overlay — taller on coaches page to cover bio text */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(to top, #000 0%, rgba(0,0,0,0.92) 45%, rgba(0,0,0,0.3) 65%, transparent 100%)',
-      }} />
-
-      {/* Text at bottom */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '24px 22px' }}>
-        <div style={{
-          fontFamily: 'Barlow Condensed, sans-serif',
-          fontSize: '26px',
-          fontWeight: 900,
-          color: '#fff',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-          marginBottom: '2px',
-        }}>
-          {c.name}
-        </div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '4px' }}>
-          {c.cert}
-        </div>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-          {c.specialty}
-        </div>
-
-        {/* Bio */}
-        <p style={{
-          fontSize: '12px',
-          color: 'rgba(255,255,255,0.6)',
-          lineHeight: 1.7,
-          margin: '0 0 12px',
-          display: '-webkit-box',
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-        }}>
-          {c.bio}
-        </p>
-
-        {/* Tags */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
-          {c.tags.map(tag => (
-            <span
-              key={tag}
-              style={{
-                fontSize: '9px',
-                fontWeight: 700,
-                padding: '3px 8px',
-                background: 'rgba(37,99,235,0.15)',
-                border: '1px solid rgba(37,99,235,0.3)',
-                borderRadius: '50px',
-                color: '#2563EB',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Classes taught */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
-          <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em', textTransform: 'uppercase', marginRight: '8px' }}>Teaches</span>
-          {c.classes.map(cl => (
-            <span key={cl} style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', marginRight: '10px' }}>{cl}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PhotoBackground({ photo, initial }) {
-  if (photo) {
-    return (
-      <img
-        src={photo}
-        alt=""
-        onError={e => { e.currentTarget.style.display = 'none' }}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          objectPosition: 'top center',
-        }}
-      />
-    )
-  }
-  return (
-    <div style={{
-      position: 'absolute',
-      inset: 0,
-      background: 'linear-gradient(135deg, #0d0d0d 0%, #141414 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      <span style={{
-        fontFamily: 'Barlow Condensed, sans-serif',
-        fontSize: '140px',
-        fontWeight: 900,
-        color: 'rgba(37,99,235,0.1)',
-        lineHeight: 1,
-      }}>
-        {initial}
-      </span>
     </div>
   )
 }

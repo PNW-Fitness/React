@@ -1,60 +1,24 @@
-﻿const BASE = import.meta.env.BASE_URL
+import { useState, useEffect } from 'react'
+import StaffCard from '../common/StaffCard'
 
-const coaches = [
-  {
-    photo: `${BASE}coaches/Keith.jpg`,
-    initial: 'K',
-    name: 'Keith',
-    cert: 'NASM-CPT',
-    specialty: 'Strength & Longevity',
-    tags: ['Strength', 'Longevity', 'Rehab'],
-  },
-  {
-    photo: `${BASE}coaches/Dave.jpg`,
-    initial: 'D',
-    name: 'Dave',
-    cert: 'NASM-CPT',
-    specialty: 'Functional Movement',
-    tags: ['Functional', 'Mobility', 'Athletic'],
-  },
-  {
-    photo: `${BASE}coaches/Joel.jpg`,
-    initial: 'J',
-    name: 'Joel',
-    cert: 'NASM-CSCS',
-    specialty: 'Athletic Performance',
-    tags: ['Performance', 'Speed', 'Power'],
-  },
-  {
-    photo: `${BASE}coaches/Bee.jpg`,
-    initial: 'B',
-    name: 'Bee',
-    cert: 'RYT-500, NASM',
-    specialty: 'Yoga, Pilates & Barre',
-    tags: ['Yoga', 'Pilates', 'Recovery'],
-  },
-  {
-    photo: `${BASE}coaches/Prabh.jpg`,
-    initial: 'P',
-    name: 'Prabh',
-    cert: 'NASM-CNC',
-    specialty: 'Nutrition & Conditioning',
-    tags: ['Nutrition', 'Conditioning', 'Fat Loss'],
-  },
-]
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 export default function Coaches() {
+  const [coaches, setCoaches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState(null)
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/staff?role=personal_trainer`)
+      .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json() })
+      .then(data => { setCoaches(data); setLoading(false) })
+      .catch(err => { setError(err.message); setLoading(false) })
+  }, [])
+
   return (
-    <section
-      id="coaches"
-      style={{
-        padding: '100px 56px',
-        background: '#141414',
-      }}
-    >
+    <section id="coaches" style={{ padding: '100px 56px', background: '#141414' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '64px' }}>
           <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '12px' }}>
             The Team
@@ -77,128 +41,27 @@ export default function Coaches() {
           </p>
         </div>
 
-        {/* Coaches grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '12px' }}>
-          {coaches.map((c) => (
-            <CoachCard key={c.name} c={c} />
-          ))}
-        </div>
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>
+            Loading coaches…
+          </div>
+        )}
+
+        {!loading && error && (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(239,68,68,0.7)', fontSize: '13px' }}>
+            Could not load coaches — is the API server running?
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '12px' }}>
+            {coaches.map(c => (
+              <StaffCard key={c.id} staff={c} variant="teaser" />
+            ))}
+          </div>
+        )}
+
       </div>
     </section>
-  )
-}
-
-function CoachCard({ c }) {
-  return (
-    <div
-      style={{
-        position: 'relative',
-        height: '380px',
-        borderRadius: '20px',
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.07)',
-        transition: 'border-color 0.25s, transform 0.25s',
-        cursor: 'default',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'rgba(37,99,235,0.4)'
-        e.currentTarget.style.transform = 'translateY(-4px)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
-        e.currentTarget.style.transform = 'translateY(0)'
-      }}
-    >
-      {/* Background photo */}
-      <PhotoBackground photo={c.photo} initial={c.initial} />
-
-      {/* Gradient overlay */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'linear-gradient(to top, #000 0%, rgba(0,0,0,0.75) 40%, rgba(0,0,0,0.1) 70%, transparent 100%)',
-      }} />
-
-      {/* Text at bottom */}
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '20px 18px' }}>
-        <div style={{
-          fontFamily: 'Barlow Condensed, sans-serif',
-          fontSize: '22px',
-          fontWeight: 900,
-          color: '#fff',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-          marginBottom: '2px',
-        }}>
-          {c.name}
-        </div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '6px' }}>
-          {c.cert}
-        </div>
-        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)', marginBottom: '10px' }}>
-          {c.specialty}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', minHeight: '46px', alignContent: 'flex-start' }}>
-          {c.tags.map(tag => (
-            <span
-              key={tag}
-              style={{
-                fontSize: '9px',
-                fontWeight: 700,
-                padding: '3px 8px',
-                background: 'rgba(37,99,235,0.15)',
-                border: '1px solid rgba(37,99,235,0.3)',
-                borderRadius: '50px',
-                color: '#2563EB',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PhotoBackground({ photo, initial }) {
-  if (photo) {
-    return (
-      <img
-        src={photo}
-        alt=""
-        onError={e => { e.currentTarget.style.display = 'none' }}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          objectPosition: 'top center',
-        }}
-      />
-    )
-  }
-  return (
-    <div style={{
-      position: 'absolute',
-      inset: 0,
-      background: 'linear-gradient(135deg, #0d0d0d 0%, #141414 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      <span style={{
-        fontFamily: 'Barlow Condensed, sans-serif',
-        fontSize: '100px',
-        fontWeight: 900,
-        color: 'rgba(37,99,235,0.12)',
-        lineHeight: 1,
-      }}>
-        {initial}
-      </span>
-    </div>
   )
 }
