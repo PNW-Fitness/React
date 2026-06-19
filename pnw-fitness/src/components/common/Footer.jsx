@@ -105,9 +105,21 @@
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.22)', margin: 0 }}>
             © 2025 Pacific Northwest Fitness · 401 Broadway E, Seattle, WA
           </p>
-          <p style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.1em', margin: 0 }}>
-            NASM APPROVED · SGN BEST GYM 2025
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: '#2563EB', letterSpacing: '0.1em', margin: 0 }}>
+              NASM APPROVED · SGN BEST GYM 2025
+            </p>
+            <a
+              href="https://react-rouge-nu.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: '11px', color: 'rgba(255,255,255,0.15)', textDecoration: 'none', letterSpacing: '0.05em' }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.15)' }}
+            >
+              Admin
+            </a>
+          </div>
         </div>
       </div>
     </footer>
