@@ -2,13 +2,13 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight, ExternalLink, CalendarDays, Loader2, AlertCircle } from 'lucide-react'
 import StaffCard from '../components/common/StaffCard'
+import { supabase } from '../lib/supabaseClient'
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const CALENDAR_ID   = '635db07ce214c29c1c6549a9a9b3161c727af1ecac59904c3ac27f47863d26ec@group.calendar.google.com'
 const API_KEY       = import.meta.env.VITE_GOOGLE_CAL_API_KEY
 const CLASSPASS_URL = 'https://classpass.com/studios/pacific-northwest-fitness-seattle'
 const BASE          = import.meta.env.BASE_URL
-const API_URL       = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TYPE_COLOR = {
@@ -243,10 +243,14 @@ export default function ClassesPage() {
   const week = getWeek()
 
   useEffect(() => {
-    fetch(`${API_URL}/api/staff?role=group_instructor`)
-      .then(r => r.json())
-      .then(setGroupInstructors)
-      .catch(() => {})
+    supabase
+      .from('staff_roles')
+      .select('display_order, classes_taught, staff!inner(id, name, photo_url, initial, cert, specialty, bio, tags, active)')
+      .eq('role', 'group_instructor')
+      .order('display_order')
+      .then(({ data }) => {
+        if (data) setGroupInstructors(data.map(r => ({ ...r.staff, classes_taught: r.classes_taught })))
+      })
   }, [])
 
   useEffect(() => {

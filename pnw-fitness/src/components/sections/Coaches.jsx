@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 import StaffCard from '../common/StaffCard'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 export default function Coaches() {
   const [coaches, setCoaches] = useState([])
@@ -9,10 +8,18 @@ export default function Coaches() {
   const [error, setError]     = useState(null)
 
   useEffect(() => {
-    fetch(`${API_URL}/api/staff?role=personal_trainer`)
-      .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json() })
-      .then(data => { setCoaches(data); setLoading(false) })
-      .catch(err => { setError(err.message); setLoading(false) })
+    async function load() {
+      const { data, error } = await supabase
+        .from('staff_roles')
+        .select('display_order, classes_taught, staff!inner(id, name, photo_url, initial, cert, specialty, bio, tags, active)')
+        .eq('role', 'personal_trainer')
+        .order('display_order')
+
+      if (error) { setError(error.message); setLoading(false); return }
+      setCoaches((data ?? []).map(r => ({ ...r.staff, classes_taught: r.classes_taught })))
+      setLoading(false)
+    }
+    load()
   }, [])
 
   return (
@@ -48,8 +55,8 @@ export default function Coaches() {
         )}
 
         {!loading && error && (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(239,68,68,0.7)', fontSize: '13px' }}>
-            Could not load coaches — is the API server running?
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(239,68,68,0.6)', fontSize: '13px' }}>
+            Could not load coaches.
           </div>
         )}
 
