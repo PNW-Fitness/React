@@ -8,6 +8,7 @@ const NAV = [
   { to: '/testimonials', label: 'Testimonials'  },
   { to: '/faq',          label: 'FAQ'           },
   { to: '/holidays',     label: 'Holiday Hours' },
+  { to: '/leads',        label: 'Leads',         adminOnly: true },
   { to: '/admins',       label: 'Admins',        adminOnly: true },
   { to: '/activity',     label: 'Activity Log',  adminOnly: true },
 ]
