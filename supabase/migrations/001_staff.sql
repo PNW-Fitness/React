@@ -138,3 +138,9 @@ CREATE POLICY "Public read staff"
 
 CREATE POLICY "Public read staff_roles"
   ON staff_roles FOR SELECT USING (true);
+
+-- Grant SELECT to the anon and authenticated roles.
+-- RLS policies control row visibility; GRANTs control table-level access.
+-- Both are required for public reads to work.
+GRANT SELECT ON staff       TO anon, authenticated;
+GRANT SELECT ON staff_roles TO anon, authenticated;
