@@ -42,25 +42,33 @@ Deno.serve(async (req) => {
 
     let userId: string
     let userEmail: string
+    let inviteLink: string | null = null
 
-    // Try to invite. If the user is already registered, look them up instead
-    // so we can still grant access without sending a duplicate invite email.
-    const { data: invite, error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(email)
+    // generateLink creates an invite URL without sending any email,
+    // avoiding Supabase's shared-SMTP rate limit entirely.
+    const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
+      type: 'invite',
+      email,
+    })
 
-    if (inviteErr) {
-      if (inviteErr.message.toLowerCase().includes('already registered') ||
-          inviteErr.message.toLowerCase().includes('already been registered')) {
+    if (linkErr) {
+      // User already exists in Auth — grant access without a new invite link
+      if (linkErr.message.toLowerCase().includes('already registered') ||
+          linkErr.message.toLowerCase().includes('already been registered') ||
+          linkErr.message.toLowerCase().includes('email address already')) {
         const { data: existingId, error: lookupErr } = await adminClient
           .rpc('get_user_id_by_email', { p_email: email })
         if (lookupErr || !existingId) throw new Error(`Could not find existing user: ${email}`)
         userId    = existingId
         userEmail = email
+        // No invite link — they already have an account and can sign in normally
       } else {
-        throw inviteErr
+        throw linkErr
       }
     } else {
-      userId    = invite.user.id
-      userEmail = invite.user.email ?? email
+      userId    = linkData.user.id
+      userEmail = linkData.user.email ?? email
+      inviteLink = linkData.properties?.action_link ?? null
     }
 
     // Grant admin access
@@ -74,7 +82,7 @@ Deno.serve(async (req) => {
       .insert({ user_id: userId, email: userEmail })
     if (apErr && apErr.code !== '23505') throw apErr
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, inviteLink }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {

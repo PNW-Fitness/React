@@ -10,6 +10,8 @@ export default function AdminsPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [inviteMessage, setInviteMessage] = useState({ type: '', text: '' })
+  const [inviteLink, setInviteLink] = useState(null)
+  const [copied, setCopied] = useState(false)
 
   async function load() {
     const [{ data: profile }, { data: list, error: err }] = await Promise.all([
@@ -27,20 +29,36 @@ export default function AdminsPage() {
   async function handleInvite(e) {
     e.preventDefault()
     setInviteMessage({ type: '', text: '' })
+    setInviteLink(null)
+    setCopied(false)
     setInviting(true)
 
-    const { error: fnErr } = await supabase.functions.invoke('invite-admin', {
+    const { data, error: fnErr } = await supabase.functions.invoke('invite-admin', {
       body: { email: inviteEmail.trim() },
     })
 
     setInviting(false)
     if (fnErr) {
       setInviteMessage({ type: 'error', text: fnErr.message })
-    } else {
-      setInviteMessage({ type: 'success', text: `Invite sent to ${inviteEmail.trim()}. They will receive an email to set their password.` })
-      setInviteEmail('')
-      load()
+      return
     }
+
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data
+    if (parsed?.inviteLink) {
+      setInviteLink(parsed.inviteLink)
+      setInviteMessage({ type: 'success', text: `Access granted for ${inviteEmail.trim()}. Send them the link below to set their password:` })
+    } else {
+      setInviteMessage({ type: 'success', text: `Access granted for ${inviteEmail.trim()}. They already have an account and can sign in now.` })
+    }
+    setInviteEmail('')
+    load()
+  }
+
+  async function handleCopyLink() {
+    if (!inviteLink) return
+    await navigator.clipboard.writeText(inviteLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   async function handleRemove(admin) {
@@ -127,7 +145,7 @@ export default function AdminsPage() {
       <div className="bg-white rounded-xl shadow p-6 max-w-md">
         <h3 className="font-semibold text-gray-700 mb-1">Invite a new admin</h3>
         <p className="text-xs text-gray-400 mb-4">
-          They will receive an email to set their password. Access is granted immediately.
+          Generates an invite link you can send via text or email. No rate limits.
         </p>
 
         <form onSubmit={handleInvite} className="space-y-3">
@@ -150,12 +168,25 @@ export default function AdminsPage() {
             </p>
           )}
 
+          {inviteLink && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+              <p className="text-xs text-gray-500 break-all font-mono">{inviteLink}</p>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded transition"
+              >
+                {copied ? 'Copied!' : 'Copy link'}
+              </button>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={inviting}
             className="bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition"
           >
-            {inviting ? 'Sending invite…' : 'Send invite'}
+            {inviting ? 'Generating link…' : 'Generate invite link'}
           </button>
         </form>
       </div>
