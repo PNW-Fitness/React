@@ -15,7 +15,7 @@ export default function Coaches() {
         .eq('role', 'personal_trainer')
         .order('display_order')
 
-      if (error) { setError(error.message); setLoading(false); return }
+      if (error) { console.error('Coaches fetch error:', error); setError(error.message); setLoading(false); return }
       setCoaches((data ?? []).map(r => ({ ...r.staff, classes_taught: r.classes_taught })))
       setLoading(false)
     }
@@ -56,7 +56,7 @@ export default function Coaches() {
 
         {!loading && error && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(239,68,68,0.6)', fontSize: '13px' }}>
-            Could not load coaches.
+            Could not load coaches: {error}
           </div>
         )}
 
