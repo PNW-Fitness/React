@@ -34,10 +34,10 @@ export default function CoachesPage({ onJoinClick }) {
           </span>
           <h1 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(56px,9vw,110px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.9, margin: '0 0 20px', color: '#fff' }}>
             MEET THE<br />
-            <span style={{ color: '#2563EB', fontStyle: 'italic' }}>COACHES.</span>
+            <span style={{ color: '#2563EB', fontStyle: 'italic' }}>TRAINERS.</span>
           </h1>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.75, maxWidth: '520px', margin: 0 }}>
-            Every coach at PNW Fitness holds NASM credentials and builds programs around you — not a template.
+            Every trainer at PNW Fitness holds NASM credentials and builds programs around you — not a template.
             Get to know the team, then book your first session.
           </p>
         </div>
@@ -51,13 +51,13 @@ export default function CoachesPage({ onJoinClick }) {
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>
-            Loading coaches…
+            Loading trainers…
           </div>
         )}
 
         {!loading && error && (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'rgba(239,68,68,0.6)', fontSize: '13px' }}>
-            Could not load coaches.
+            Could not load trainers.
           </div>
         )}
 

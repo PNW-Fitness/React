@@ -50,7 +50,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage onJoinClick={openModal} onTourClick={openTour} />} />
         <Route path="/classes" element={<ClassesPage />} />
-        <Route path="/coaches" element={<CoachesPage onJoinClick={openModal} />} />
+        <Route path="/trainers" element={<CoachesPage onJoinClick={openModal} />} />
       </Routes>
       <Footer />
       {modalOpen && <JoinModal onClose={() => setModalOpen(false)} />}

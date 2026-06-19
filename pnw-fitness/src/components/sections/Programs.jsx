@@ -15,7 +15,7 @@
     icon: '⭐',
     name: 'Personal Training',
     sub: '1-on-1',
-    desc: 'NASM-certified coaches build a custom program around your goals, schedule, and fitness history.',
+    desc: 'NASM-certified trainers build a custom program around your goals, schedule, and fitness history.',
   },
   {
     icon: '☀️',

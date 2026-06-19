@@ -23,7 +23,7 @@ export default function Coaches() {
   }, [])
 
   return (
-    <section id="coaches" style={{ padding: '100px 56px', background: '#141414' }}>
+    <section id="trainers" style={{ padding: '100px 56px', background: '#141414' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
         <div style={{ textAlign: 'center', marginBottom: '64px' }}>
@@ -41,22 +41,22 @@ export default function Coaches() {
             }}
           >
             <span style={{ color: '#fff' }}>MEET THE </span>
-            <span style={{ color: '#2563EB', fontStyle: 'italic' }}>COACHES.</span>
+            <span style={{ color: '#2563EB', fontStyle: 'italic' }}>TRAINERS.</span>
           </h2>
           <p style={{ fontSize: '15px', color: 'rgba(255,255,255,0.45)', maxWidth: '500px', margin: '0 auto' }}>
-            Every coach at PNW Fitness holds NASM credentials and builds programs around you.
+            Every trainer at PNW Fitness holds NASM credentials and builds programs around you.
           </p>
         </div>
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)', fontSize: '14px' }}>
-            Loading coaches…
+            Loading trainers…
           </div>
         )}
 
         {!loading && error && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(239,68,68,0.6)', fontSize: '13px' }}>
-            Could not load coaches: {error}
+            Could not load trainers: {error}
           </div>
         )}
 

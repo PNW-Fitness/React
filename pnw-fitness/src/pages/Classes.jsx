@@ -415,8 +415,8 @@ export default function ClassesPage() {
             <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '36px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', margin: '0 0 8px' }}>Want a custom program?</h3>
             <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>Work 1-on-1 with one of our certified personal trainers on your schedule.</p>
           </div>
-          <Link to="/coaches" style={{ background: '#2563EB', color: '#fff', textDecoration: 'none', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
-            Meet the Coaches <ChevronRight size={14} />
+          <Link to="/trainers" style={{ background: '#2563EB', color: '#fff', textDecoration: 'none', padding: '14px 32px', borderRadius: '50px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+            Meet the Trainers <ChevronRight size={14} />
           </Link>
         </div>
 

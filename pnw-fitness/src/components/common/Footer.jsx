@@ -1,6 +1,6 @@
 ﻿export default function Footer() {
   const links = {
-    'Quick Links': ['Home', 'About', 'Programs', 'Coaches', 'Pricing'],
+    'Quick Links': ['Home', 'About', 'Programs', 'Trainers', 'Pricing'],
     'Services': ['Group Fitness', 'Personal Training', 'Yoga & Pilates', 'Boxing & HIIT', 'Corporate Wellness', 'Temp Passes'],
   }
 
