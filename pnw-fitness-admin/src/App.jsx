@@ -12,6 +12,8 @@ import FaqListPage from './pages/FaqListPage'
 import FaqEditPage from './pages/FaqEditPage'
 import HolidayListPage from './pages/HolidayListPage'
 import HolidayEditPage from './pages/HolidayEditPage'
+import AdminsPage from './pages/AdminsPage'
+import ActivityLogPage from './pages/ActivityLogPage'
 
 function ProtectedRoute({ session, children }) {
   if (session === undefined) {
@@ -43,22 +45,24 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage session={session} />} />
-        <Route path="/"                    element={protect(<StaffListPage />)} />
-        <Route path="/staff/new"           element={protect(<StaffEditPage />)} />
-        <Route path="/staff/:id"           element={protect(<StaffEditPage />)} />
-        <Route path="/pricing"             element={protect(<PricingListPage />)} />
-        <Route path="/pricing/new"         element={protect(<PricingEditPage />)} />
-        <Route path="/pricing/:id"         element={protect(<PricingEditPage />)} />
-        <Route path="/testimonials"        element={protect(<TestimonialsListPage />)} />
-        <Route path="/testimonials/new"    element={protect(<TestimonialsEditPage />)} />
-        <Route path="/testimonials/:id"    element={protect(<TestimonialsEditPage />)} />
-        <Route path="/faq"                 element={protect(<FaqListPage />)} />
-        <Route path="/faq/new"             element={protect(<FaqEditPage />)} />
-        <Route path="/faq/:id"             element={protect(<FaqEditPage />)} />
-        <Route path="/holidays"            element={protect(<HolidayListPage />)} />
-        <Route path="/holidays/new"        element={protect(<HolidayEditPage />)} />
-        <Route path="/holidays/:id"        element={protect(<HolidayEditPage />)} />
+        <Route path="/login"                element={<LoginPage session={session} />} />
+        <Route path="/"                     element={protect(<StaffListPage />)} />
+        <Route path="/staff/new"            element={protect(<StaffEditPage />)} />
+        <Route path="/staff/:id"            element={protect(<StaffEditPage />)} />
+        <Route path="/pricing"              element={protect(<PricingListPage />)} />
+        <Route path="/pricing/new"          element={protect(<PricingEditPage />)} />
+        <Route path="/pricing/:id"          element={protect(<PricingEditPage />)} />
+        <Route path="/testimonials"         element={protect(<TestimonialsListPage />)} />
+        <Route path="/testimonials/new"     element={protect(<TestimonialsEditPage />)} />
+        <Route path="/testimonials/:id"     element={protect(<TestimonialsEditPage />)} />
+        <Route path="/faq"                  element={protect(<FaqListPage />)} />
+        <Route path="/faq/new"              element={protect(<FaqEditPage />)} />
+        <Route path="/faq/:id"              element={protect(<FaqEditPage />)} />
+        <Route path="/holidays"             element={protect(<HolidayListPage />)} />
+        <Route path="/holidays/new"         element={protect(<HolidayEditPage />)} />
+        <Route path="/holidays/:id"         element={protect(<HolidayEditPage />)} />
+        <Route path="/admins"               element={protect(<AdminsPage />)} />
+        <Route path="/activity"             element={protect(<ActivityLogPage />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

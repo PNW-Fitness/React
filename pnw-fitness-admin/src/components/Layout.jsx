@@ -7,6 +7,8 @@ const NAV = [
   { to: '/testimonials', label: 'Testimonials'  },
   { to: '/faq',          label: 'FAQ'           },
   { to: '/holidays',     label: 'Holiday Hours' },
+  { to: '/admins',       label: 'Admins'        },
+  { to: '/activity',     label: 'Activity Log'  },
 ]
 
 export default function Layout({ children }) {

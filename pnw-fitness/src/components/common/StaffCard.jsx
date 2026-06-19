@@ -24,7 +24,7 @@ export default function StaffCard({ staff: c, variant = 'teaser' }) {
       }}
     >
       <PhotoBg
-        photo={c.photo_url ? `${BASE}${c.photo_url}` : null}
+        photo={c.photo_url ? (c.photo_url.startsWith('http') ? c.photo_url : `${BASE}${c.photo_url}`) : null}
         initial={c.initial}
         isFull={isFull}
       />
