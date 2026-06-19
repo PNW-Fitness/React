@@ -1,34 +1,18 @@
-﻿import { useState } from 'react'
-
-const faqs = [
-  {
-    q: 'Do I need to sign a contract?',
-    a: 'No contracts at PNW Fitness. All memberships are month-to-month and can be cancelled at any time with 30 days notice.',
-  },
-  {
-    q: 'Can I try the gym before joining?',
-    a: 'Absolutely. Walk in during staffed hours and we will give you a full tour. Day passes are available for $20 so you can try a full workout before committing.',
-  },
-  {
-    q: 'Are group classes included in my membership?',
-    a: 'Yes — all group fitness classes are included with Premier and Elite memberships at no extra cost. Basic members can add classes for a small per-class fee.',
-  },
-  {
-    q: 'What is an NASM-Approved Facility?',
-    a: 'The National Academy of Sports Medicine certifies facilities that meet their standards for equipment, training practices, and coach credentials. We are the only NASM-Approved gym in Capitol Hill.',
-  },
-  {
-    q: 'Do you offer personal training?',
-    a: 'Yes. All our trainers are NASM-certified and available for one-on-one sessions. Elite members receive 2 sessions per month included. Sessions can also be purchased individually.',
-  },
-  {
-    q: 'Where are you located?',
-    a: '401 Broadway E, Suite 301, Seattle, WA 98102 — on Capitol Hill, above the QFC grocery store. Street parking is available on Broadway and surrounding streets.',
-  },
-]
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 
 export default function FAQ() {
+  const [faqs, setFaqs] = useState([])
   const [open, setOpen] = useState(0)
+
+  useEffect(() => {
+    supabase
+      .from('faqs')
+      .select('*')
+      .eq('active', true)
+      .order('display_order')
+      .then(({ data }) => setFaqs(data ?? []))
+  }, [])
 
   return (
     <section
@@ -82,7 +66,7 @@ export default function FAQ() {
         <div>
           {faqs.map((faq, i) => (
             <div
-              key={i}
+              key={faq.id}
               style={{
                 borderBottom: '1px solid rgba(255,255,255,0.08)',
               }}
@@ -113,7 +97,7 @@ export default function FAQ() {
                     transition: 'color 0.2s',
                   }}
                 >
-                  {faq.q}
+                  {faq.question}
                 </span>
                 <div
                   style={{
@@ -138,14 +122,13 @@ export default function FAQ() {
               {open === i && (
                 <div style={{ paddingBottom: '20px' }}>
                   <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.75, margin: 0 }}>
-                    {faq.a}
+                    {faq.answer}
                   </p>
                 </div>
               )}
             </div>
           ))}
 
-          {/* Link to full FAQ & policies page */}
           <div style={{ marginTop: '28px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
             <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
               More questions? View our full policies and FAQ page.

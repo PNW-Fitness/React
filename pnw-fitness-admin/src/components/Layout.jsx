@@ -1,5 +1,13 @@
+import { NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { useNavigate } from 'react-router-dom'
+
+const NAV = [
+  { to: '/',             label: 'Staff'         },
+  { to: '/pricing',      label: 'Pricing'       },
+  { to: '/testimonials', label: 'Testimonials'  },
+  { to: '/faq',          label: 'FAQ'           },
+  { to: '/holidays',     label: 'Holiday Hours' },
+]
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
@@ -21,6 +29,24 @@ export default function Layout({ children }) {
             Sign out
           </button>
         </div>
+        <nav className="max-w-5xl mx-auto px-4 pb-0 flex gap-1 overflow-x-auto">
+          {NAV.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              className={({ isActive }) =>
+                `text-sm font-medium px-3 py-2 rounded-t whitespace-nowrap transition-colors ${
+                  isActive
+                    ? 'bg-gray-50 text-blue-700'
+                    : 'text-blue-100 hover:text-white hover:bg-blue-600'
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
       <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
     </div>
