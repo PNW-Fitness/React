@@ -15,6 +15,8 @@ import HolidayEditPage from './pages/HolidayEditPage'
 import AdminsPage from './pages/AdminsPage'
 import ActivityLogPage from './pages/ActivityLogPage'
 import LeadsPage from './pages/LeadsPage'
+import AnnouncementsListPage from './pages/AnnouncementsListPage'
+import AnnouncementsEditPage from './pages/AnnouncementsEditPage'
 
 function ProtectedRoute({ session, children }) {
   if (session === undefined) {
@@ -65,6 +67,9 @@ export default function App() {
         <Route path="/leads"                element={protect(<LeadsPage />)} />
         <Route path="/admins"               element={protect(<AdminsPage />)} />
         <Route path="/activity"             element={protect(<ActivityLogPage />)} />
+        <Route path="/announcements"        element={protect(<AnnouncementsListPage />)} />
+        <Route path="/announcements/new"    element={protect(<AnnouncementsEditPage />)} />
+        <Route path="/announcements/:id"    element={protect(<AnnouncementsEditPage />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

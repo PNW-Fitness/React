@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, ExternalLink, CalendarDays, Loader2, AlertCircle } from 'lucide-react'
 import StaffCard from '../components/common/StaffCard'
@@ -97,7 +97,7 @@ function ClassEventCard({ evt, onHover, onLeave }) {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '110px 1fr auto',
+        gridTemplateColumns: '88px 100px 1fr auto',
         alignItems: 'center',
         gap: '20px',
         background: '#111111',
@@ -118,22 +118,24 @@ function ClassEventCard({ evt, onHover, onLeave }) {
       }}
     >
       {/* Time */}
-      <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#2563EB' }}>
+      <div style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: '18px', fontWeight: 700, color: '#2563EB', textAlign: 'right' }}>
         {time}
       </div>
 
-      {/* Info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      {/* Badge — own column for alignment */}
+      <div>
         <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '50px', background: `${color}22`, border: `1px solid ${color}55`, color, whiteSpace: 'nowrap' }}>
           {type}
         </span>
-        <div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{title}</div>
-          <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            {coach    && <span style={{ color: '#2563EB' }}>with {coach}</span>}
-            {coach && duration && <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
-            {duration && <span style={{ color: 'rgba(255,255,255,0.35)' }}>{duration}</span>}
-          </div>
+      </div>
+
+      {/* Title + coach */}
+      <div>
+        <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '3px' }}>{title}</div>
+        <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {coach    && <span style={{ color: '#2563EB' }}>with {coach}</span>}
+          {coach && duration && <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>}
+          {duration && <span style={{ color: 'rgba(255,255,255,0.35)' }}>{duration}</span>}
         </div>
       </div>
 
@@ -152,7 +154,7 @@ function ClassEventCard({ evt, onHover, onLeave }) {
 }
 
 // ─── Fixed side panel — appears on the right when hovering a class row ────────
-function EventSidePanel({ evt }) {
+function EventSidePanel({ evt, onEnter, onLeave }) {
   const type     = detectType(evt.summary || '')
   const color    = TYPE_COLOR[type]
   const coach    = parseCoachFromTitle(evt.summary || '')
@@ -167,6 +169,8 @@ function EventSidePanel({ evt }) {
 
   return (
     <div
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
       style={{
         position: 'fixed',
         right: '28px',
@@ -179,7 +183,6 @@ function EventSidePanel({ evt }) {
         padding: '28px 24px',
         zIndex: 300,
         boxShadow: '0 24px 64px rgba(0,0,0,0.75)',
-        pointerEvents: 'none',
       }}
     >
       {/* Type badge + time */}
@@ -239,8 +242,16 @@ export default function ClassesPage() {
   const [activeDay, setActiveDay]           = useState(0)
   const [hoveredEvt, setHoveredEvt]         = useState(null)
   const [groupInstructors, setGroupInstructors] = useState([])
+  const closeTimer = useRef(null)
 
   const week = getWeek()
+
+  function scheduleClose() {
+    closeTimer.current = setTimeout(() => setHoveredEvt(null), 175)
+  }
+  function cancelClose() {
+    clearTimeout(closeTimer.current)
+  }
 
   useEffect(() => {
     supabase
@@ -399,8 +410,8 @@ export default function ClassesPage() {
                   <ClassEventCard
                     key={evt.id || i}
                     evt={evt}
-                    onHover={setHoveredEvt}
-                    onLeave={() => setHoveredEvt(null)}
+                    onHover={e => { cancelClose(); setHoveredEvt(e) }}
+                    onLeave={scheduleClose}
                   />
                 ))}
               </div>
@@ -455,7 +466,7 @@ export default function ClassesPage() {
     </div>
 
     {/* Hover description panel — fixed to right side of screen */}
-    {hoveredEvt && <EventSidePanel evt={hoveredEvt} />}
+    {hoveredEvt && <EventSidePanel evt={hoveredEvt} onEnter={cancelClose} onLeave={scheduleClose} />}
     </>
   )
 }

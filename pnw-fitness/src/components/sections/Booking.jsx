@@ -1,4 +1,48 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
+
+const TYPE_OPTIONS = [
+  'Tour of the Facility',
+  'Membership Consultation',
+  'Personal Training Session',
+  'Tanning Services',
+  'Short-Term Pass',
+  'Other',
+]
+
+const TIME_OPTIONS = [
+  'Morning (6am – 11am)',
+  'Midday (11am – 2pm)',
+  'Afternoon (2pm – 5pm)',
+  'Evening (5pm – 9pm)',
+]
+
+function PillGroup({ options, value, onChange, cols }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: cols ? `repeat(${cols}, 1fr)` : undefined, gap: '8px', ...(cols ? {} : { display: 'flex', flexWrap: 'wrap' }) }}>
+      {options.map(opt => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          style={{
+            padding: '9px 12px',
+            borderRadius: '8px',
+            border: `1px solid ${value === opt ? '#2563EB' : 'rgba(255,255,255,0.1)'}`,
+            background: value === opt ? 'rgba(37,99,235,0.15)' : 'rgba(255,255,255,0.03)',
+            color: value === opt ? '#2563EB' : 'rgba(255,255,255,0.5)',
+            fontSize: '12px',
+            fontWeight: value === opt ? 700 : 400,
+            cursor: 'pointer',
+            textAlign: 'center',
+            transition: 'all 0.15s',
+          }}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function Booking() {
   const [status, setStatus] = useState('idle')
@@ -10,6 +54,7 @@ export default function Booking() {
   })
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
+  const setPill = (k) => (v) => setForm(f => ({ ...f, [k]: v }))
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -132,17 +177,13 @@ export default function Booking() {
                   onFocus={e => (e.target.style.borderColor = '#2563EB')}
                   onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')} />
               </div>
+
+              {/* Appointment Type — pill grid */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={labelStyle}>Appointment Type</label>
-                <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.type} onChange={set('type')}>
-                  <option>Tour of the Facility</option>
-                  <option>Membership Consultation</option>
-                  <option>Personal Training Session</option>
-                  <option>Tanning Services</option>
-                  <option>Short-Term Pass</option>
-                  <option>Other</option>
-                </select>
+                <PillGroup options={TYPE_OPTIONS} value={form.type} onChange={setPill('type')} cols={2} />
               </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
                   <label style={labelStyle}>Preferred Date</label>
@@ -152,14 +193,35 @@ export default function Booking() {
                 </div>
                 <div>
                   <label style={labelStyle}>Preferred Time</label>
-                  <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.time} onChange={set('time')}>
-                    <option>Morning (6am – 11am)</option>
-                    <option>Midday (11am – 2pm)</option>
-                    <option>Afternoon (2pm – 5pm)</option>
-                    <option>Evening (5pm – 9pm)</option>
-                  </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {TIME_OPTIONS.map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setPill('time')(opt)}
+                        style={{
+                          padding: '7px 10px',
+                          borderRadius: '7px',
+                          border: `1px solid ${form.time === opt ? '#2563EB' : 'rgba(255,255,255,0.1)'}`,
+                          background: form.time === opt ? 'rgba(37,99,235,0.15)' : 'rgba(255,255,255,0.03)',
+                          color: form.time === opt ? '#2563EB' : 'rgba(255,255,255,0.45)',
+                          fontSize: '11px',
+                          fontWeight: form.time === opt ? 700 : 400,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.15s',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
+
               <div style={{ marginBottom: '24px' }}>
                 <label style={labelStyle}>Notes (optional)</label>
                 <textarea style={{ ...inputStyle, minHeight: '90px', resize: 'vertical' }} placeholder="Any questions or details you'd like to share..." value={form.notes} onChange={set('notes')}

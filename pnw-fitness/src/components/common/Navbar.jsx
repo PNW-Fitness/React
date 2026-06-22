@@ -1,6 +1,7 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
+import { supabase } from '../../lib/supabaseClient'
 
 const navLinks = [
   { name: 'Home',               to: '/'        },
@@ -9,22 +10,27 @@ const navLinks = [
   { name: 'About Us',           href: '/#about'},
 ]
 
-// Update this array to add, edit, or remove announcements.
-const ANNOUNCEMENTS = [
-  'Summer Special — Short-term day, week & month passes now available in person. Visit us to learn more!',
-]
-
 export default function Navbar({ onJoinClick, onTourClick }) {
-  const [open, setOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
-  const [announcementIdx, setAnnouncementIdx] = useState(0)
-  const [announcementVisible, setAnnouncementVisible] = useState(ANNOUNCEMENTS.length > 0)
+  const [open, setOpen]                         = useState(false)
+  const [scrolled, setScrolled]                 = useState(false)
+  const [announcements, setAnnouncements]       = useState([])
+  const [announcementIdx, setAnnouncementIdx]   = useState(0)
+  const [announcementCollapsed, setCollapsed]   = useState(false)
   const { pathname } = useLocation()
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', fn)
     return () => window.removeEventListener('scroll', fn)
+  }, [])
+
+  useEffect(() => {
+    supabase
+      .from('announcements')
+      .select('message')
+      .eq('active', true)
+      .order('display_order')
+      .then(({ data }) => { if (data) setAnnouncements(data.map(r => r.message)) })
   }, [])
 
   const navStyle = {
@@ -94,6 +100,16 @@ export default function Navbar({ onJoinClick, onTourClick }) {
     return <a key={l.name} href={l.href} style={style} onClick={closeMenu} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>{l.name}</a>
   }
 
+  const hasBanner = announcements.length > 0 && !announcementCollapsed
+
+  function dismissAnnouncement() {
+    if (announcementIdx < announcements.length - 1) {
+      setAnnouncementIdx(i => i + 1)
+    } else {
+      setCollapsed(true)
+    }
+  }
+
   return (
     <>
       <nav style={navStyle}>
@@ -109,6 +125,28 @@ export default function Navbar({ onJoinClick, onTourClick }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Collapsed announcement badge */}
+          {announcements.length > 0 && announcementCollapsed && (
+            <button
+              onClick={() => { setCollapsed(false); setAnnouncementIdx(0) }}
+              title="Show announcement"
+              style={{
+                background: 'rgba(37,99,235,0.15)',
+                border: '1px solid rgba(37,99,235,0.35)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                cursor: 'pointer',
+                fontSize: '15px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              📣
+            </button>
+          )}
           <button onClick={onTourClick} style={tourBtnStyle}>Schedule a Tour</button>
           <button onClick={onJoinClick} style={btnStyle}>Join Now</button>
           <button onClick={() => setOpen(!open)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', padding: '8px' }}>
@@ -129,8 +167,8 @@ export default function Navbar({ onJoinClick, onTourClick }) {
         )}
       </nav>
 
-      {/* Announcements banner — drops down from top bar, dismissible with × */}
-      {announcementVisible && (
+      {/* Announcements banner */}
+      {hasBanner && (
         <div
           style={{
             position: 'fixed',
@@ -153,16 +191,10 @@ export default function Navbar({ onJoinClick, onTourClick }) {
           }}
         >
           <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600, lineHeight: 1.4 }}>
-            📣 {ANNOUNCEMENTS[announcementIdx]}
+            📣 {announcements[announcementIdx]}
           </span>
           <button
-            onClick={() => {
-              if (announcementIdx < ANNOUNCEMENTS.length - 1) {
-                setAnnouncementIdx(i => i + 1)
-              } else {
-                setAnnouncementVisible(false)
-              }
-            }}
+            onClick={dismissAnnouncement}
             style={{
               background: 'rgba(20,20,20,0.15)',
               border: 'none',

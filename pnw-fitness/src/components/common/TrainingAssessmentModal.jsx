@@ -256,17 +256,32 @@ export default function TrainingAssessmentModal({ onClose }) {
                 />
               </div>
 
-              {/* Fitness level */}
+              {/* Fitness level — pills */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={labelStyle}>Current Fitness Level (optional)</label>
-                <select
-                  value={form.fitnessLevel}
-                  onChange={onChange('fitnessLevel')}
-                  style={{ ...inputStyle, cursor: 'pointer' }}
-                >
-                  <option value="">Select…</option>
-                  {FITNESS_OPTIONS.map(o => <option key={o}>{o}</option>)}
-                </select>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {FITNESS_OPTIONS.map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => set('fitnessLevel', form.fitnessLevel === opt ? '' : opt)}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: '8px',
+                        border: `1px solid ${form.fitnessLevel === opt ? '#2563EB' : 'rgba(255,255,255,0.1)'}`,
+                        background: form.fitnessLevel === opt ? 'rgba(37,99,235,0.15)' : 'rgba(255,255,255,0.03)',
+                        color: form.fitnessLevel === opt ? '#2563EB' : 'rgba(255,255,255,0.5)',
+                        fontSize: '13px',
+                        fontWeight: form.fitnessLevel === opt ? 700 : 400,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Availability */}
