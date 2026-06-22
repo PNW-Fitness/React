@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 
 const inputStyle = {
   width: '100%',
@@ -22,12 +23,6 @@ const labelStyle = {
   textTransform: 'uppercase',
   marginBottom: '6px',
 }
-
-const PLANS = [
-  { key: 'Basic',   price: '$39/mo'  },
-  { key: 'Premier', price: '$59/mo'  },
-  { key: 'Elite',   price: '$89/mo'  },
-]
 
 function PillCard({ label, sub, selected, onClick }) {
   return (
@@ -53,8 +48,24 @@ function PillCard({ label, sub, selected, onClick }) {
 }
 
 export default function JoinModal({ onClose }) {
-  const [step, setStep] = useState('form')
-  const [form, setForm] = useState({ name: '', email: '', phone: '', plan: 'Premier' })
+  const [step, setStep]   = useState('form')
+  const [plans, setPlans] = useState([])
+  const [form, setForm]   = useState({ name: '', email: '', phone: '', plan: '' })
+
+  useEffect(() => {
+    supabase
+      .from('pricing_plans')
+      .select('name, monthly_price')
+      .eq('active', true)
+      .order('display_order')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setPlans(data)
+          // pre-select the last plan (typically the featured/premium one)
+          setForm(f => ({ ...f, plan: data[data.length - 1].name }))
+        }
+      })
+  }, [])
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
   const focus = e => (e.target.style.borderColor = '#2563EB')
@@ -115,21 +126,23 @@ export default function JoinModal({ onClose }) {
                 <input style={inputStyle} type="tel" placeholder="(206) 000-0000" value={form.phone} onChange={set('phone')} onFocus={focus} onBlur={blur} />
               </div>
 
-              {/* Plan — pill cards */}
-              <div style={{ marginBottom: '28px' }}>
-                <label style={labelStyle}>Plan</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {PLANS.map(p => (
-                    <PillCard
-                      key={p.key}
-                      label={p.key}
-                      sub={p.price}
-                      selected={form.plan === p.key}
-                      onClick={() => setForm(f => ({ ...f, plan: p.key }))}
-                    />
-                  ))}
+              {/* Plan — pill cards pulled from Supabase */}
+              {plans.length > 0 && (
+                <div style={{ marginBottom: '28px' }}>
+                  <label style={labelStyle}>Plan</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {plans.map(p => (
+                      <PillCard
+                        key={p.name}
+                        label={p.name}
+                        sub={`$${p.monthly_price}/mo`}
+                        selected={form.plan === p.name}
+                        onClick={() => setForm(f => ({ ...f, plan: p.name }))}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button
                 onClick={() => setStep('done')}

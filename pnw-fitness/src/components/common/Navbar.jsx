@@ -116,7 +116,7 @@ export default function Navbar({ onJoinClick, onTourClick }) {
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <img src={`${import.meta.env.BASE_URL}pnw-logo.png`} alt="PNW Fitness" style={{ height: '36px', width: 'auto', display: 'block' }} />
           <span style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff' }}>
-            PNW<span style={{ color: '#2563EB' }}>FITNESS</span>
+            FITNESS<span style={{ color: '#2563EB' }}></span>
           </span>
         </Link>
 
