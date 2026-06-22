@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Layout from '../components/Layout'
+import { SOURCE_LABELS } from '../lib/sourceLabels'
 
-const SOURCE_LABELS = { join: 'Join', tour: 'Tour', booking: 'Booking' }
+// ── Source badge colours ──────────────────────────────────────
 const SOURCE_COLORS = {
-  join:    'bg-green-100 text-green-700',
-  tour:    'bg-purple-100 text-purple-700',
-  booking: 'bg-orange-100 text-orange-700',
+  join:                'bg-green-100 text-green-700',
+  tour:                'bg-purple-100 text-purple-700',
+  booking:             'bg-orange-100 text-orange-700',
+  training_assessment: 'bg-yellow-100 text-yellow-700',
+  nasm_partnership:    'bg-indigo-100 text-indigo-700',
 }
+
 const STATUS_OPTIONS = ['new', 'contacted', 'closed']
 const STATUS_LABELS  = { new: 'New', contacted: 'Contacted', closed: 'Closed' }
 
@@ -17,24 +21,63 @@ function statusCls(status) {
   return 'bg-gray-100 text-gray-500 border-gray-200'
 }
 
-// One-line summary shown in the collapsed row
+// One-line summary for the collapsed row
 function summaryLine(source, details) {
   if (!details) return null
-  if (source === 'join')    return details.plan ? `Plan: ${details.plan}` : null
-  if (source === 'tour')    return [details.date, details.time, details.group].filter(Boolean).join(' · ') || null
-  if (source === 'booking') return [details.type, details.date, details.time].filter(Boolean).join(' · ') || null
-  return null
+  switch (source) {
+    case 'join':    return details.plan ? `Plan: ${details.plan}` : null
+    case 'tour':    return [details.date, details.time, details.group].filter(Boolean).join(' · ') || null
+    case 'booking': return [details.type, details.date, details.time].filter(Boolean).join(' · ') || null
+    case 'training_assessment':
+      return [details.membership_status, details.fitness_level].filter(Boolean).join(' · ') || null
+    case 'nasm_partnership':
+      return details.course || null
+    default:        return null
+  }
 }
 
-// Detail rows for the expanded panel
+// Labelled rows for the expanded detail panel
+const DETAIL_FIELD_LABELS = {
+  // join
+  plan:              'Plan',
+  // tour
+  date:              'Date',
+  time:              'Time',
+  group:             'Group size',
+  notes:             'Notes',
+  // booking
+  type:              'Booking type',
+  // training_assessment
+  contact_method:    'Preferred contact',
+  membership_status: 'Membership status',
+  goals:             'Goals',
+  fitness_level:     'Fitness level',
+  availability:      'Availability',
+  medical_notes:     'Medical / joint notes',
+  // nasm_partnership
+  mailing_address:   'Mailing address',
+  course:            'Course',
+  questions:         'Questions',
+}
+
+// Ordered field list per source so the panel reads logically
+const DETAIL_ORDER = {
+  join:                ['plan'],
+  tour:                ['date', 'time', 'group', 'notes'],
+  booking:             ['type', 'date', 'time', 'notes'],
+  training_assessment: ['contact_method', 'membership_status', 'goals', 'fitness_level', 'availability', 'medical_notes'],
+  nasm_partnership:    ['mailing_address', 'course', 'questions'],
+}
+
 function detailRows(source, details) {
   if (!details) return []
-  if (source === 'join')    return [['Plan', details.plan]].filter(([, v]) => v)
-  if (source === 'tour')    return [['Date', details.date], ['Time', details.time], ['Group size', details.group], ['Notes', details.notes]].filter(([, v]) => v)
-  if (source === 'booking') return [['Type', details.type], ['Date', details.date], ['Time', details.time], ['Notes', details.notes]].filter(([, v]) => v)
-  return Object.entries(details).filter(([, v]) => v)
+  const order = DETAIL_ORDER[source] ?? Object.keys(details)
+  return order
+    .map(k => [DETAIL_FIELD_LABELS[k] ?? k, details[k]])
+    .filter(([, v]) => v)
 }
 
+// ── Component ─────────────────────────────────────────────────
 export default function LeadsPage() {
   const [leads, setLeads]         = useState([])
   const [loading, setLoading]     = useState(true)
@@ -96,9 +139,9 @@ export default function LeadsPage() {
             className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All</option>
-            <option value="join">Join</option>
-            <option value="tour">Tour</option>
-            <option value="booking">Booking</option>
+            {Object.entries(SOURCE_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
           </select>
         </div>
         <div className="flex items-center gap-2">
@@ -132,13 +175,15 @@ export default function LeadsPage() {
               const isExpanded = expanded === lead.id
               const summary    = summaryLine(lead.source, lead.details)
               const rows       = detailRows(lead.source, lead.details)
+              const srcLabel   = SOURCE_LABELS[lead.source] ?? lead.source
+              const srcColor   = SOURCE_COLORS[lead.source] ?? 'bg-gray-100 text-gray-600'
 
               return (
                 <div key={lead.id} className={isNew ? 'bg-blue-50/40' : undefined}>
                   {/* Collapsed row */}
                   <div className="flex items-center gap-3 px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${SOURCE_COLORS[lead.source] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {SOURCE_LABELS[lead.source] ?? lead.source}
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${srcColor}`}>
+                      {srcLabel}
                     </span>
 
                     <div className="flex-1 min-w-0">
@@ -192,7 +237,7 @@ export default function LeadsPage() {
                       <div className="flex flex-wrap gap-8">
                         {/* Contact block */}
                         <div>
-                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Contact</p>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{srcLabel}</p>
                           <p className="text-sm font-medium text-gray-800">{lead.name}</p>
                           <a href={`mailto:${lead.email}`} className="text-sm text-blue-600 hover:underline block">{lead.email}</a>
                           {lead.phone && <p className="text-sm text-gray-700">{lead.phone}</p>}
@@ -211,7 +256,7 @@ export default function LeadsPage() {
                             <dl className="space-y-1">
                               {rows.map(([label, value]) => (
                                 <div key={label} className="flex gap-2 text-sm">
-                                  <dt className="font-medium text-gray-500 capitalize flex-shrink-0">{label}:</dt>
+                                  <dt className="font-medium text-gray-500 flex-shrink-0">{label}:</dt>
                                   <dd className="text-gray-800">{value}</dd>
                                 </div>
                               ))}

@@ -15,6 +15,8 @@ import JoinModal from './components/common/JoinModal'
 import TourModal from './components/common/TourModal'
 import ClassesPage from './pages/Classes'
 import CoachesPage from './pages/CoachesPage'
+import TrainingAssessmentModal from './components/common/TrainingAssessmentModal'
+import NasmPartnershipModal from './components/common/NasmPartnershipModal'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -22,13 +24,13 @@ function ScrollToTop() {
   return null
 }
 
-function HomePage({ onJoinClick, onTourClick }) {
+function HomePage({ onJoinClick, onTourClick, onTaClick, onNasmClick }) {
   return (
     <>
       <Hero onJoinClick={onJoinClick} onTourClick={onTourClick} />
-      <About />
+      <About onNasmClick={onNasmClick} />
       <Programs />
-      <Coaches />
+      <Coaches onTaClick={onTaClick} />
       <Pricing onJoinClick={onJoinClick} />
       <Testimonials />
       <FAQ />
@@ -39,22 +41,29 @@ function HomePage({ onJoinClick, onTourClick }) {
 
 export default function App() {
   const [modalOpen, setModalOpen] = useState(false)
-  const [tourOpen, setTourOpen] = useState(false)
+  const [tourOpen,  setTourOpen]  = useState(false)
+  const [taOpen,    setTaOpen]    = useState(false)
+  const [nasmOpen,  setNasmOpen]  = useState(false)
+
   const openModal = () => setModalOpen(true)
   const openTour  = () => setTourOpen(true)
+  const openTa    = () => setTaOpen(true)
+  const openNasm  = () => setNasmOpen(true)
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a' }}>
       <ScrollToTop />
       <Navbar onJoinClick={openModal} onTourClick={openTour} />
       <Routes>
-        <Route path="/" element={<HomePage onJoinClick={openModal} onTourClick={openTour} />} />
+        <Route path="/" element={<HomePage onJoinClick={openModal} onTourClick={openTour} onTaClick={openTa} onNasmClick={openNasm} />} />
         <Route path="/classes" element={<ClassesPage />} />
         <Route path="/trainers" element={<CoachesPage onJoinClick={openModal} />} />
       </Routes>
       <Footer />
-      {modalOpen && <JoinModal onClose={() => setModalOpen(false)} />}
-      {tourOpen  && <TourModal onClose={() => setTourOpen(false)} />}
+      {modalOpen && <JoinModal    onClose={() => setModalOpen(false)} />}
+      {tourOpen  && <TourModal   onClose={() => setTourOpen(false)}  />}
+      {taOpen    && <TrainingAssessmentModal onClose={() => setTaOpen(false)}   />}
+      {nasmOpen  && <NasmPartnershipModal   onClose={() => setNasmOpen(false)}  />}
     </div>
   )
 }

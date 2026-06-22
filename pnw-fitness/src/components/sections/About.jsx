@@ -1,4 +1,4 @@
-﻿export default function About() {
+﻿export default function About({ onNasmClick }) {
   const features = [
     { num: '01', title: 'NASM Approved', desc: 'The only NASM-Approved Facility in Capitol Hill — the highest standard in fitness.' },
     { num: '02', title: 'Expert Trainers', desc: 'Every trainer holds fitness credentials and builds programs around your specific goals.' },
@@ -155,6 +155,22 @@
             </div>
           </div>
         </div>
+
+        {/* NASM Partnership CTA */}
+        <div style={{ marginTop: '48px', background: '#141414', border: '1px solid rgba(37,99,235,0.15)', borderRadius: '16px', padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2563EB', margin: '0 0 6px' }}>NASM-Approved Facility</p>
+            <p style={{ fontSize: '15px', fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Interested in NASM Certification?</p>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', margin: 0 }}>Enroll in a course directly through PNW Fitness.</p>
+          </div>
+          <button
+            onClick={onNasmClick}
+            style={{ background: 'transparent', color: '#2563EB', border: '1px solid rgba(37,99,235,0.5)', padding: '12px 28px', borderRadius: '50px', fontWeight: 700, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+          >
+            Enroll in a Course →
+          </button>
+        </div>
+
       </div>
     </section>
   )

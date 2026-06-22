@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import StaffCard from '../common/StaffCard'
 
-export default function Coaches() {
+export default function Coaches({ onTaClick }) {
   const [coaches, setCoaches] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
@@ -67,6 +67,25 @@ export default function Coaches() {
             ))}
           </div>
         )}
+
+      {/* TA CTA */}
+      <div style={{ marginTop: '64px', background: 'linear-gradient(135deg,#0d0d0d,#141414)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: '20px', padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '32px', flexWrap: 'wrap' }}>
+        <div>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#2563EB', display: 'block', marginBottom: '8px' }}>Free · No Commitment</span>
+          <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontSize: 'clamp(28px,4vw,48px)', fontWeight: 900, textTransform: 'uppercase', color: '#fff', margin: '0 0 10px' }}>
+            Not Sure Where to Start?
+          </h3>
+          <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', margin: 0, maxWidth: '420px', lineHeight: 1.7 }}>
+            Book a free training assessment. One of our NASM-certified trainers will talk through your goals and build a plan around you.
+          </p>
+        </div>
+        <button
+          onClick={onTaClick}
+          style={{ background: '#2563EB', color: '#fff', border: 'none', padding: '16px 36px', borderRadius: '50px', fontWeight: 800, fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}
+        >
+          Book Free Assessment →
+        </button>
+      </div>
 
       </div>
     </section>
