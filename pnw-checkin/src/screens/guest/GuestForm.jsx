@@ -103,7 +103,7 @@ export default function GuestForm({ guestSession, navigate, onBack }) {
       setErrors(errs);
       return;
     }
-    navigate("guest_waiver", { formData: form });
+    navigate("guest_id_type_check", { formData: form });
   }
 
   const howHeardEntry = HOW_HEARD_OPTIONS.find((o) => o.value === form.how_heard);
@@ -113,7 +113,7 @@ export default function GuestForm({ guestSession, navigate, onBack }) {
     <div className="screen">
       <div className="screen-header">
         <button className="btn-back" onClick={onBack}>← Back</button>
-        <div className="step-indicator">Step 2 of 3 — Guest information</div>
+        <div className="step-indicator">Step 2 of 4 — Guest information</div>
       </div>
 
       <div className="screen-body form-body">
@@ -123,19 +123,19 @@ export default function GuestForm({ guestSession, navigate, onBack }) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} noValidate autoComplete="off">
           <fieldset className="form-section">
             <legend>Guest Information</legend>
 
             <div className="field-row">
               <div className="field">
                 <label htmlFor="first_name">First Name *</label>
-                <input id="first_name" type="text" value={form.first_name} onChange={(e) => set("first_name", e.target.value)} />
+                <input id="first_name" type="text" autoComplete="off" value={form.first_name} onChange={(e) => set("first_name", e.target.value)} />
                 {errors.first_name && <p className="field-error">{errors.first_name}</p>}
               </div>
               <div className="field">
                 <label htmlFor="last_name">Last Name *</label>
-                <input id="last_name" type="text" value={form.last_name} onChange={(e) => set("last_name", e.target.value)} />
+                <input id="last_name" type="text" autoComplete="off" value={form.last_name} onChange={(e) => set("last_name", e.target.value)} />
                 {errors.last_name && <p className="field-error">{errors.last_name}</p>}
               </div>
             </div>
@@ -143,19 +143,19 @@ export default function GuestForm({ guestSession, navigate, onBack }) {
             <div className="field-row">
               <div className="field">
                 <label htmlFor="zip_code">Zip Code *</label>
-                <input id="zip_code" type="text" inputMode="numeric" maxLength={5} value={form.zip_code} onChange={(e) => set("zip_code", e.target.value.replace(/\D/g, ""))} />
+                <input id="zip_code" type="text" inputMode="numeric" maxLength={5} autoComplete="off" value={form.zip_code} onChange={(e) => set("zip_code", e.target.value.replace(/\D/g, ""))} />
                 {errors.zip_code && <p className="field-error">{errors.zip_code}</p>}
               </div>
               <div className="field">
                 <label htmlFor="phone">Phone Number *</label>
-                <input id="phone" type="tel" placeholder="(253) 555-0123" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+                <input id="phone" type="tel" placeholder="(253) 555-0123" autoComplete="off" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
                 {errors.phone && <p className="field-error">{errors.phone}</p>}
               </div>
             </div>
 
             <div className="field">
               <label htmlFor="email">Email *</label>
-              <input id="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+              <input id="email" type="email" autoComplete="off" value={form.email} onChange={(e) => set("email", e.target.value)} />
               {errors.email && <p className="field-error">{errors.email}</p>}
             </div>
 
@@ -177,12 +177,12 @@ export default function GuestForm({ guestSession, navigate, onBack }) {
               <div className="field-row">
                 <div className="field">
                   <label htmlFor="guardian_name">Guardian Full Name *</label>
-                  <input id="guardian_name" type="text" value={form.guardian_name} onChange={(e) => set("guardian_name", e.target.value)} />
+                  <input id="guardian_name" type="text" autoComplete="off" value={form.guardian_name} onChange={(e) => set("guardian_name", e.target.value)} />
                   {errors.guardian_name && <p className="field-error">{errors.guardian_name}</p>}
                 </div>
                 <div className="field">
                   <label htmlFor="guardian_phone">Guardian Phone *</label>
-                  <input id="guardian_phone" type="tel" placeholder="(253) 555-0123" value={form.guardian_phone} onChange={(e) => set("guardian_phone", e.target.value)} />
+                  <input id="guardian_phone" type="tel" placeholder="(253) 555-0123" autoComplete="off" value={form.guardian_phone} onChange={(e) => set("guardian_phone", e.target.value)} />
                   {errors.guardian_phone && <p className="field-error">{errors.guardian_phone}</p>}
                 </div>
               </div>
@@ -205,7 +205,7 @@ export default function GuestForm({ guestSession, navigate, onBack }) {
             {showSpecify && (
               <div className="field">
                 <label htmlFor="how_heard_specify">Please specify</label>
-                <input id="how_heard_specify" type="text" value={form.how_heard_specify} onChange={(e) => set("how_heard_specify", e.target.value)} />
+                <input id="how_heard_specify" type="text" autoComplete="off" value={form.how_heard_specify} onChange={(e) => set("how_heard_specify", e.target.value)} />
               </div>
             )}
 

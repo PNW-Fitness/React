@@ -50,20 +50,20 @@ export default function VendorForm({ onDone, onBack }) {
 
       <div className="screen-body centered">
         <h2>Vendor Check-In</h2>
-        <form onSubmit={handleSubmit} noValidate className="vendor-form">
+        <form onSubmit={handleSubmit} noValidate autoComplete="off" className="vendor-form">
           <div className="field">
             <label htmlFor="v-name">Name *</label>
-            <input id="v-name" type="text" value={form.name} onChange={(e) => set("name", e.target.value)} />
+            <input id="v-name" type="text" autoComplete="off" value={form.name} onChange={(e) => set("name", e.target.value)} />
             {errors.name && <p className="field-error">{errors.name}</p>}
           </div>
           <div className="field">
             <label htmlFor="v-company">Company *</label>
-            <input id="v-company" type="text" value={form.company} onChange={(e) => set("company", e.target.value)} />
+            <input id="v-company" type="text" autoComplete="off" value={form.company} onChange={(e) => set("company", e.target.value)} />
             {errors.company && <p className="field-error">{errors.company}</p>}
           </div>
           <div className="field">
             <label htmlFor="v-reason">Reason for Visit *</label>
-            <textarea id="v-reason" rows={3} value={form.reason} onChange={(e) => set("reason", e.target.value)} />
+            <textarea id="v-reason" rows={3} autoComplete="off" value={form.reason} onChange={(e) => set("reason", e.target.value)} />
             {errors.reason && <p className="field-error">{errors.reason}</p>}
           </div>
           {saveError && <p className="field-error">{saveError}</p>}

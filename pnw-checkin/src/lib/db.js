@@ -64,7 +64,7 @@ async function getDb() {
   return _db;
 }
 
-function localNow() {
+export function localNow() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
@@ -124,15 +124,25 @@ export async function saveGuest(data) {
   return result.lastInsertId;
 }
 
-// Inserts a waiver row linked to guestId. Returns the new waiver id.
-export async function saveWaiver(guestId, signedByGuardian = false) {
+// Inserts a waiver row linked to guestId. Returns { id, signedAt }.
+export async function saveWaiver(guestId, signedByGuardian = false, signedAt = null) {
   const db = await getDb();
+  const ts = signedAt || localNow();
   const result = await db.execute(
     `INSERT INTO waivers (guest_id, signed_at, signed_by_guardian)
      VALUES (?, ?, ?)`,
-    [guestId, localNow(), signedByGuardian ? 1 : 0]
+    [guestId, ts, signedByGuardian ? 1 : 0]
   );
-  return result.lastInsertId;
+  return { id: result.lastInsertId, signedAt: ts };
+}
+
+// Updates pdf_path and id_photo_path on a waiver row after successful file export.
+export async function updateWaiverPaths(waiverId, idPhotoPath, pdfPath) {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE waivers SET pdf_path = ?, id_photo_path = ? WHERE id = ?`,
+    [pdfPath, idPhotoPath, waiverId]
+  );
 }
 
 // Inserts a vendor log entry. Returns the new row id.

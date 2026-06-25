@@ -530,3 +530,338 @@ textarea { resize: vertical; }
 
 .empty-log   { color: var(--color-text-muted); text-align: center; margin-top: 32px; }
 .loading-text { color: var(--color-text-muted); text-align: center; margin-top: 32px; }
+
+/* ── ID type check ───────────────────────────────────── */
+.id-type-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 40px;
+}
+
+.id-type-heading {
+  font-size: 1.35rem;
+  color: var(--color-primary);
+}
+
+.id-type-subtext {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.id-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .id-lists { grid-template-columns: 1fr; }
+}
+
+.id-list {
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.id-list-ok {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+}
+
+.id-list-no {
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+}
+
+.id-list-header { display: flex; align-items: center; }
+
+.id-list-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+
+.id-list-badge-ok   { background: #16a34a; color: #fff; }
+.id-list-badge-warn { background: #d97706; color: #fff; }
+.id-list-badge-no   { background: #dc2626; color: #fff; }
+
+.id-list-items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.id-list-items li {
+  font-size: 0.9rem;
+  padding-left: 18px;
+  position: relative;
+  line-height: 1.4;
+}
+
+.id-list-ok .id-list-items li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.id-list-no .id-list-items li::before {
+  content: "✗";
+  position: absolute;
+  left: 0;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.id-list-last-resort {
+  border-top: 1px solid #86efac;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.id-last-resort-note {
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+.id-no-note {
+  font-size: 0.82rem;
+  color: #991b1b;
+  line-height: 1.4;
+}
+
+.id-confirm-row {
+  padding: 4px 0;
+}
+
+.id-confirm-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.id-confirm-label input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ── ID camera capture ───────────────────────────────── */
+.id-capture-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  align-items: center;
+}
+
+/* Status cards (requesting / denied / error) */
+.cam-status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 40px 32px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+
+.cam-status-card h3 { color: var(--color-primary); }
+.cam-status-card p  { color: var(--color-text-muted); font-size: 0.9rem; line-height: 1.5; }
+.cam-status-icon    { font-size: 2.5rem; }
+
+.cam-denied { border-color: var(--color-danger); background: #fef2f2; }
+.cam-error  { border-color: var(--color-warning-border); background: var(--color-warning-bg); }
+
+/* Spinner */
+.cam-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Live preview + captured image share the same viewport */
+.cam-preview-wrap,
+.cam-captured-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 680px;
+}
+
+.cam-hidden { display: none; }
+
+.cam-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.cam-video,
+.cam-captured-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cam-overlay-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.cam-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-capture {
+  min-width: 160px;
+  font-size: 1rem;
+}
+
+.cam-switch {
+  min-width: 160px;
+  font-size: 0.9rem;
+}
+
+/* Minor DOB reminder */
+.cam-minor-reminder {
+  background: var(--color-warning-bg);
+  border: 1.5px solid var(--color-warning-border);
+  color: var(--color-warning-text);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.cam-dob-highlight {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.cam-captured-actions {
+  display: flex;
+  gap: 14px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* ── Signature pad ───────────────────────────────────── */
+.sig-pad-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sig-pad-canvas {
+  display: block;
+  width: 100%;
+  height: 140px;
+  border-radius: var(--radius);
+  border: 2px dashed var(--color-border);
+  background: #ffffff;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.sig-pad-active {
+  border-color: var(--color-primary);
+  border-style: solid;
+  cursor: crosshair;
+}
+
+.sig-pad-locked {
+  background: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.sig-pad-footer {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.sig-pad-hint {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.sig-pad-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.82rem;
+  color: var(--color-danger);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sig-pad-clear:hover {
+  opacity: 0.75;
+}
+
+/* ── Confirmation export path ────────────────────────── */
+.confirmation-export-path {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 8px 0 4px;
+  word-break: break-all;
+}
+
+.export-path-text {
+  font-family: "Courier New", monospace;
+  font-size: 0.75rem;
+  background: #f0f2f5;
+  padding: 2px 5px;
+  border-radius: 4px;
+}

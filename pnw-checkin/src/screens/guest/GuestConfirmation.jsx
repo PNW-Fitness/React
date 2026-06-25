@@ -1,4 +1,4 @@
-export default function GuestConfirmation({ guestSession, onDone }) {
+export default function GuestConfirmation({ guestSession, exportDir, onDone }) {
   const { formData, isMinor, supervisionRequired } = guestSession;
   const guestName = `${formData?.first_name || ""} ${formData?.last_name || ""}`.trim();
 
@@ -23,6 +23,11 @@ export default function GuestConfirmation({ guestSession, onDone }) {
           <p className="confirmation-time">
             {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
           </p>
+          {exportDir && (
+            <p className="confirmation-export-path" title={exportDir}>
+              Files saved to: <span className="export-path-text">{exportDir}</span>
+            </p>
+          )}
           <button className="btn-primary btn-large" onClick={onDone}>
             Done
           </button>

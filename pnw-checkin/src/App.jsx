@@ -12,7 +12,11 @@ import GuestConfirmation from "./screens/guest/GuestConfirmation.jsx";
 import VendorForm from "./screens/vendor/VendorForm.jsx";
 import VendorLog from "./screens/vendor/VendorLog.jsx";
 
-import { saveGuest, saveWaiver } from "./lib/db.js";
+import IdTypeCheck from "./components/IdCapture/IdTypeCheck.jsx";
+import IdCapture from "./components/IdCapture/IdCapture.jsx";
+
+import { saveGuest, saveWaiver, updateWaiverPaths, localNow } from "./lib/db.js";
+import { exportGuestFiles } from "./lib/fileExport/fileExport.js";
 
 const EMPTY_GUEST_SESSION = {
   isMinor: false,
@@ -22,12 +26,15 @@ const EMPTY_GUEST_SESSION = {
   prefillData: null,
   existingGuestId: null,
   formData: {},
+  idPhoto: null,
 };
 
 export default function App() {
   const [screen, setScreen] = useState("landing");
   const [guestSession, setGuestSession] = useState(EMPTY_GUEST_SESSION);
   const [submitError, setSubmitError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [exportDir, setExportDir] = useState(null);
 
   function navigate(targetScreen, updates = {}) {
     setGuestSession((prev) => ({ ...prev, ...updates }));
@@ -38,12 +45,17 @@ export default function App() {
   function resetToLanding() {
     setGuestSession(EMPTY_GUEST_SESSION);
     setSubmitError("");
+    setSubmitting(false);
+    setExportDir(null);
     setScreen("landing");
   }
 
-  async function handleSubmitWaiver() {
+  async function handleSubmitWaiver(signatureDataUrl) {
     setSubmitError("");
+    setSubmitting(true);
     try {
+      const signedAt = localNow();
+
       let guestId = guestSession.existingGuestId;
       if (!guestId) {
         guestId = await saveGuest({
@@ -52,11 +64,30 @@ export default function App() {
           supervision_required: guestSession.supervisionRequired,
         });
       }
-      await saveWaiver(guestId, guestSession.isMinor);
+
+      const { id: waiverId } = await saveWaiver(guestId, guestSession.isMinor, signedAt);
+
+      const { idPhotoPath, pdfPath, exportDir: dir } = await exportGuestFiles({
+        guestSession,
+        signatureDataUrl,
+        guestId,
+        waiverId,
+        signedAt,
+      });
+
+      await updateWaiverPaths(waiverId, idPhotoPath, pdfPath);
+
+      setExportDir(dir);
       setScreen("guest_confirm");
     } catch (err) {
-      console.error("Check-in save failed:", err);
-      setSubmitError("Failed to save check-in — please try again or get staff assistance.");
+      console.error("Check-in failed:", err);
+      setSubmitError(
+        typeof err === "string"
+          ? err
+          : err?.message || "Failed to complete check-in — please try again or get staff assistance."
+      );
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -110,13 +141,31 @@ export default function App() {
         />
       );
 
+    case "guest_id_type_check":
+      return (
+        <IdTypeCheck
+          onConfirm={() => setScreen("guest_id_capture")}
+          onBack={() => setScreen("guest_form")}
+        />
+      );
+
+    case "guest_id_capture":
+      return (
+        <IdCapture
+          guestSession={guestSession}
+          onConfirm={(idPhoto) => navigate("guest_waiver", { idPhoto })}
+          onBack={() => setScreen("guest_id_type_check")}
+        />
+      );
+
     case "guest_waiver":
       return (
         <WaiverView
           guestSession={guestSession}
           onSubmit={handleSubmitWaiver}
-          onBack={() => setScreen("guest_form")}
+          onBack={() => setScreen("guest_id_capture")}
           submitError={submitError}
+          submitting={submitting}
         />
       );
 
@@ -124,6 +173,7 @@ export default function App() {
       return (
         <GuestConfirmation
           guestSession={guestSession}
+          exportDir={exportDir}
           onDone={resetToLanding}
         />
       );
@@ -140,6 +190,11 @@ export default function App() {
       return <VendorLog onDone={resetToLanding} />;
 
     default:
-      return <Landing onGuest={() => setScreen("guest_age_check")} onVendor={() => setScreen("vendor_form")} />;
+      return (
+        <Landing
+          onGuest={() => setScreen("guest_age_check")}
+          onVendor={() => setScreen("vendor_form")}
+        />
+      );
   }
 }
