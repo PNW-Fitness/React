@@ -67,15 +67,14 @@ export default function App() {
 
       const { id: waiverId } = await saveWaiver(guestId, guestSession.isMinor, signedAt);
 
-      const { idPhotoPath, pdfPath, exportDir: dir } = await exportGuestFiles({
+      const { pdfPath, exportDir: dir } = await exportGuestFiles({
         guestSession,
         signatureDataUrl,
         guestId,
-        waiverId,
         signedAt,
       });
 
-      await updateWaiverPaths(waiverId, idPhotoPath, pdfPath);
+      await updateWaiverPaths(waiverId, pdfPath);
 
       setExportDir(dir);
       setScreen("guest_confirm");

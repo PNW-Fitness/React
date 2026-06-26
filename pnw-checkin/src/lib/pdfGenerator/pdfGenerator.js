@@ -26,7 +26,7 @@ function wrapLine(text, font, size, maxWidth) {
   return lines;
 }
 
-export async function generateWaiverPdf({ formData, isMinor, signatureDataUrl, signedAt, guestId }) {
+export async function generateWaiverPdf({ formData, isMinor, signatureDataUrl, signedAt, guestId, idPhoto }) {
   const PAGE_W = 612;
   const PAGE_H = 792;
   const MARGIN = 50;
@@ -131,9 +131,9 @@ export async function generateWaiverPdf({ formData, isMinor, signatureDataUrl, s
 
   const SIG_MAX_W = CONTENT_W * 0.65;
   const SIG_MAX_H = 100;
-  const scale = Math.min(SIG_MAX_W / sigImage.width, SIG_MAX_H / sigImage.height, 1);
-  const sigW = sigImage.width * scale;
-  const sigH = sigImage.height * scale;
+  const sigScale = Math.min(SIG_MAX_W / sigImage.width, SIG_MAX_H / sigImage.height, 1);
+  const sigW = sigImage.width * sigScale;
+  const sigH = sigImage.height * sigScale;
 
   ensureSpace(sigH + 52);
 
@@ -158,6 +158,34 @@ export async function generateWaiverPdf({ formData, isMinor, signatureDataUrl, s
 
   drawText(signerDisplay, bold, 11);
   drawText(`Signed: ${signedAt}`, regular, 10, rgb(0.4, 0.4, 0.4));
+
+  // ── ID Verification Photo ─────────────────────────────────────────────────
+  if (idPhoto) {
+    page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+    y = PAGE_H - MARGIN;
+
+    drawText("ID Verification Photo", bold, 14, rgb(0.1, 0.17, 0.29));
+    drawHRule();
+
+    const idPhotoBytes = dataUrlToUint8Array(idPhoto);
+    const idImage = await pdfDoc.embedJpg(idPhotoBytes);
+
+    const maxImgW = CONTENT_W;
+    const maxImgH = y - MARGIN - 28;
+    const idScale = Math.min(maxImgW / idImage.width, maxImgH / idImage.height, 1);
+    const idW = idImage.width * idScale;
+    const idH = idImage.height * idScale;
+
+    page.drawImage(idImage, {
+      x: MARGIN + (CONTENT_W - idW) / 2,
+      y: y - idH,
+      width: idW,
+      height: idH,
+    });
+
+    y -= idH + 12;
+    drawText(`Photographed: ${signedAt}`, regular, 10, rgb(0.4, 0.4, 0.4));
+  }
 
   return await pdfDoc.save();
 }

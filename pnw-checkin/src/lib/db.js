@@ -136,12 +136,12 @@ export async function saveWaiver(guestId, signedByGuardian = false, signedAt = n
   return { id: result.lastInsertId, signedAt: ts };
 }
 
-// Updates pdf_path and id_photo_path on a waiver row after successful file export.
-export async function updateWaiverPaths(waiverId, idPhotoPath, pdfPath) {
+// Updates pdf_path on a waiver row after successful file export.
+export async function updateWaiverPaths(waiverId, pdfPath) {
   const db = await getDb();
   await db.execute(
-    `UPDATE waivers SET pdf_path = ?, id_photo_path = ? WHERE id = ?`,
-    [pdfPath, idPhotoPath, waiverId]
+    `UPDATE waivers SET pdf_path = ? WHERE id = ?`,
+    [pdfPath, waiverId]
   );
 }
 

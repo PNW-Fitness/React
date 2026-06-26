@@ -34,37 +34,21 @@ fn get_export_dir(app: tauri::AppHandle) -> Result<String, String> {
 fn write_guest_export(
     base_dir: String,
     date_str: String,
-    guest_folder: String,
-    id_photo_b64: String,
+    filename: String,
     pdf_b64: String,
-    metadata_json: String,
-) -> Result<(String, String), String> {
-    let dir = Path::new(&base_dir).join(&date_str).join(&guest_folder);
+) -> Result<String, String> {
+    let dir = Path::new(&base_dir).join(&date_str);
     fs::create_dir_all(&dir)
-        .map_err(|e| format!("Cannot create guest folder: {}", e))?;
-
-    let photo_bytes = STANDARD
-        .decode(&id_photo_b64)
-        .map_err(|e| format!("Cannot decode ID photo: {}", e))?;
-    let photo_path = dir.join("id_photo.jpg");
-    fs::write(&photo_path, &photo_bytes)
-        .map_err(|e| format!("Cannot write ID photo: {}", e))?;
+        .map_err(|e| format!("Cannot create date folder: {}", e))?;
 
     let pdf_bytes = STANDARD
         .decode(&pdf_b64)
         .map_err(|e| format!("Cannot decode PDF: {}", e))?;
-    let pdf_path = dir.join("waiver_signed.pdf");
+    let pdf_path = dir.join(format!("{}.pdf", filename));
     fs::write(&pdf_path, &pdf_bytes)
         .map_err(|e| format!("Cannot write PDF: {}", e))?;
 
-    let meta_path = dir.join("metadata.json");
-    fs::write(&meta_path, metadata_json.as_bytes())
-        .map_err(|e| format!("Cannot write metadata: {}", e))?;
-
-    Ok((
-        photo_path.to_string_lossy().into_owned(),
-        pdf_path.to_string_lossy().into_owned(),
-    ))
+    Ok(pdf_path.to_string_lossy().into_owned())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

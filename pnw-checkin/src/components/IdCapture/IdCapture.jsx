@@ -15,9 +15,12 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
 
   // 'requesting' | 'live' | 'captured' | 'denied' | 'error'
   const [camState, setCamState] = useState("requesting");
-  const [facingMode, setFacingMode] = useState("environment");
-  const [capturedUrl, setCapturedUrl] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [capturedUrl, setCapturedUrl] = useState(null);
+
+  // Available video devices (populated after first permission grant)
+  const [devices, setDevices] = useState([]);
+  const [deviceIndex, setDeviceIndex] = useState(0);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -41,19 +44,21 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
     }
   }
 
-  const startCamera = useCallback(async (mode) => {
+  // deviceId null → first open, let browser pick (environment hint).
+  // deviceId string → explicit device selected by the user.
+  const startCamera = useCallback(async (deviceId = null) => {
     stopStream();
     if (!mountedRef.current) return;
     setCamState("requesting");
     setErrorMessage("");
 
+    const videoConstraints = deviceId
+      ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      : { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } };
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: mode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+        video: videoConstraints,
         audio: false,
       });
 
@@ -62,11 +67,20 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
         return;
       }
 
+      // Enumerate devices now that permission is granted so deviceIds are available.
+      // facingMode is unreliable on Windows/WebView2 — we cycle by deviceId instead.
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = allDevices.filter((d) => d.kind === "videoinput");
+      if (mountedRef.current) {
+        setDevices(videoDevices);
+        const activeId = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
+        const idx = videoDevices.findIndex((d) => d.deviceId === activeId);
+        setDeviceIndex(idx >= 0 ? idx : 0);
+      }
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        // play() returns a promise; swallow the abort error that fires when
-        // the stream is replaced before play completes
         videoRef.current.play().catch(() => {});
       }
       setCamState("live");
@@ -87,16 +101,16 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
     }
   }, []);
 
-  // Start the camera on mount with the default facing mode
   useEffect(() => {
-    startCamera(facingMode);
+    startCamera(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleSwitchCamera() {
-    const next = facingMode === "environment" ? "user" : "environment";
-    setFacingMode(next);
-    startCamera(next);
+    if (devices.length < 2) return;
+    const nextIndex = (deviceIndex + 1) % devices.length;
+    setDeviceIndex(nextIndex);
+    startCamera(devices[nextIndex].deviceId);
   }
 
   function handleCapture() {
@@ -116,7 +130,7 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
 
   function handleRetake() {
     setCapturedUrl(null);
-    startCamera(facingMode);
+    startCamera(devices[deviceIndex]?.deviceId ?? null);
   }
 
   function handleUsePhoto() {
@@ -126,6 +140,8 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
   const guestName = formData
     ? `${formData.first_name || ""} ${formData.last_name || ""}`.trim()
     : "";
+
+  const canSwitch = devices.length >= 2;
 
   return (
     <div className="screen">
@@ -162,10 +178,7 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
               and make sure "Let desktop apps access your camera" is turned on,
               then click Retry below.
             </p>
-            <button
-              className="btn-primary"
-              onClick={() => startCamera(facingMode)}
-            >
+            <button className="btn-primary" onClick={() => startCamera(null)}>
               Retry
             </button>
           </div>
@@ -179,7 +192,7 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
             <p>{errorMessage}</p>
             <button
               className="btn-primary"
-              onClick={() => startCamera(facingMode)}
+              onClick={() => startCamera(devices[deviceIndex]?.deviceId ?? null)}
             >
               Retry
             </button>
@@ -199,9 +212,11 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
             <div className="cam-overlay-hint">Position ID card to fill the frame</div>
           </div>
           <div className="cam-controls">
-            <button className="btn-outline cam-switch" onClick={handleSwitchCamera} title="Switch camera">
-              🔄 Switch camera
-            </button>
+            {canSwitch && (
+              <button className="btn-outline cam-switch" onClick={handleSwitchCamera} title="Switch camera">
+                🔄 Switch camera
+              </button>
+            )}
             <button className="btn-primary btn-capture" onClick={handleCapture}>
               📷 Capture
             </button>
