@@ -61,6 +61,31 @@ async function getDb() {
     )
   `);
 
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS classpass_checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guest_name TEXT NOT NULL,
+      contact TEXT NOT NULL,
+      zip_code TEXT NOT NULL,
+      booking_verified INTEGER NOT NULL DEFAULT 0,
+      signed_at TEXT NOT NULL,
+      pdf_path TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
+
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS pending_lead_sync (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guest_id INTEGER NOT NULL,
+      payload TEXT NOT NULL,
+      attempt_count INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      created_at TEXT NOT NULL,
+      last_attempted_at TEXT
+    )
+  `);
+
   return _db;
 }
 
@@ -145,6 +170,26 @@ export async function updateWaiverPaths(waiverId, pdfPath) {
   );
 }
 
+// Inserts a ClassPass check-in row. Returns the new row id.
+export async function saveClassPassCheckin(data) {
+  const db = await getDb();
+  const result = await db.execute(
+    `INSERT INTO classpass_checkins (guest_name, contact, zip_code, booking_verified, signed_at, created_at)
+     VALUES (?, ?, ?, 1, ?, ?)`,
+    [data.guestName, data.contact, data.zipCode, data.signedAt, localNow()]
+  );
+  return result.lastInsertId;
+}
+
+// Updates pdf_path on a classpass_checkins row after successful file export.
+export async function updateClassPassPdfPath(checkinId, pdfPath) {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE classpass_checkins SET pdf_path = ? WHERE id = ?`,
+    [pdfPath, checkinId]
+  );
+}
+
 // Inserts a vendor log entry. Returns the new row id.
 export async function saveVendor(data) {
   const db = await getDb();
@@ -154,6 +199,59 @@ export async function saveVendor(data) {
     [data.name, data.company, data.reason, localNow()]
   );
   return result.lastInsertId;
+}
+
+// Adds a failed lead push to the retry queue.
+export async function queuePendingLead(guestId, payload) {
+  const db = await getDb();
+  await db.execute(
+    `INSERT INTO pending_lead_sync (guest_id, payload, created_at)
+     VALUES (?, ?, ?)`,
+    [guestId, JSON.stringify(payload), localNow()]
+  );
+}
+
+// Returns pending leads that have not yet exceeded 10 attempts.
+export async function getPendingLeads() {
+  const db = await getDb();
+  return await db.select(
+    `SELECT id, guest_id, payload, attempt_count, last_error
+     FROM pending_lead_sync
+     WHERE attempt_count < 10
+     ORDER BY id ASC`
+  );
+}
+
+// Removes a successfully synced lead from the queue.
+export async function deletePendingLead(id) {
+  const db = await getDb();
+  await db.execute(`DELETE FROM pending_lead_sync WHERE id = ?`, [id]);
+}
+
+// Increments attempt_count and records the last error message.
+export async function updatePendingLeadAttempt(id, error) {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE pending_lead_sync
+     SET attempt_count = attempt_count + 1,
+         last_error = ?,
+         last_attempted_at = ?
+     WHERE id = ?`,
+    [error, localNow(), id]
+  );
+}
+
+// Returns { total, stuck } counts for the Settings screen.
+export async function getPendingSyncStats() {
+  const db = await getDb();
+  const rows = await db.select(
+    `SELECT
+       COUNT(*) as total,
+       SUM(CASE WHEN attempt_count >= 10 THEN 1 ELSE 0 END) as stuck
+     FROM pending_lead_sync`
+  );
+  const row = rows[0] ?? {};
+  return { total: Number(row.total ?? 0), stuck: Number(row.stuck ?? 0) };
 }
 
 // Returns all vendor_log rows where time_in is today (local time).

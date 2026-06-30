@@ -10,6 +10,7 @@ const SOURCE_COLORS = {
   booking:             'bg-orange-100 text-orange-700',
   training_assessment: 'bg-yellow-100 text-yellow-700',
   nasm_partnership:    'bg-indigo-100 text-indigo-700',
+  checkin_app:         'bg-teal-100 text-teal-700',
 }
 
 const STATUS_OPTIONS = ['new', 'contacted', 'closed']
@@ -22,17 +23,24 @@ function statusCls(status) {
 }
 
 // One-line summary for the collapsed row
-function summaryLine(source, details) {
-  if (!details) return null
+function summaryLine(source, details, visitCount) {
+  if (!details && source !== 'checkin_app') return null
   switch (source) {
-    case 'join':    return details.plan ? `Plan: ${details.plan}` : null
-    case 'tour':    return [details.date, details.time, details.group].filter(Boolean).join(' · ') || null
-    case 'booking': return [details.type, details.date, details.time].filter(Boolean).join(' · ') || null
+    case 'join':    return details?.plan ? `Plan: ${details.plan}` : null
+    case 'tour':    return [details?.date, details?.time, details?.group].filter(Boolean).join(' · ') || null
+    case 'booking': return [details?.type, details?.date, details?.time].filter(Boolean).join(' · ') || null
     case 'training_assessment':
-      return [details.membership_status, details.fitness_level].filter(Boolean).join(' · ') || null
+      return [details?.membership_status, details?.fitness_level].filter(Boolean).join(' · ') || null
     case 'nasm_partnership':
-      return details.course || null
-    default:        return null
+      return details?.course || null
+    case 'checkin_app': {
+      const parts = [
+        details?.visit_reason,
+        visitCount > 1 ? `${visitCount} visits` : null,
+      ].filter(Boolean)
+      return parts.join(' · ') || null
+    }
+    default: return null
   }
 }
 
@@ -58,6 +66,11 @@ const DETAIL_FIELD_LABELS = {
   mailing_address:   'Mailing address',
   course:            'Course',
   questions:         'Questions',
+  // checkin_app
+  visit_reason:      'Visit reason',
+  interests:         'Interests',
+  how_heard:         'How heard',
+  zip_code:          'Zip code',
 }
 
 // Ordered field list per source so the panel reads logically
@@ -67,6 +80,7 @@ const DETAIL_ORDER = {
   booking:             ['type', 'date', 'time', 'notes'],
   training_assessment: ['contact_method', 'membership_status', 'goals', 'fitness_level', 'availability', 'medical_notes'],
   nasm_partnership:    ['mailing_address', 'course', 'questions'],
+  checkin_app:         ['visit_reason', 'interests', 'how_heard', 'zip_code'],
 }
 
 function detailRows(source, details) {
@@ -173,7 +187,7 @@ export default function LeadsPage() {
             {filtered.map(lead => {
               const isNew      = lead.status === 'new'
               const isExpanded = expanded === lead.id
-              const summary    = summaryLine(lead.source, lead.details)
+              const summary    = summaryLine(lead.source, lead.details, lead.visit_count)
               const rows       = detailRows(lead.source, lead.details)
               const srcLabel   = SOURCE_LABELS[lead.source] ?? lead.source
               const srcColor   = SOURCE_COLORS[lead.source] ?? 'bg-gray-100 text-gray-600'
@@ -247,6 +261,21 @@ export default function LeadsPage() {
                               hour: 'numeric', minute: '2-digit',
                             })}
                           </p>
+                          {lead.source === 'checkin_app' && (
+                            <div className="mt-2 space-y-0.5">
+                              <p className="text-xs text-gray-500">
+                                <span className="font-medium">Visits:</span> {lead.visit_count ?? 1}
+                              </p>
+                              {lead.last_seen && (
+                                <p className="text-xs text-gray-500">
+                                  <span className="font-medium">Last seen:</span>{' '}
+                                  {new Date(lead.last_seen).toLocaleDateString('en-US', {
+                                    month: 'short', day: 'numeric', year: 'numeric',
+                                  })}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Details block */}

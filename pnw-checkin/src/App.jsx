@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 import Landing from "./screens/Landing.jsx";
@@ -9,14 +9,22 @@ import PhoneLookup from "./screens/guest/PhoneLookup.jsx";
 import GuestForm from "./screens/guest/GuestForm.jsx";
 import WaiverView from "./screens/guest/WaiverView.jsx";
 import GuestConfirmation from "./screens/guest/GuestConfirmation.jsx";
+import Settings from "./screens/Settings.jsx";
 import VendorForm from "./screens/vendor/VendorForm.jsx";
 import VendorLog from "./screens/vendor/VendorLog.jsx";
 
 import IdTypeCheck from "./components/IdCapture/IdTypeCheck.jsx";
 import IdCapture from "./components/IdCapture/IdCapture.jsx";
 
-import { saveGuest, saveWaiver, updateWaiverPaths, localNow } from "./lib/db.js";
+import ClassPassBookingVerify from "./screens/classpass/ClassPassBookingVerify.jsx";
+import ClassPassForm from "./screens/classpass/ClassPassForm.jsx";
+import ClassPassWaiver from "./screens/classpass/ClassPassWaiver.jsx";
+import ClassPassConfirmation from "./screens/classpass/ClassPassConfirmation.jsx";
+
+import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, updateClassPassPdfPath, localNow, queuePendingLead } from "./lib/db.js";
+import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, retryPendingLeads } from "./lib/leadSync.js";
 import { exportGuestFiles } from "./lib/fileExport/fileExport.js";
+import { exportClassPassFile } from "./lib/classpassExport.js";
 
 const EMPTY_GUEST_SESSION = {
   isMinor: false,
@@ -29,13 +37,31 @@ const EMPTY_GUEST_SESSION = {
   idPhoto: null,
 };
 
+const EMPTY_CP_SESSION = { guestName: "", contact: "", zipCode: "", idPhoto: null };
+
 export default function App() {
   const [screen, setScreen] = useState("landing");
+
+  // ── Guest flow state ──────────────────────────────────────────────────────
   const [guestSession, setGuestSession] = useState(EMPTY_GUEST_SESSION);
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [exportDir, setExportDir] = useState(null);
 
+  // ── ClassPass flow state ──────────────────────────────────────────────────
+  const [cpSession, setCpSession] = useState(EMPTY_CP_SESSION);
+  const [cpSubmitError, setCpSubmitError] = useState("");
+  const [cpSubmitting, setCpSubmitting] = useState(false);
+  const [cpExportDir, setCpExportDir] = useState(null);
+
+  // ── Lead sync: retry on startup and every 5 minutes ──────────────────────
+  useEffect(() => {
+    retryPendingLeads();
+    const interval = setInterval(retryPendingLeads, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ── Guest helpers ─────────────────────────────────────────────────────────
   function navigate(targetScreen, updates = {}) {
     setGuestSession((prev) => ({ ...prev, ...updates }));
     setSubmitError("");
@@ -76,6 +102,16 @@ export default function App() {
 
       await updateWaiverPaths(waiverId, pdfPath);
 
+      // Push qualifying leads to Supabase; queue for retry on failure.
+      if (isQualifyingLead(guestSession)) {
+        const payload = buildLeadPayload(guestSession, signedAt);
+        const { success, error: syncError } = await pushLeadToSupabase(payload);
+        if (!success) {
+          console.warn("Lead sync failed, queuing for retry:", syncError);
+          await queuePendingLead(guestId, payload);
+        }
+      }
+
       setExportDir(dir);
       setScreen("guest_confirm");
     } catch (err) {
@@ -90,15 +126,73 @@ export default function App() {
     }
   }
 
+  // ── ClassPass helpers ─────────────────────────────────────────────────────
+  function navigateCp(targetScreen, updates = {}) {
+    setCpSession((prev) => ({ ...prev, ...updates }));
+    setCpSubmitError("");
+    setScreen(targetScreen);
+  }
+
+  function resetCpToLanding() {
+    setCpSession(EMPTY_CP_SESSION);
+    setCpSubmitError("");
+    setCpSubmitting(false);
+    setCpExportDir(null);
+    setScreen("landing");
+  }
+
+  async function handleSubmitClassPass(signatureDataUrl) {
+    setCpSubmitError("");
+    setCpSubmitting(true);
+    try {
+      const signedAt = localNow();
+
+      const checkinId = await saveClassPassCheckin({
+        guestName: cpSession.guestName,
+        contact: cpSession.contact,
+        zipCode: cpSession.zipCode,
+        signedAt,
+      });
+
+      const { pdfPath, exportDir: dir } = await exportClassPassFile({
+        cpSession,
+        signatureDataUrl,
+        checkinId,
+        signedAt,
+      });
+
+      await updateClassPassPdfPath(checkinId, pdfPath);
+
+      setCpExportDir(dir);
+      setScreen("classpass_confirm");
+    } catch (err) {
+      console.error("ClassPass check-in failed:", err);
+      setCpSubmitError(
+        typeof err === "string"
+          ? err
+          : err?.message || "Failed to complete check-in — please try again or get staff assistance."
+      );
+    } finally {
+      setCpSubmitting(false);
+    }
+  }
+
+  // ── Router ────────────────────────────────────────────────────────────────
   switch (screen) {
     case "landing":
       return (
         <Landing
           onGuest={() => setScreen("guest_age_check")}
+          onClassPass={() => setScreen("classpass_verify")}
           onVendor={() => setScreen("vendor_form")}
+          onSettings={() => setScreen("settings")}
         />
       );
 
+    case "settings":
+      return <Settings onBack={() => setScreen("landing")} />;
+
+    // ── Guest flow ──────────────────────────────────────────────────────────
     case "guest_age_check":
       return (
         <AgeCheck
@@ -177,6 +271,65 @@ export default function App() {
         />
       );
 
+    // ── ClassPass flow ──────────────────────────────────────────────────────
+    case "classpass_verify":
+      return (
+        <ClassPassBookingVerify
+          onConfirm={() => setScreen("classpass_form")}
+          onBack={resetCpToLanding}
+        />
+      );
+
+    case "classpass_form":
+      return (
+        <ClassPassForm
+          onSubmit={(data) => navigateCp("classpass_id_type_check", data)}
+          onBack={() => setScreen("classpass_verify")}
+        />
+      );
+
+    case "classpass_id_type_check":
+      return (
+        <IdTypeCheck
+          onConfirm={() => setScreen("classpass_id_capture")}
+          onBack={() => setScreen("classpass_form")}
+        />
+      );
+
+    case "classpass_id_capture":
+      return (
+        <IdCapture
+          guestSession={{
+            formData: { first_name: cpSession.guestName, last_name: "" },
+            isMinor: false,
+            dob: null,
+          }}
+          onConfirm={(idPhoto) => navigateCp("classpass_waiver", { idPhoto })}
+          onBack={() => setScreen("classpass_id_type_check")}
+        />
+      );
+
+    case "classpass_waiver":
+      return (
+        <ClassPassWaiver
+          cpSession={cpSession}
+          onSubmit={handleSubmitClassPass}
+          onBack={() => setScreen("classpass_id_capture")}
+          submitError={cpSubmitError}
+          submitting={cpSubmitting}
+        />
+      );
+
+    case "classpass_confirm":
+      return (
+        <ClassPassConfirmation
+          cpSession={cpSession}
+          exportDir={cpExportDir}
+          onDone={resetCpToLanding}
+        />
+      );
+
+    // ── Vendor flow ─────────────────────────────────────────────────────────
     case "vendor_form":
       return (
         <VendorForm
@@ -192,7 +345,9 @@ export default function App() {
       return (
         <Landing
           onGuest={() => setScreen("guest_age_check")}
+          onClassPass={() => setScreen("classpass_verify")}
           onVendor={() => setScreen("vendor_form")}
+          onSettings={() => setScreen("settings")}
         />
       );
   }

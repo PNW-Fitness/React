@@ -4,6 +4,7 @@ export const SOURCE_LABELS = {
   booking:             'Booking',
   training_assessment: 'TA Request',
   nasm_partnership:    'NASM Certification',
+  checkin_app:         'Check-in App',
 }
 
 export function getSourceLabel(source) {

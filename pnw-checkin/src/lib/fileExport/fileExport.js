@@ -34,10 +34,11 @@ export async function exportGuestFiles({ guestSession, signatureDataUrl, guestId
   const pdfPath = await invoke("write_guest_export", {
     baseDir,
     dateStr,
+    subfolder: "Guests",
     filename,
     pdfB64: uint8ArrayToBase64(pdfBytes),
   });
 
-  const exportDir = `${baseDir}\\${dateStr}`;
+  const exportDir = `${baseDir}\\${dateStr}\\Guests`;
   return { pdfPath, exportDir };
 }
