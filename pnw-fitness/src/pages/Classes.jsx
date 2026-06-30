@@ -82,6 +82,14 @@ function getWeek() {
 
 const SHORT_DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+function toLocalDateStr(d) {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-')
+}
+
 // ─── Individual class event row ───────────────────────────────────────────────
 function ClassEventCard({ evt, onHover, onLeave }) {
   const isAllDay = !evt.start.dateTime
@@ -296,7 +304,7 @@ export default function ClassesPage() {
       })
   }, [])
 
-  const selectedDateStr = week[activeDay].toISOString().slice(0, 10)
+  const selectedDateStr = toLocalDateStr(week[activeDay])
   const dayEvents = grouped[selectedDateStr] || []
 
   return (
