@@ -254,6 +254,46 @@ export async function getPendingSyncStats() {
   return { total: Number(row.total ?? 0), stuck: Number(row.stuck ?? 0) };
 }
 
+// Returns guest+waiver rows whose waiver was signed within [from, to] (YYYY-MM-DD inclusive).
+export async function getGuestsByDateRange(from, to) {
+  const db = await getDb();
+  return await db.select(
+    `SELECT g.first_name, g.last_name, g.phone, g.email, g.zip_code,
+            g.visit_reason, g.how_heard, g.how_heard_specify, g.interests,
+            g.is_minor, g.guardian_name, g.guardian_phone,
+            w.signed_at
+     FROM guests g
+     JOIN waivers w ON w.guest_id = g.id
+     WHERE date(w.signed_at) >= ? AND date(w.signed_at) <= ?
+     ORDER BY w.signed_at ASC`,
+    [from, to]
+  );
+}
+
+// Returns ClassPass check-in rows within [from, to] (YYYY-MM-DD inclusive).
+export async function getClassPassByDateRange(from, to) {
+  const db = await getDb();
+  return await db.select(
+    `SELECT guest_name, contact, zip_code, signed_at
+     FROM classpass_checkins
+     WHERE date(signed_at) >= ? AND date(signed_at) <= ?
+     ORDER BY signed_at ASC`,
+    [from, to]
+  );
+}
+
+// Returns vendor log rows within [from, to] (YYYY-MM-DD inclusive).
+export async function getVendorsByDateRange(from, to) {
+  const db = await getDb();
+  return await db.select(
+    `SELECT name, company, reason, time_in
+     FROM vendor_log
+     WHERE date(time_in) >= ? AND date(time_in) <= ?
+     ORDER BY time_in ASC`,
+    [from, to]
+  );
+}
+
 // Returns all vendor_log rows where time_in is today (local time).
 export async function getTodayVendors() {
   const db = await getDb();

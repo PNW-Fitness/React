@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getExportDir } from "../lib/fileExport/fileExport.js";
 import { getPendingSyncStats } from "../lib/db.js";
 import { retryPendingLeads } from "../lib/leadSync.js";
+import { exportDateRangeCsv } from "../lib/csvExport.js";
 
 export default function Settings({ onBack }) {
   const [path, setPath] = useState("");
@@ -13,6 +14,18 @@ export default function Settings({ onBack }) {
   const [justSaved, setJustSaved] = useState(false);
   const [syncStats, setSyncStats] = useState({ total: 0, stuck: 0 });
   const [syncRetrying, setSyncRetrying] = useState(false);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 6);
+    return d.toISOString().slice(0, 10);
+  })();
+  const [exportFrom, setExportFrom] = useState(weekAgo);
+  const [exportTo, setExportTo] = useState(today);
+  const [exporting, setExporting] = useState(false);
+  const [exportResult, setExportResult] = useState(null);
+  const [exportError, setExportError] = useState(null);
 
   useEffect(() => {
     getExportDir().then((dir) => {
@@ -27,6 +40,20 @@ export default function Settings({ onBack }) {
     setStatus("checking");
     const ok = await invoke("check_dir_writable", { path: dir });
     setStatus(ok ? "ready" : "error");
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    setExportResult(null);
+    setExportError(null);
+    try {
+      const result = await exportDateRangeCsv(exportFrom, exportTo);
+      setExportResult(result);
+    } catch (err) {
+      setExportError(typeof err === "string" ? err : err?.message || "Export failed.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleSyncRetry() {
@@ -143,6 +170,56 @@ export default function Settings({ onBack }) {
               <span className="tree-label tree-file">ClassPass_Name_ID.pdf</span>
             </div>
           </div>
+        </div>
+
+        <div className="settings-divider" />
+
+        <div className="settings-section">
+          <h2 className="settings-section-title">Export Data</h2>
+          <p className="settings-section-desc">
+            Export guest, ClassPass, and vendor records as CSV files.
+            Files are saved to the <strong>exports</strong> subfolder of your export folder.
+          </p>
+
+          <div className="settings-date-row">
+            <div className="settings-date-field">
+              <label className="settings-date-label">From</label>
+              <input
+                type="date"
+                className="settings-date-input"
+                value={exportFrom}
+                max={exportTo}
+                onChange={e => { setExportFrom(e.target.value); setExportResult(null); }}
+              />
+            </div>
+            <div className="settings-date-field">
+              <label className="settings-date-label">To</label>
+              <input
+                type="date"
+                className="settings-date-input"
+                value={exportTo}
+                min={exportFrom}
+                max={today}
+                onChange={e => { setExportTo(e.target.value); setExportResult(null); }}
+              />
+            </div>
+          </div>
+
+          <div className="settings-save-row">
+            <button className="btn-primary" onClick={handleExport} disabled={exporting}>
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+          </div>
+
+          {exportResult && (
+            <div className="settings-status settings-status-ready">
+              ✓ {exportResult.counts.guests} guests · {exportResult.counts.classPasses} ClassPass · {exportResult.counts.vendors} vendors
+              <div className="settings-export-path">{exportResult.exportDir}</div>
+            </div>
+          )}
+          {exportError && (
+            <div className="settings-status settings-status-error">{exportError}</div>
+          )}
         </div>
 
         <div className="settings-divider" />

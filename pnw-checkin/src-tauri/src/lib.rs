@@ -85,6 +85,18 @@ fn write_guest_export(
     Ok(pdf_path.to_string_lossy().into_owned())
 }
 
+#[tauri::command]
+fn write_text_file(path: String, content: String) -> Result<String, String> {
+    let p = Path::new(&path);
+    if let Some(parent) = p.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Cannot create directory: {}", e))?;
+    }
+    fs::write(p, content.as_bytes())
+        .map_err(|e| format!("Cannot write file: {}", e))?;
+    Ok(path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -104,7 +116,8 @@ pub fn run() {
             get_export_dir,
             set_export_dir,
             check_dir_writable,
-            write_guest_export
+            write_guest_export,
+            write_text_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

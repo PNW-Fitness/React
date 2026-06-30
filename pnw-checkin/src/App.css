@@ -1060,3 +1060,48 @@ textarea { resize: vertical; }
   padding: 2px 5px;
   border-radius: 4px;
 }
+
+/* ── Settings: date range export ─────────────────────── */
+.settings-date-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.settings-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-date-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.settings-date-input {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  font-size: 0.93rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  outline: none;
+  cursor: pointer;
+}
+
+.settings-date-input:focus {
+  border-color: var(--color-primary);
+}
+
+.settings-export-path {
+  margin-top: 4px;
+  font-family: "Courier New", monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  word-break: break-all;
+}

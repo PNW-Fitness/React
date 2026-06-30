@@ -87,7 +87,13 @@ export async function generateWaiverPdf({ formData, isMinor, signatureDataUrl, s
   // ── Guest info ───────────────────────────────────────────────────────────
   y -= 4;
   const guestName = `${formData.first_name} ${formData.last_name}`;
+  const rawPhone = (formData.phone || "").replace(/\D/g, "").slice(-10);
+  const fmtPhone = rawPhone.length === 10
+    ? `(${rawPhone.slice(0, 3)}) ${rawPhone.slice(3, 6)}-${rawPhone.slice(6)}`
+    : formData.phone || "";
   drawText(`Guest: ${guestName}`, bold, 12);
+  if (fmtPhone) drawText(`Phone: ${fmtPhone}`, regular, 11);
+  if (formData.email) drawText(`Email: ${formData.email}`, regular, 11);
   drawText(`Visit reason: ${formData.visit_reason}`, regular, 11);
   drawText(`Date signed: ${signedAt}`, regular, 11);
   drawText(`Record #${guestId}`, regular, 10, rgb(0.5, 0.5, 0.5));
