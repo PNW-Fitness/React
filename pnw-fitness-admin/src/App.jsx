@@ -24,7 +24,7 @@ const INACTIVITY_MS = 30 * 60 * 1000
 
 // Role groups — used to control which routes each role can access.
 const CONTENT_ROLES = ['admin', 'staff']    // content management pages
-const LEADS_ROLES   = ['admin', 'trainer']  // leads + notes
+const LEADS_ROLES   = ['admin', 'fitness_manager', 'trainer']  // leads + notes + assign
 const ADMIN_ROLES   = ['admin']             // user/role management, activity log
 
 function Loading() {
@@ -40,7 +40,7 @@ function DefaultRedirect() {
   const { session, role } = useAuth()
   if (session === undefined || (session && role === undefined)) return <Loading />
   if (!session) return <Navigate to="/login" replace />
-  return <Navigate to={role === 'trainer' ? '/leads' : '/'} replace />
+  return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
 }
 
 // Gate for role-restricted pages. Redirects unauthorized users to their default.
@@ -49,7 +49,7 @@ function ProtectedRoute({ allowedRoles, children }) {
   if (session === undefined || (session && role === undefined)) return <Loading />
   if (!session) return <Navigate to="/login" replace />
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to={role === 'trainer' ? '/leads' : '/'} replace />
+    return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
   }
   return children
 }

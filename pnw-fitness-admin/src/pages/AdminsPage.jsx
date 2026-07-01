@@ -3,15 +3,17 @@ import { supabase } from '../lib/supabaseClient'
 import Layout from '../components/Layout'
 
 const ROLES = [
-  { value: 'admin',   label: 'Admin'   },
-  { value: 'trainer', label: 'Trainer' },
-  { value: 'staff',   label: 'Staff'   },
+  { value: 'admin',           label: 'Admin'           },
+  { value: 'fitness_manager', label: 'Fitness Manager' },
+  { value: 'trainer',         label: 'Trainer'         },
+  { value: 'staff',           label: 'Staff'           },
 ]
 
 const ROLE_BADGE = {
-  admin:   'bg-blue-100 text-blue-700',
-  trainer: 'bg-purple-100 text-purple-700',
-  staff:   'bg-gray-100 text-gray-600',
+  admin:           'bg-blue-100 text-blue-700',
+  fitness_manager: 'bg-green-100 text-green-700',
+  trainer:         'bg-purple-100 text-purple-700',
+  staff:           'bg-gray-100 text-gray-600',
 }
 
 export default function AdminsPage() {
@@ -249,6 +251,7 @@ export default function AdminsPage() {
       <div className="bg-white rounded-xl shadow p-4 mb-8 flex flex-wrap gap-4 text-xs text-gray-600">
         <span className="font-semibold text-gray-700 self-center">Roles:</span>
         <span><span className="font-semibold text-blue-700">Admin</span> — full access to all pages</span>
+        <span><span className="font-semibold text-green-700">Fitness Manager</span> — leads page + assign trainers to leads</span>
         <span><span className="font-semibold text-purple-700">Trainer</span> — leads page + add notes</span>
         <span><span className="font-semibold text-gray-700">Staff</span> — content management (staff, pricing, FAQ, etc.)</span>
       </div>

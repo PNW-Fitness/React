@@ -9,7 +9,7 @@ const NAV = [
   { to: '/faq',           label: 'FAQ',            roles: ['admin', 'staff']            },
   { to: '/holidays',      label: 'Holiday Hours',  roles: ['admin', 'staff']            },
   { to: '/announcements', label: 'Announcements',  roles: ['admin', 'staff']            },
-  { to: '/leads',         label: 'Leads',          roles: ['admin', 'trainer']          },
+  { to: '/leads',         label: 'Leads',          roles: ['admin', 'fitness_manager', 'trainer'] },
   { to: '/admins',        label: 'Admins',         roles: ['admin']                     },
   { to: '/activity',      label: 'Activity Log',   roles: ['admin']                     },
 ]

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Layout from '../components/Layout'
 import { SOURCE_LABELS } from '../lib/sourceLabels'
+import { useAuth } from '../lib/AuthContext'
 
 // ── Source badge colours ──────────────────────────────────────────────────────
 const SOURCE_COLORS = {
@@ -141,14 +142,25 @@ export default function LeadsPage() {
   const [noteText,       setNoteText]       = useState({})      // { leadId: string }
   const [noteSubmitting, setNoteSubmitting] = useState(null)
 
-  // Current user's display name for note authorship
-  const [myName, setMyName] = useState(null)
+  // Current user's display name (for notes) and id (for "my leads" filter)
+  const [myName,       setMyName]       = useState(null)
+  const [currentUserId, setCurrentUserId] = useState(null)
 
-  // On mount: resolve current user's display name from admin_profiles
+  // Trainer list (for assign dropdown and filter)
+  const [trainers, setTrainers] = useState([])
+
+  // Filter by assigned trainer
+  const [filterAssigned, setFilterAssigned] = useState('all')
+
+  const { role } = useAuth()
+  const canAssign = role === 'admin' || role === 'fitness_manager'
+
+  // Resolve current user's name + id
   useEffect(() => {
     async function resolveUser() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      setCurrentUserId(user.id)
       const { data: profile } = await supabase
         .from('admin_profiles')
         .select('display_name, email')
@@ -157,6 +169,16 @@ export default function LeadsPage() {
       setMyName(profile?.display_name || profile?.email || user.email || null)
     }
     resolveUser()
+  }, [])
+
+  // Load all trainer-role users for the assign dropdown + filter
+  useEffect(() => {
+    supabase
+      .from('admin_profiles')
+      .select('user_id, display_name, email')
+      .eq('role', 'trainer')
+      .order('display_name')
+      .then(({ data }) => setTrainers(data ?? []))
   }, [])
 
   // Debounce search: also resets page so filter change is clean
@@ -194,6 +216,9 @@ export default function LeadsPage() {
     if (dateFrom) q = q.gte('created_at', dateFrom)
     if (dateTo)   q = q.lte('created_at', `${dateTo}T23:59:59.999Z`)
 
+    if (filterAssigned === 'unassigned') q = q.is('assigned_to', null)
+    else if (filterAssigned !== 'all')   q = q.eq('assigned_to', filterAssigned)
+
     const { data, error: err, count } = await q
 
     if (err) {
@@ -203,7 +228,7 @@ export default function LeadsPage() {
       setTotalCount(count ?? 0)
     }
     setLoading(false)
-  }, [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason])
+  }, [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterAssigned])
 
   useEffect(() => { fetchLeads() }, [fetchLeads])
 
@@ -217,6 +242,21 @@ export default function LeadsPage() {
       .eq('id', leadId)
     if (!err) setLeads(l => l.map(x => x.id === leadId ? { ...x, status: newStatus } : x))
     setUpdating(null)
+  }
+
+  async function handleAssign(leadId, userId) {
+    const val = userId || null
+    const { error: err } = await supabase
+      .from('lead_submissions')
+      .update({ assigned_to: val })
+      .eq('id', leadId)
+    if (!err) setLeads(l => l.map(x => x.id === leadId ? { ...x, assigned_to: val } : x))
+  }
+
+  function trainerName(userId) {
+    if (!userId) return 'Unassigned'
+    const t = trainers.find(t => t.user_id === userId)
+    return t?.display_name || t?.email || 'Unknown'
   }
 
   async function handleExpand(leadId) {
@@ -257,11 +297,12 @@ export default function LeadsPage() {
     setFilterSource('all')
     setFilterStatus('all')
     setFilterVisitReason('all')
+    setFilterAssigned('all')
     setPage(0)
   }
 
   const anyFilter = search || filterSource !== 'all' || filterStatus !== 'all'
-    || filterVisitReason !== 'all' || dateFrom || dateTo
+    || filterVisitReason !== 'all' || dateFrom || dateTo || filterAssigned !== 'all'
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
   const rangeStart = totalCount === 0 ? 0 : page * PAGE_SIZE + 1
@@ -379,6 +420,36 @@ export default function LeadsPage() {
           />
         </div>
 
+        {/* Trainer filter — admin/fitness_manager see full dropdown; trainers get "My leads" toggle */}
+        {canAssign ? (
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-500">Trainer</label>
+            <select
+              value={filterAssigned}
+              onChange={e => { setFilterAssigned(e.target.value); setPage(0) }}
+              className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              <option value="unassigned">Unassigned</option>
+              {trainers.map(t => (
+                <option key={t.user_id} value={t.user_id}>
+                  {t.display_name || t.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : role === 'trainer' && currentUserId ? (
+          <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={filterAssigned === currentUserId}
+              onChange={e => { setFilterAssigned(e.target.checked ? currentUserId : 'all'); setPage(0) }}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600"
+            />
+            My leads only
+          </label>
+        ) : null}
+
         {anyFilter && (
           <button
             onClick={clearFilters}
@@ -441,6 +512,12 @@ export default function LeadsPage() {
                       <span className="text-xs text-gray-500 flex-shrink-0 hidden sm:block w-24 text-right">
                         {lead.phone || '—'}
                       </span>
+
+                      {lead.assigned_to && (
+                        <span className="text-xs text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full flex-shrink-0 hidden lg:block">
+                          {trainerName(lead.assigned_to)}
+                        </span>
+                      )}
 
                       <span className="text-xs text-gray-400 flex-shrink-0 hidden md:block w-28 text-right">
                         {new Date(lead.created_at).toLocaleDateString('en-US', {
@@ -519,6 +596,29 @@ export default function LeadsPage() {
                                 ))}
                               </dl>
                             </div>
+                          )}
+                        </div>
+
+                        {/* ── Trainer assignment ── */}
+                        <div className="mt-5 pt-4 border-t border-gray-100">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                            Assigned Trainer
+                          </p>
+                          {canAssign ? (
+                            <select
+                              value={lead.assigned_to || ''}
+                              onChange={e => handleAssign(lead.id, e.target.value)}
+                              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Unassigned</option>
+                              {trainers.map(t => (
+                                <option key={t.user_id} value={t.user_id}>
+                                  {t.display_name || t.email}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <p className="text-sm text-gray-700">{trainerName(lead.assigned_to)}</p>
                           )}
                         </div>
 
