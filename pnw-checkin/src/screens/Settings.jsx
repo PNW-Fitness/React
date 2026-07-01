@@ -5,6 +5,7 @@ import { getExportDir } from "../lib/fileExport/fileExport.js";
 import { getPendingSyncStats } from "../lib/db.js";
 import { retryPendingLeads } from "../lib/leadSync.js";
 import { exportDateRangeCsv } from "../lib/csvExport.js";
+import FrontDeskQrCode from "../components/FrontDeskQrCode.jsx";
 
 export default function Settings({ onBack }) {
   const [path, setPath] = useState("");
@@ -102,6 +103,10 @@ export default function Settings({ onBack }) {
         <span className="settings-title">Settings</span>
       </div>
       <div className="screen-body">
+        <FrontDeskQrCode />
+
+        <div className="settings-divider" />
+
         <div className="settings-section">
           <h2 className="settings-section-title">Export Folder</h2>
           <p className="settings-section-desc">
