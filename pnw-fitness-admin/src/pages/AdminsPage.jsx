@@ -50,12 +50,21 @@ export default function AdminsPage() {
     setInviting(true)
 
     const { data, error: fnErr } = await supabase.functions.invoke('invite-admin', {
-      body: { email: inviteEmail.trim() },
+      body: {
+        email: inviteEmail.trim(),
+        redirectTo: `${window.location.origin}/accept-invite`,
+      },
     })
 
     if (fnErr) {
       setInviting(false)
-      setInviteMessage({ type: 'error', text: fnErr.message })
+      // Try to surface the real error message from the function response body.
+      let msg = fnErr.message
+      try {
+        const body = await fnErr.context?.json?.()
+        if (body?.error) msg = body.error
+      } catch {}
+      setInviteMessage({ type: 'error', text: msg })
       return
     }
 

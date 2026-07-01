@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email } = await req.json()
+    const { email, redirectTo } = await req.json()
     if (!email) throw new Error('Email is required')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
     const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
       type: 'invite',
       email,
+      options: { redirectTo: redirectTo || undefined },
     })
 
     if (linkErr) {
