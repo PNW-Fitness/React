@@ -1,6 +1,8 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { CLASSPASS_WAIVER_TEXT } from "./classpassWaiverText.js";
 
+// ── Utilities ────────────────────────────────────────────────────────────────
+
 function dataUrlToUint8Array(dataUrl) {
   const base64 = dataUrl.split(",")[1];
   const binary = atob(base64);
@@ -26,148 +28,186 @@ function wrapLine(text, font, size, maxWidth) {
   return lines;
 }
 
-export async function generateClassPassPdf({ guestName, contact, zipCode, signatureDataUrl, signedAt, checkinId, idPhoto }) {
-  const PAGE_W = 612;
-  const PAGE_H = 792;
-  const MARGIN = 50;
-  const CONTENT_W = PAGE_W - MARGIN * 2;
-  const BOTTOM_SAFE = MARGIN + 36;
-
-  const pdfDoc = await PDFDocument.create();
-  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-  let page = pdfDoc.addPage([PAGE_W, PAGE_H]);
-  let y = PAGE_H - MARGIN;
-
-  function ensureSpace(needed) {
-    if (y - needed < BOTTOM_SAFE) {
-      page = pdfDoc.addPage([PAGE_W, PAGE_H]);
-      y = PAGE_H - MARGIN;
-    }
-  }
-
-  function drawText(text, font, size, color = rgb(0, 0, 0), x = MARGIN) {
-    ensureSpace(size + 6);
-    page.drawText(text, { x, y: y - size, size, font, color });
-    y -= size * 1.55;
-  }
-
-  function drawWrapped(text, font, size, color = rgb(0.15, 0.15, 0.15)) {
-    for (const rawLine of text.split("\n")) {
-      if (!rawLine.trim()) {
-        y -= size * 0.5;
-        continue;
-      }
-      const wrapped = wrapLine(rawLine, font, size, CONTENT_W);
-      for (const line of wrapped) {
-        ensureSpace(size + 4);
-        page.drawText(line, { x: MARGIN, y: y - size, size, font, color });
-        y -= size * 1.5;
-      }
-    }
-  }
-
-  function drawHRule() {
-    ensureSpace(16);
-    page.drawLine({
-      start: { x: MARGIN, y },
-      end: { x: MARGIN + CONTENT_W, y },
-      thickness: 0.5,
-      color: rgb(0.65, 0.65, 0.65),
-    });
-    y -= 16;
-  }
-
-  // ── Header ──────────────────────────────────────────────────────────────
-  drawText("Pacific Northwest Fitness", bold, 18, rgb(0.1, 0.17, 0.29));
-  drawText("ClassPass Guest Waiver & Liability Release", regular, 12, rgb(0.35, 0.35, 0.35));
-  drawHRule();
-
-  // ── Guest info ───────────────────────────────────────────────────────────
-  y -= 4;
-  drawText(`Guest: ${guestName}`, bold, 12);
-  drawText(`Contact: ${contact}`, regular, 11);
-  drawText(`Zip Code: ${zipCode}`, regular, 11);
-  drawText(`Date signed: ${signedAt}`, regular, 11);
-  drawText(`ClassPass Record #${checkinId}`, regular, 10, rgb(0.5, 0.5, 0.5));
-  y -= 4;
-  drawText("Booking verified by staff prior to check-in", bold, 10, rgb(0.05, 0.5, 0.15));
-
-  y -= 8;
-  drawHRule();
-
-  // ── Waiver text ──────────────────────────────────────────────────────────
-  const paragraphs = CLASSPASS_WAIVER_TEXT.split("\n\n");
+// Estimates height for paragraph-style waiver text (no section headers).
+function measureParagraphsHeight(paragraphs, font, fontSize, contentWidth) {
+  let h = 0;
   for (const para of paragraphs) {
-    y -= 6;
-    drawWrapped(para.trim(), regular, 10);
+    const trimmed = para.trim();
+    if (!trimmed) continue;
+    h += wrapLine(trimmed, font, fontSize, contentWidth).length * fontSize * 1.4;
+    h += 6; // gap after paragraph
+  }
+  return h;
+}
+
+// ── Main export ──────────────────────────────────────────────────────────────
+
+export async function generateClassPassPdf({
+  guestName, contact, zipCode,
+  signatureDataUrl, signedAt, checkinId, idPhoto,
+}) {
+  // ── Page geometry ────────────────────────────────────────────────────────────
+  const PAGE_W = 612, PAGE_H = 792, MARGIN = 36;
+  const CONTENT_W = PAGE_W - MARGIN * 2;
+
+  const DIV_Y   = 356;
+  const MID_X   = PAGE_W / 2;
+  const COL_IN  = 10;
+
+  const LEFT_X  = MARGIN;
+  const LEFT_W  = MID_X - MARGIN - COL_IN;
+  const RIGHT_X = MID_X + COL_IN;
+  const RIGHT_W = PAGE_W - MARGIN - RIGHT_X;
+
+  const BOT_TOP = DIV_Y - 10;
+  const BOT_BTM = MARGIN;
+  const BOT_H   = BOT_TOP - BOT_BTM;
+
+  // ── Colors ───────────────────────────────────────────────────────────────────
+  const C_DARK  = rgb(0.1,  0.17, 0.29);
+  const C_GRAY  = rgb(0.5,  0.5,  0.5);
+  const C_BLACK = rgb(0,    0,    0);
+  const C_BODY  = rgb(0.15, 0.15, 0.15);
+  const C_RULE  = rgb(0.72, 0.72, 0.72);
+  const C_GREEN = rgb(0.05, 0.5,  0.15);
+
+  const pdfDoc  = await PDFDocument.create();
+  const regular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const bold    = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const page    = pdfDoc.addPage([PAGE_W, PAGE_H]);
+
+  // ── Header ───────────────────────────────────────────────────────────────────
+  const HDR_SZ = 7.5;
+  const HDR_Y  = PAGE_H - MARGIN - HDR_SZ;
+  const rText  = `${signedAt}  ·  Check-in #${checkinId}`;
+  page.drawText("Pacific Northwest Fitness  ·  ClassPass Waiver & Liability Release", {
+    x: MARGIN, y: HDR_Y, size: HDR_SZ, font: bold, color: C_DARK,
+  });
+  page.drawText(rText, {
+    x: PAGE_W - MARGIN - regular.widthOfTextAtSize(rText, HDR_SZ),
+    y: HDR_Y, size: HDR_SZ, font: regular, color: C_GRAY,
+  });
+  const HDR_RULE_Y = HDR_Y - 10;
+  page.drawLine({
+    start: { x: MARGIN, y: HDR_RULE_Y }, end: { x: PAGE_W - MARGIN, y: HDR_RULE_Y },
+    thickness: 0.5, color: C_RULE,
+  });
+
+  // ── ClassPass waiver text (paragraph-style, auto-sized) ──────────────────────
+  const WAIVER_TOP = HDR_RULE_Y - 6;
+  const WAIVER_BTM = DIV_Y + 8;
+  const AVAIL_H    = WAIVER_TOP - WAIVER_BTM;
+
+  const paragraphs = CLASSPASS_WAIVER_TEXT.split("\n\n");
+  let wSz = 10;
+  for (const sz of [10, 9, 8, 7.5, 7]) {
+    if (measureParagraphsHeight(paragraphs, regular, sz, CONTENT_W) <= AVAIL_H) {
+      wSz = sz;
+      break;
+    }
   }
 
-  y -= 10;
-  drawHRule();
+  let wy = WAIVER_TOP;
+  for (const para of paragraphs) {
+    const trimmed = para.trim();
+    if (!trimmed) continue;
+    for (const line of wrapLine(trimmed, regular, wSz, CONTENT_W)) {
+      if (wy - wSz < WAIVER_BTM) break;
+      page.drawText(line, { x: MARGIN, y: wy - wSz, size: wSz, font: regular, color: C_BODY });
+      wy -= wSz * 1.4;
+    }
+    wy -= 6; // paragraph gap
+  }
 
-  // ── Signature ────────────────────────────────────────────────────────────
-  drawText("Guest Signature", bold, 12);
+  // ── Dividers ──────────────────────────────────────────────────────────────────
+  page.drawLine({
+    start: { x: MARGIN, y: DIV_Y }, end: { x: PAGE_W - MARGIN, y: DIV_Y },
+    thickness: 0.75, color: C_RULE,
+  });
+  page.drawLine({
+    start: { x: MID_X, y: DIV_Y - 2 }, end: { x: MID_X, y: BOT_BTM },
+    thickness: 0.75, color: C_RULE,
+  });
 
-  const sigPngBytes = dataUrlToUint8Array(signatureDataUrl);
-  const sigImage = await pdfDoc.embedPng(sigPngBytes);
+  // ── Bottom-left: ID photo + signature ────────────────────────────────────────
+  let leftY = BOT_TOP;
 
-  const SIG_MAX_W = CONTENT_W * 0.65;
-  const SIG_MAX_H = 100;
-  const sigScale = Math.min(SIG_MAX_W / sigImage.width, SIG_MAX_H / sigImage.height, 1);
-  const sigW = sigImage.width * sigScale;
-  const sigH = sigImage.height * sigScale;
+  if (idPhoto) {
+    page.drawText("VERIFIED ID", {
+      x: LEFT_X, y: leftY - 7, size: 6.5, font: bold, color: C_GRAY,
+    });
+    leftY -= 13;
 
-  ensureSpace(sigH + 52);
+    const idBytes = dataUrlToUint8Array(idPhoto);
+    const isJpeg  = idPhoto.startsWith("data:image/jpeg") || idPhoto.startsWith("data:image/jpg");
+    const idImg   = isJpeg ? await pdfDoc.embedJpg(idBytes) : await pdfDoc.embedPng(idBytes);
+    const idMaxH  = Math.round(BOT_H * 0.52);
+    const idScale = Math.min(LEFT_W / idImg.width, idMaxH / idImg.height, 1);
+    const idW = idImg.width * idScale, idH = idImg.height * idScale;
+    page.drawImage(idImg, { x: LEFT_X, y: leftY - idH, width: idW, height: idH });
+    leftY -= idH + 8;
+  }
+
+  page.drawText("SIGNATURE", { x: LEFT_X, y: leftY - 7, size: 6.5, font: bold, color: C_GRAY });
+  leftY -= 13;
+
+  const sigBytes = dataUrlToUint8Array(signatureDataUrl);
+  const sigImg   = await pdfDoc.embedPng(sigBytes);
+  const sigMaxH  = Math.max(leftY - BOT_BTM - 22, 36);
+  const sigScale = Math.min(LEFT_W / sigImg.width, sigMaxH / sigImg.height, 1);
+  const sigW = sigImg.width * sigScale, sigH = sigImg.height * sigScale;
 
   page.drawRectangle({
-    x: MARGIN - 1,
-    y: y - sigH - 6,
-    width: SIG_MAX_W + 10,
-    height: sigH + 10,
-    borderColor: rgb(0.78, 0.78, 0.78),
-    borderWidth: 0.5,
-    color: rgb(0.985, 0.985, 0.985),
+    x: LEFT_X, y: leftY - sigH - 3, width: LEFT_W, height: sigH + 3,
+    borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.5, color: rgb(0.985, 0.985, 0.985),
   });
+  page.drawImage(sigImg, { x: LEFT_X + 2, y: leftY - sigH - 1, width: sigW, height: sigH });
+  leftY -= sigH + 5;
 
-  page.drawImage(sigImage, {
-    x: MARGIN + 4,
-    y: y - sigH - 1,
-    width: sigW,
-    height: sigH,
+  if (leftY - 7 > BOT_BTM) {
+    page.drawText(guestName, { x: LEFT_X, y: leftY - 7, size: 7, font: bold, color: C_BLACK });
+    leftY -= 11;
+  }
+  if (leftY - 7 > BOT_BTM) {
+    page.drawText(`Signed: ${signedAt}`, { x: LEFT_X, y: leftY - 7, size: 7, font: regular, color: C_GRAY });
+  }
+
+  // ── Bottom-right: ClassPass guest info ────────────────────────────────────────
+  let rightY   = BOT_TOP;
+  const infoSz = 9;
+
+  function drawField(label, value, vColor = C_BLACK) {
+    if (!value || rightY - infoSz < BOT_BTM) return;
+    const lText = `${label}: `;
+    const lW    = bold.widthOfTextAtSize(lText, infoSz);
+    page.drawText(lText, { x: RIGHT_X, y: rightY - infoSz, size: infoSz, font: bold, color: C_GRAY });
+    const lines = wrapLine(String(value), regular, infoSz, RIGHT_W - lW);
+    if (lines.length > 0) {
+      page.drawText(lines[0], { x: RIGHT_X + lW, y: rightY - infoSz, size: infoSz, font: regular, color: vColor });
+    }
+    rightY -= infoSz * 1.4;
+    for (let i = 1; i < lines.length; i++) {
+      if (rightY - infoSz < BOT_BTM) break;
+      page.drawText(lines[i], { x: RIGHT_X + lW, y: rightY - infoSz, size: infoSz, font: regular, color: vColor });
+      rightY -= infoSz * 1.4;
+    }
+  }
+
+  page.drawText("CLASSPASS GUEST", {
+    x: RIGHT_X, y: rightY - 7, size: 6.5, font: bold, color: C_GRAY,
   });
+  rightY -= 15;
 
-  y -= sigH + 14;
-  drawText(guestName, bold, 11);
-  drawText(`Signed: ${signedAt}`, regular, 10, rgb(0.4, 0.4, 0.4));
+  drawField("Name",    guestName);
+  drawField("Contact", contact);
+  drawField("Zip",     zipCode);
 
-  // ── ID Verification Photo ─────────────────────────────────────────────────
-  if (idPhoto) {
-    page = pdfDoc.addPage([PAGE_W, PAGE_H]);
-    y = PAGE_H - MARGIN;
-
-    drawText("ID Verification Photo", bold, 14, rgb(0.1, 0.17, 0.29));
-    drawHRule();
-
-    const idPhotoBytes = dataUrlToUint8Array(idPhoto);
-    const idImage = await pdfDoc.embedJpg(idPhotoBytes);
-
-    const maxImgW = CONTENT_W;
-    const maxImgH = y - MARGIN - 28;
-    const idScale = Math.min(maxImgW / idImage.width, maxImgH / idImage.height, 1);
-    const idW = idImage.width * idScale;
-    const idH = idImage.height * idScale;
-
-    page.drawImage(idImage, {
-      x: MARGIN + (CONTENT_W - idW) / 2,
-      y: y - idH,
-      width: idW,
-      height: idH,
+  // Booking verification note
+  rightY -= 4;
+  if (rightY - 8 > BOT_BTM) {
+    page.drawText("✓ Booking verified by staff", {
+      x: RIGHT_X, y: rightY - 8, size: 8, font: bold, color: C_GREEN,
     });
-
-    y -= idH + 12;
-    drawText(`Photographed: ${signedAt}`, regular, 10, rgb(0.4, 0.4, 0.4));
   }
 
   return await pdfDoc.save();

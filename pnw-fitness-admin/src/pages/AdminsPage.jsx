@@ -12,6 +12,8 @@ export default function AdminsPage() {
   const [inviteMessage, setInviteMessage] = useState({ type: '', text: '' })
   const [inviteLink, setInviteLink] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [resetTarget, setResetTarget] = useState(null) // email being reset
+  const [resetMessage, setResetMessage] = useState({ type: '', text: '' })
 
   async function load() {
     const [{ data: profile }, { data: list, error: err }] = await Promise.all([
@@ -61,6 +63,19 @@ export default function AdminsPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  async function handleResetPassword(admin) {
+    setResetMessage({ type: '', text: '' })
+    setResetTarget(admin.email)
+    const redirectTo = `${window.location.origin}/reset-password`
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(admin.email, { redirectTo })
+    setResetTarget(null)
+    if (resetErr) {
+      setResetMessage({ type: 'error', text: `Failed to send reset email: ${resetErr.message}` })
+    } else {
+      setResetMessage({ type: 'success', text: `Password reset email sent to ${admin.email}.` })
+    }
+  }
+
   async function handleRemove(admin) {
     if (!window.confirm(`Remove admin access for ${admin.email}?`)) return
 
@@ -91,6 +106,17 @@ export default function AdminsPage() {
     <Layout>
       <h2 className="text-xl font-bold text-gray-800 mb-6">Manage Admins</h2>
 
+      {/* Password reset feedback */}
+      {resetMessage.text && (
+        <p className={`text-sm px-3 py-2 rounded border mb-4 ${
+          resetMessage.type === 'error'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-green-50 text-green-700 border-green-200'
+        }`}>
+          {resetMessage.text}
+        </p>
+      )}
+
       {/* Current admins list */}
       {loading && <p className="text-gray-500 text-sm mb-6">Loading…</p>}
       {error && <p className="text-red-600 text-sm mb-6">{error}</p>}
@@ -103,7 +129,7 @@ export default function AdminsPage() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Display name</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Added</th>
-                <th className="px-4 py-3" />
+                <th className="px-4 py-3 text-right font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -117,7 +143,14 @@ export default function AdminsPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500">{a.display_name ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-400">{formatDate(a.created_at)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right space-x-3">
+                    <button
+                      onClick={() => handleResetPassword(a)}
+                      disabled={resetTarget === a.email}
+                      className="text-blue-500 hover:underline text-sm disabled:opacity-40"
+                    >
+                      {resetTarget === a.email ? 'Sending…' : 'Reset password'}
+                    </button>
                     {a.user_id === currentUserId ? (
                       <span className="text-xs text-gray-300">Cannot remove yourself</span>
                     ) : (

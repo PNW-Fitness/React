@@ -14,6 +14,7 @@ import VendorForm from "./screens/vendor/VendorForm.jsx";
 import VendorLog from "./screens/vendor/VendorLog.jsx";
 import QueueList from "./screens/QueueList.jsx";
 import QueueFinalizing from "./screens/QueueFinalizing.jsx";
+import QueueDeclineId from "./screens/QueueDeclineId.jsx";
 
 import IdTypeCheck from "./components/IdCapture/IdTypeCheck.jsx";
 import IdCapture from "./components/IdCapture/IdCapture.jsx";
@@ -25,7 +26,7 @@ import ClassPassConfirmation from "./screens/classpass/ClassPassConfirmation.jsx
 
 import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, updateClassPassPdfPath, localNow, queuePendingLead } from "./lib/db.js";
 import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, retryPendingLeads } from "./lib/leadSync.js";
-import { exportGuestFiles } from "./lib/fileExport/fileExport.js";
+import { exportGuestFiles, exportDeclinedGuestRecord } from "./lib/fileExport/fileExport.js";
 import { exportClassPassFile } from "./lib/classpassExport.js";
 import { usePendingCheckinsQueue } from "./lib/pendingQueue.js";
 import {
@@ -33,6 +34,8 @@ import {
   guestSessionFromPendingRow,
   cpSessionFromPendingRow,
   markPendingCheckinCompleted,
+  markPendingCheckinDeclinedId,
+  markPendingCheckinCleared,
 } from "./lib/queueFinalize.js";
 
 const EMPTY_GUEST_SESSION = {
@@ -69,6 +72,8 @@ export default function App() {
   const [queueIdPhoto, setQueueIdPhoto] = useState(null);
   const [queueSubmitError, setQueueSubmitError] = useState("");
   const [queueSubmitting, setQueueSubmitting] = useState(false);
+  const [queueDeclineWorking, setQueueDeclineWorking] = useState(false);
+  const [queueDeclineDone, setQueueDeclineDone] = useState(null);
 
   // ── Lead sync: retry on startup and every 5 minutes ──────────────────────
   useEffect(() => {
@@ -199,7 +204,53 @@ export default function App() {
     setQueueIdPhoto(null);
     setQueueSubmitError("");
     setQueueSubmitting(false);
+    setQueueDeclineWorking(false);
+    setQueueDeclineDone(null);
     setScreen("queue_list");
+  }
+
+  function enterDeclineFlow() {
+    setQueueDeclineWorking(false);
+    setQueueDeclineDone(null);
+    setScreen("queue_id_declined");
+  }
+
+  async function handleDeclineOptionA() {
+    setQueueDeclineWorking(true);
+    try {
+      const row = queueEntry;
+      const signedAt = formatIsoAsLocal(row.waiver_agreed_at);
+      const guestFromRow = guestSessionFromPendingRow(row);
+      await exportDeclinedGuestRecord({
+        guestSession: guestFromRow,
+        signatureDataUrl: row.signature_data,
+        guestId: row.id,
+        signedAt,
+      });
+      await markPendingCheckinDeclinedId(row.id);
+      removeQueueEntryLocally(row.id);
+      setQueueDeclineDone({ message: "Record saved. This guest has not been checked in." });
+    } catch (err) {
+      console.error("Decline option A failed:", err);
+      setQueueDeclineDone({ message: `Save failed: ${err?.message || "unknown error"}` });
+    } finally {
+      setQueueDeclineWorking(false);
+    }
+  }
+
+  async function handleDeclineOptionB() {
+    setQueueDeclineWorking(true);
+    try {
+      const row = queueEntry;
+      await markPendingCheckinCleared(row.id);
+      removeQueueEntryLocally(row.id);
+      setQueueDeclineDone({ message: "Entry cleared from queue. No record was saved." });
+    } catch (err) {
+      console.error("Decline option B failed:", err);
+      setQueueDeclineDone({ message: `Clear failed: ${err?.message || "unknown error"}` });
+    } finally {
+      setQueueDeclineWorking(false);
+    }
   }
 
   function handleStartQueueCheckIn(row) {
@@ -312,6 +363,7 @@ export default function App() {
           }
           onConfirm={() => setScreen("queue_id_capture")}
           onBack={resetQueueToList}
+          onDeclineId={enterDeclineFlow}
         />
       );
 
@@ -328,6 +380,18 @@ export default function App() {
             setScreen("queue_finalizing");
           }}
           onBack={() => setScreen("queue_id_type_check")}
+          onDeclineId={enterDeclineFlow}
+        />
+      );
+
+    case "queue_id_declined":
+      return (
+        <QueueDeclineId
+          onOptionA={handleDeclineOptionA}
+          onOptionB={handleDeclineOptionB}
+          onDone={resetQueueToList}
+          working={queueDeclineWorking}
+          done={queueDeclineDone}
         />
       );
 

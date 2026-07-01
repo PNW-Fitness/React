@@ -1245,3 +1245,93 @@ textarea { resize: vertical; }
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
+
+/* ── Declined-ID flow ────────────────────────────────── */
+.decline-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+
+.decline-prompt-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.decline-prompt-sub {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.decline-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.decline-option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.decline-option-btn {
+  width: 100%;
+}
+
+.decline-option-clear {
+  color: var(--color-danger) !important;
+  border-color: var(--color-danger) !important;
+}
+
+.decline-option-desc {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  text-align: left;
+  padding: 0 4px;
+}
+
+.decline-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.decline-done-msg {
+  font-size: 1.1rem;
+  color: var(--color-text);
+  max-width: 380px;
+}
+
+/* "Guest declined to provide ID" link in IdTypeCheck and IdCapture */
+.id-decline-row,
+.cam-decline-row {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 4px;
+}
+
+.btn-text-muted {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn-text-muted:hover {
+  color: var(--color-text);
+}

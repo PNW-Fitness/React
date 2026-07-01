@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
 export default function LoginPage({ session }) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const timedOut = searchParams.get('timeout') === '1'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -30,7 +32,13 @@ export default function LoginPage({ session }) {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="bg-white rounded-xl shadow-md w-full max-w-sm p-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-1">PNW Fitness</h1>
-        <p className="text-sm text-gray-500 mb-6">Admin Portal</p>
+        <p className="text-sm text-gray-500 mb-4">Admin Portal</p>
+
+        {timedOut && (
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-4">
+            Your session timed out due to inactivity. Please sign in again.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

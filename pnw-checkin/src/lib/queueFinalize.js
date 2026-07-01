@@ -46,3 +46,19 @@ export async function markPendingCheckinCompleted(id) {
     .eq("id", id);
   if (error) throw error;
 }
+
+export async function markPendingCheckinDeclinedId(id) {
+  const { error } = await supabase
+    .from("pending_checkins")
+    .update({ status: "declined_id", completed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function markPendingCheckinCleared(id) {
+  const { error } = await supabase
+    .from("pending_checkins")
+    .update({ status: "cleared", completed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}

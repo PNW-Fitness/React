@@ -18,7 +18,7 @@ const DO_NOT = [
   "Workplace IDs",
 ];
 
-export default function IdTypeCheck({ onConfirm, onBack, banner }) {
+export default function IdTypeCheck({ onConfirm, onBack, banner, onDeclineId }) {
   const [confirmed, setConfirmed] = useState(false);
 
   return (
@@ -96,6 +96,14 @@ export default function IdTypeCheck({ onConfirm, onBack, banner }) {
             Open Camera →
           </button>
         </div>
+
+        {onDeclineId && (
+          <div className="id-decline-row">
+            <button className="btn-text-muted" onClick={onDeclineId}>
+              Guest declined to provide ID
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

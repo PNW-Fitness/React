@@ -10,7 +10,7 @@ function formatDob(isoDate) {
   return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
 
-export default function IdCapture({ guestSession, onConfirm, onBack }) {
+export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId }) {
   const { isMinor, dob, formData } = guestSession;
 
   // 'requesting' | 'live' | 'captured' | 'denied' | 'error'
@@ -252,6 +252,17 @@ export default function IdCapture({ guestSession, onConfirm, onBack }) {
                 Use this photo →
               </button>
             </div>
+          </div>
+        )}
+
+        {onDeclineId && (
+          <div className="cam-decline-row">
+            <button
+              className="btn-text-muted"
+              onClick={() => { stopStream(); onDeclineId(); }}
+            >
+              Guest declined to provide ID
+            </button>
           </div>
         )}
       </div>

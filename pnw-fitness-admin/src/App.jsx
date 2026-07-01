@@ -17,6 +17,10 @@ import ActivityLogPage from './pages/ActivityLogPage'
 import LeadsPage from './pages/LeadsPage'
 import AnnouncementsListPage from './pages/AnnouncementsListPage'
 import AnnouncementsEditPage from './pages/AnnouncementsEditPage'
+import AcceptInvitePage from './pages/AcceptInvitePage'
+
+// Sign out after 30 minutes of no mouse, keyboard, click, or touch activity.
+const INACTIVITY_MS = 30 * 60 * 1000
 
 function ProtectedRoute({ session, children }) {
   if (session === undefined) {
@@ -41,6 +45,31 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Inactivity timeout — signs the user out and redirects to /login?timeout=1
+  // after INACTIVITY_MS of no user interaction. Only active while logged in.
+  useEffect(() => {
+    if (!session) return
+
+    let timer
+
+    function resetTimer() {
+      clearTimeout(timer)
+      timer = setTimeout(async () => {
+        await supabase.auth.signOut()
+        window.location.replace('/login?timeout=1')
+      }, INACTIVITY_MS)
+    }
+
+    const EVENTS = ['mousemove', 'keydown', 'click', 'touchstart']
+    EVENTS.forEach(ev => window.addEventListener(ev, resetTimer, { passive: true }))
+    resetTimer()
+
+    return () => {
+      clearTimeout(timer)
+      EVENTS.forEach(ev => window.removeEventListener(ev, resetTimer))
+    }
+  }, [session])
+
   function protect(el) {
     return <ProtectedRoute session={session}>{el}</ProtectedRoute>
   }
@@ -49,6 +78,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login"                element={<LoginPage session={session} />} />
+        <Route path="/accept-invite"        element={<AcceptInvitePage />} />
+        <Route path="/reset-password"       element={<AcceptInvitePage />} />
         <Route path="/"                     element={protect(<StaffListPage />)} />
         <Route path="/staff/new"            element={protect(<StaffEditPage />)} />
         <Route path="/staff/:id"            element={protect(<StaffEditPage />)} />
