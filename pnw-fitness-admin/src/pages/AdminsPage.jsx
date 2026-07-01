@@ -7,6 +7,7 @@ const ROLES = [
   { value: 'fitness_manager', label: 'Fitness Manager' },
   { value: 'trainer',         label: 'Trainer'         },
   { value: 'staff',           label: 'Staff'           },
+  { value: 'front_desk',      label: 'Front Desk'      },
 ]
 
 const ROLE_BADGE = {
@@ -14,6 +15,7 @@ const ROLE_BADGE = {
   fitness_manager: 'bg-green-100 text-green-700',
   trainer:         'bg-purple-100 text-purple-700',
   staff:           'bg-gray-100 text-gray-600',
+  front_desk:      'bg-orange-100 text-orange-700',
 }
 
 export default function AdminsPage() {
@@ -21,12 +23,21 @@ export default function AdminsPage() {
   const [currentUserId, setCurrentUserId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // Invite / create form
+  const [createMode, setCreateMode]   = useState('invite') // 'invite' | 'create'
   const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState('staff')
-  const [inviting, setInviting] = useState(false)
+  const [inviteRole, setInviteRole]   = useState('staff')
+  const [inviting, setInviting]       = useState(false)
   const [inviteMessage, setInviteMessage] = useState({ type: '', text: '' })
-  const [inviteLink, setInviteLink] = useState(null)
-  const [copied, setCopied] = useState(false)
+  const [inviteLink, setInviteLink]   = useState(null)
+  const [copied, setCopied]           = useState(false)
+  // Direct create
+  const [createEmail, setCreateEmail]       = useState('')
+  const [createPassword, setCreatePassword] = useState('')
+  const [createConfirm, setCreateConfirm]   = useState('')
+  const [createRole, setCreateRole]         = useState('staff')
+  const [creating, setCreating]             = useState(false)
+  const [createMessage, setCreateMessage]   = useState({ type: '', text: '' })
   const [resetTarget, setResetTarget] = useState(null)
   const [resetMessage, setResetMessage] = useState({ type: '', text: '' })
   const [changingRole, setChangingRole]     = useState(null) // user_id being updated
@@ -109,6 +120,46 @@ export default function AdminsPage() {
     await navigator.clipboard.writeText(inviteLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleCreate(e) {
+    e.preventDefault()
+    setCreateMessage({ type: '', text: '' })
+
+    if (createPassword.length < 6) {
+      setCreateMessage({ type: 'error', text: 'Password must be at least 6 characters.' })
+      return
+    }
+    if (createPassword !== createConfirm) {
+      setCreateMessage({ type: 'error', text: 'Passwords do not match.' })
+      return
+    }
+
+    setCreating(true)
+    const { error: fnErr } = await supabase.functions.invoke('create-admin-user', {
+      body: { email: createEmail.trim(), password: createPassword, role: createRole },
+    })
+    setCreating(false)
+
+    if (fnErr) {
+      let msg = fnErr.message
+      try {
+        const body = await fnErr.context?.json?.()
+        if (body?.error) msg = body.error
+      } catch {}
+      setCreateMessage({ type: 'error', text: msg })
+      return
+    }
+
+    setCreateMessage({
+      type: 'success',
+      text: `Account created for ${createEmail.trim()} as ${createRole}. They can sign in immediately.`,
+    })
+    setCreateEmail('')
+    setCreatePassword('')
+    setCreateConfirm('')
+    setCreateRole('staff')
+    load()
   }
 
   async function handleResetPassword(admin) {
@@ -317,69 +368,159 @@ export default function AdminsPage() {
         <span><span className="font-semibold text-green-700">Fitness Manager</span> — leads page + assign trainers to leads</span>
         <span><span className="font-semibold text-purple-700">Trainer</span> — leads page + add notes</span>
         <span><span className="font-semibold text-gray-700">Staff</span> — content management (staff, pricing, FAQ, etc.)</span>
+        <span><span className="font-semibold text-orange-700">Front Desk</span> — guest lookup + add notes only (shared kiosk account)</span>
       </div>
 
-      {/* Invite form */}
+      {/* Add user section */}
       <div className="bg-white rounded-xl shadow p-6 max-w-md">
-        <h3 className="font-semibold text-gray-700 mb-1">Invite a new user</h3>
-        <p className="text-xs text-gray-400 mb-4">
-          Generates an invite link you can send via text or email. No rate limits.
-        </p>
+        <h3 className="font-semibold text-gray-700 mb-3">Add a new user</h3>
 
-        <form onSubmit={handleInvite} className="space-y-3">
-          <input
-            type="email"
-            required
-            placeholder="user@example.com"
-            value={inviteEmail}
-            onChange={e => setInviteEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
-            <select
-              value={inviteRole}
-              onChange={e => setInviteRole(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {ROLES.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {inviteMessage.text && (
-            <p className={`text-sm px-3 py-2 rounded border ${
-              inviteMessage.type === 'error'
-                ? 'bg-red-50 text-red-700 border-red-200'
-                : 'bg-green-50 text-green-700 border-green-200'
-            }`}>
-              {inviteMessage.text}
-            </p>
-          )}
-
-          {inviteLink && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
-              <p className="text-xs text-gray-500 break-all font-mono">{inviteLink}</p>
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded transition"
-              >
-                {copied ? 'Copied!' : 'Copy link'}
-              </button>
-            </div>
-          )}
-
+        {/* Mode toggle */}
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden mb-5 text-sm font-medium">
           <button
-            type="submit"
-            disabled={inviting}
-            className="bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition"
+            type="button"
+            onClick={() => { setCreateMode('invite'); setInviteMessage({ type: '', text: '' }); setInviteLink(null) }}
+            className={`flex-1 py-2 transition ${createMode === 'invite' ? 'bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
           >
-            {inviting ? 'Generating link…' : 'Generate invite link'}
+            Generate invite link
           </button>
-        </form>
+          <button
+            type="button"
+            onClick={() => { setCreateMode('create'); setCreateMessage({ type: '', text: '' }) }}
+            className={`flex-1 py-2 transition ${createMode === 'create' ? 'bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+          >
+            Set username &amp; password
+          </button>
+        </div>
+
+        {/* ── Invite link form ── */}
+        {createMode === 'invite' && (
+          <form onSubmit={handleInvite} className="space-y-3">
+            <p className="text-xs text-gray-400 -mt-1 mb-2">
+              Generates a one-time link you can send to the user.
+            </p>
+            <input
+              type="email"
+              required
+              placeholder="user@example.com"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
+              <select
+                value={inviteRole}
+                onChange={e => setInviteRole(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {ROLES.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {inviteMessage.text && (
+              <p className={`text-sm px-3 py-2 rounded border ${
+                inviteMessage.type === 'error'
+                  ? 'bg-red-50 text-red-700 border-red-200'
+                  : 'bg-green-50 text-green-700 border-green-200'
+              }`}>
+                {inviteMessage.text}
+              </p>
+            )}
+
+            {inviteLink && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+                <p className="text-xs text-gray-500 break-all font-mono">{inviteLink}</p>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded transition"
+                >
+                  {copied ? 'Copied!' : 'Copy link'}
+                </button>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={inviting}
+              className="bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition"
+            >
+              {inviting ? 'Generating…' : 'Generate invite link'}
+            </button>
+          </form>
+        )}
+
+        {/* ── Direct create form ── */}
+        {createMode === 'create' && (
+          <form onSubmit={handleCreate} className="space-y-3">
+            <p className="text-xs text-gray-400 -mt-1 mb-2">
+              Creates the account immediately — no link needed. Use for shared accounts like Front Desk.
+            </p>
+            <input
+              type="email"
+              required
+              placeholder="user@example.com"
+              value={createEmail}
+              onChange={e => setCreateEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                placeholder="At least 6 characters"
+                value={createPassword}
+                onChange={e => setCreatePassword(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Confirm password</label>
+              <input
+                type="password"
+                required
+                value={createConfirm}
+                onChange={e => setCreateConfirm(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
+              <select
+                value={createRole}
+                onChange={e => setCreateRole(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {ROLES.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {createMessage.text && (
+              <p className={`text-sm px-3 py-2 rounded border ${
+                createMessage.type === 'error'
+                  ? 'bg-red-50 text-red-700 border-red-200'
+                  : 'bg-green-50 text-green-700 border-green-200'
+              }`}>
+                {createMessage.text}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={creating}
+              className="bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-sm font-medium px-5 py-2 rounded-lg transition"
+            >
+              {creating ? 'Creating…' : 'Create account'}
+            </button>
+          </form>
+        )}
       </div>
       {/* Set password modal */}
       {setPasswordTarget && (

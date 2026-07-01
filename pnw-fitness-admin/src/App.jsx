@@ -19,13 +19,15 @@ import LeadsPage from './pages/LeadsPage'
 import AnnouncementsListPage from './pages/AnnouncementsListPage'
 import AnnouncementsEditPage from './pages/AnnouncementsEditPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
+import GuestNotesPage from './pages/GuestNotesPage'
 
 const INACTIVITY_MS = 30 * 60 * 1000
 
 // Role groups — used to control which routes each role can access.
-const CONTENT_ROLES = ['admin', 'staff']    // content management pages
-const LEADS_ROLES   = ['admin', 'fitness_manager', 'trainer']  // leads + notes + assign
-const ADMIN_ROLES   = ['admin']             // user/role management, activity log
+const CONTENT_ROLES     = ['admin', 'staff']
+const LEADS_ROLES       = ['admin', 'fitness_manager', 'trainer']
+const GUEST_NOTES_ROLES = ['admin', 'front_desk']
+const ADMIN_ROLES       = ['admin']
 
 function Loading() {
   return (
@@ -40,6 +42,7 @@ function DefaultRedirect() {
   const { session, role } = useAuth()
   if (session === undefined || (session && role === undefined)) return <Loading />
   if (!session) return <Navigate to="/login" replace />
+  if (role === 'front_desk') return <Navigate to="/guest-notes" replace />
   return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
 }
 
@@ -49,6 +52,7 @@ function ProtectedRoute({ allowedRoles, children }) {
   if (session === undefined || (session && role === undefined)) return <Loading />
   if (!session) return <Navigate to="/login" replace />
   if (allowedRoles && !allowedRoles.includes(role)) {
+    if (role === 'front_desk') return <Navigate to="/guest-notes" replace />
     return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
   }
   return children
@@ -115,6 +119,9 @@ export default function App() {
 
         {/* Leads: admin + trainer */}
         <Route path="/leads"               element={protect(<LeadsPage />,             LEADS_ROLES)} />
+
+        {/* Guest notes: admin + front desk */}
+        <Route path="/guest-notes"         element={protect(<GuestNotesPage />,        GUEST_NOTES_ROLES)} />
 
         {/* Admin only */}
         <Route path="/admins"              element={protect(<AdminsPage />,            ADMIN_ROLES)} />
