@@ -18,7 +18,7 @@ const DO_NOT = [
   "Workplace IDs",
 ];
 
-export default function IdTypeCheck({ onConfirm, onBack }) {
+export default function IdTypeCheck({ onConfirm, onBack, banner }) {
   const [confirmed, setConfirmed] = useState(false);
 
   return (
@@ -29,6 +29,7 @@ export default function IdTypeCheck({ onConfirm, onBack }) {
       </div>
 
       <div className="screen-body id-type-body">
+        {banner}
         <h2 className="id-type-heading">Verify acceptable ID type before photographing</h2>
         <p className="id-type-subtext">
           Check the guest's ID against the lists below before opening the camera.

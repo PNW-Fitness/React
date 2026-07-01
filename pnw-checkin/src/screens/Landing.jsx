@@ -1,8 +1,15 @@
-export default function Landing({ onGuest, onClassPass, onVendor, onSettings }) {
+export default function Landing({ onGuest, onClassPass, onVendor, onSettings, onOpenQueue, pendingCount = 0 }) {
   return (
     <div className="screen landing">
       <button className="landing-settings-btn" onClick={onSettings} title="Settings">
         ⚙
+      </button>
+      <button
+        className={`landing-queue-btn ${pendingCount > 0 ? "landing-queue-btn-active" : ""}`}
+        onClick={onOpenQueue}
+        title="Check-in queue"
+      >
+        🔔 {pendingCount}
       </button>
       <div className="landing-header">
         <h1 className="gym-name">Pacific Northwest Fitness</h1>

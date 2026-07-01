@@ -12,6 +12,8 @@ import GuestConfirmation from "./screens/guest/GuestConfirmation.jsx";
 import Settings from "./screens/Settings.jsx";
 import VendorForm from "./screens/vendor/VendorForm.jsx";
 import VendorLog from "./screens/vendor/VendorLog.jsx";
+import QueueList from "./screens/QueueList.jsx";
+import QueueFinalizing from "./screens/QueueFinalizing.jsx";
 
 import IdTypeCheck from "./components/IdCapture/IdTypeCheck.jsx";
 import IdCapture from "./components/IdCapture/IdCapture.jsx";
@@ -25,6 +27,13 @@ import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, updateC
 import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, retryPendingLeads } from "./lib/leadSync.js";
 import { exportGuestFiles } from "./lib/fileExport/fileExport.js";
 import { exportClassPassFile } from "./lib/classpassExport.js";
+import { usePendingCheckinsQueue } from "./lib/pendingQueue.js";
+import {
+  formatIsoAsLocal,
+  guestSessionFromPendingRow,
+  cpSessionFromPendingRow,
+  markPendingCheckinCompleted,
+} from "./lib/queueFinalize.js";
 
 const EMPTY_GUEST_SESSION = {
   isMinor: false,
@@ -53,6 +62,13 @@ export default function App() {
   const [cpSubmitError, setCpSubmitError] = useState("");
   const [cpSubmitting, setCpSubmitting] = useState(false);
   const [cpExportDir, setCpExportDir] = useState(null);
+
+  // ── Check-in queue (phone-submitted, awaiting ID verification) ───────────
+  const { queue: pendingQueue, removeLocally: removeQueueEntryLocally } = usePendingCheckinsQueue();
+  const [queueEntry, setQueueEntry] = useState(null);
+  const [queueIdPhoto, setQueueIdPhoto] = useState(null);
+  const [queueSubmitError, setQueueSubmitError] = useState("");
+  const [queueSubmitting, setQueueSubmitting] = useState(false);
 
   // ── Lead sync: retry on startup and every 5 minutes ──────────────────────
   useEffect(() => {
@@ -177,6 +193,74 @@ export default function App() {
     }
   }
 
+  // ── Queue helpers ─────────────────────────────────────────────────────────
+  function resetQueueToList() {
+    setQueueEntry(null);
+    setQueueIdPhoto(null);
+    setQueueSubmitError("");
+    setQueueSubmitting(false);
+    setScreen("queue_list");
+  }
+
+  function handleStartQueueCheckIn(row) {
+    setQueueEntry(row);
+    setQueueSubmitError("");
+    setScreen(row.flow_type === "classpass" ? "queue_classpass_verify" : "queue_id_type_check");
+  }
+
+  async function handleFinalizeQueueEntry() {
+    const row = queueEntry;
+    const idPhoto = queueIdPhoto;
+    setQueueSubmitError("");
+    setQueueSubmitting(true);
+    try {
+      const signedAt = formatIsoAsLocal(row.waiver_agreed_at);
+
+      if (row.flow_type === "classpass") {
+        const cpFromRow = cpSessionFromPendingRow(row);
+        await exportClassPassFile({
+          cpSession: { ...cpFromRow, idPhoto },
+          signatureDataUrl: row.signature_data,
+          checkinId: row.id,
+          signedAt,
+        });
+      } else {
+        const guestFromRow = guestSessionFromPendingRow(row);
+        await exportGuestFiles({
+          guestSession: { ...guestFromRow, idPhoto },
+          signatureDataUrl: row.signature_data,
+          guestId: row.id,
+          signedAt,
+        });
+
+        // Same qualifying rules as the tablet's own guest flow. No local
+        // retry queue here (that table keys off a local integer guest id,
+        // which phone-submitted check-ins never get) — best-effort push,
+        // logged on failure.
+        if (isQualifyingLead(guestFromRow)) {
+          const payload = buildLeadPayload(guestFromRow, signedAt);
+          const { success, error: syncError } = await pushLeadToSupabase(payload);
+          if (!success) {
+            console.warn("Lead sync failed for queue entry:", syncError);
+          }
+        }
+      }
+
+      await markPendingCheckinCompleted(row.id);
+      removeQueueEntryLocally(row.id);
+      resetQueueToList();
+    } catch (err) {
+      console.error("Queue check-in failed:", err);
+      setQueueSubmitError(
+        typeof err === "string"
+          ? err
+          : err?.message || "Failed to complete check-in — please try again or get staff assistance."
+      );
+    } finally {
+      setQueueSubmitting(false);
+    }
+  }
+
   // ── Router ────────────────────────────────────────────────────────────────
   switch (screen) {
     case "landing":
@@ -186,11 +270,76 @@ export default function App() {
           onClassPass={() => setScreen("classpass_verify")}
           onVendor={() => setScreen("vendor_form")}
           onSettings={() => setScreen("settings")}
+          onOpenQueue={() => setScreen("queue_list")}
+          pendingCount={pendingQueue.length}
         />
       );
 
     case "settings":
       return <Settings onBack={() => setScreen("landing")} />;
+
+    // ── Check-in queue ────────────────────────────────────────────────────
+    case "queue_list":
+      return (
+        <QueueList
+          queue={pendingQueue}
+          onCheckIn={handleStartQueueCheckIn}
+          onBack={() => setScreen("landing")}
+        />
+      );
+
+    case "queue_classpass_verify":
+      return (
+        <ClassPassBookingVerify
+          onConfirm={() => setScreen("queue_id_type_check")}
+          onBack={resetQueueToList}
+        />
+      );
+
+    case "queue_id_type_check":
+      return (
+        <IdTypeCheck
+          banner={
+            queueEntry?.flow_type === "guest" &&
+            queueEntry.form_data?.is_minor &&
+            queueEntry.form_data?.supervision_required ? (
+              <div className="notice-minor notice-supervision">
+                <strong>Staff reminder:</strong> this guest is a minor (14–15) — a
+                guardian or personal trainer must supervise them at all times
+                while using equipment.
+              </div>
+            ) : null
+          }
+          onConfirm={() => setScreen("queue_id_capture")}
+          onBack={resetQueueToList}
+        />
+      );
+
+    case "queue_id_capture":
+      return (
+        <IdCapture
+          guestSession={
+            queueEntry?.flow_type === "classpass"
+              ? { formData: { first_name: queueEntry.form_data?.guest_name || "", last_name: "" }, isMinor: false, dob: null }
+              : guestSessionFromPendingRow(queueEntry || {})
+          }
+          onConfirm={(idPhoto) => {
+            setQueueIdPhoto(idPhoto);
+            setScreen("queue_finalizing");
+          }}
+          onBack={() => setScreen("queue_id_type_check")}
+        />
+      );
+
+    case "queue_finalizing":
+      return (
+        <QueueFinalizing
+          submitting={queueSubmitting}
+          submitError={queueSubmitError}
+          onRetry={handleFinalizeQueueEntry}
+          onBack={resetQueueToList}
+        />
+      );
 
     // ── Guest flow ──────────────────────────────────────────────────────────
     case "guest_age_check":
@@ -348,6 +497,8 @@ export default function App() {
           onClassPass={() => setScreen("classpass_verify")}
           onVendor={() => setScreen("vendor_form")}
           onSettings={() => setScreen("settings")}
+          onOpenQueue={() => setScreen("queue_list")}
+          pendingCount={pendingQueue.length}
         />
       );
   }

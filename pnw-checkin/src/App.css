@@ -111,6 +111,37 @@ a { color: var(--color-accent); text-decoration: none; }
   color: rgba(255, 255, 255, 0.85);
 }
 
+.landing-queue-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.landing-queue-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.85);
+}
+.landing-queue-btn-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+  animation: queue-pulse 1.8s ease-in-out infinite;
+}
+@keyframes queue-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 131, 42, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(232, 131, 42, 0); }
+}
+
 .landing-header {
   text-align: center;
   margin-bottom: 48px;
@@ -1143,4 +1174,74 @@ textarea { resize: vertical; }
     padding: 40px;
   }
   .settings-qr-image { width: 320px; height: 320px; }
+}
+
+/* ── Check-in queue ──────────────────────────────────── */
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.queue-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+}
+
+.queue-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.queue-card-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.queue-flow-badge {
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 20px;
+  padding: 3px 10px;
+  color: #fff;
+}
+.queue-flow-guest { background: var(--color-accent); }
+.queue-flow-classpass { background: #0d9488; }
+
+.queue-minor-badge {
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 20px;
+  padding: 3px 10px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-border);
+}
+
+.queue-card-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.queue-card-time {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
