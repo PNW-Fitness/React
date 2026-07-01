@@ -192,6 +192,11 @@ export default function LeadsPage() {
 
   // Main data fetch — re-runs whenever any filter or page changes
   const fetchLeads = useCallback(async () => {
+    // Wait until role is resolved. For trainers, also wait for their user ID
+    // so we never accidentally show them the full unfiltered list.
+    if (role === undefined) return
+    if (role === 'trainer' && !currentUserId) return
+
     setLoading(true)
     setError(null)
 
@@ -216,8 +221,14 @@ export default function LeadsPage() {
     if (dateFrom) q = q.gte('created_at', dateFrom)
     if (dateTo)   q = q.lte('created_at', `${dateTo}T23:59:59.999Z`)
 
-    if (filterAssigned === 'unassigned') q = q.is('assigned_to', null)
-    else if (filterAssigned !== 'all')   q = q.eq('assigned_to', filterAssigned)
+    // Trainers are locked to their own assigned leads — not a UI option.
+    // Admins and fitness managers use the optional filterAssigned dropdown.
+    if (role === 'trainer') {
+      q = q.eq('assigned_to', currentUserId)
+    } else {
+      if (filterAssigned === 'unassigned') q = q.is('assigned_to', null)
+      else if (filterAssigned !== 'all')   q = q.eq('assigned_to', filterAssigned)
+    }
 
     const { data, error: err, count } = await q
 
@@ -228,7 +239,7 @@ export default function LeadsPage() {
       setTotalCount(count ?? 0)
     }
     setLoading(false)
-  }, [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterAssigned])
+  }, [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterAssigned, role, currentUserId])
 
   useEffect(() => { fetchLeads() }, [fetchLeads])
 
@@ -420,8 +431,8 @@ export default function LeadsPage() {
           />
         </div>
 
-        {/* Trainer filter — admin/fitness_manager see full dropdown; trainers get "My leads" toggle */}
-        {canAssign ? (
+        {/* Trainer filter — only shown to admin and fitness_manager */}
+        {canAssign && (
           <div className="flex items-center gap-2">
             <label className="text-xs font-medium text-gray-500">Trainer</label>
             <select
@@ -438,17 +449,7 @@ export default function LeadsPage() {
               ))}
             </select>
           </div>
-        ) : role === 'trainer' && currentUserId ? (
-          <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-600">
-            <input
-              type="checkbox"
-              checked={filterAssigned === currentUserId}
-              onChange={e => { setFilterAssigned(e.target.checked ? currentUserId : 'all'); setPage(0) }}
-              className="w-4 h-4 rounded border-gray-300 text-blue-600"
-            />
-            My leads only
-          </label>
-        ) : null}
+        )}
 
         {anyFilter && (
           <button
