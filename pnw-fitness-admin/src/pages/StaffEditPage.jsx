@@ -16,6 +16,7 @@ const EMPTY_FORM = {
   bio: '',
   tags: '',
   active: true,
+  color: '#3498DB',
 }
 
 const EMPTY_ROLE_STATE = {
@@ -61,6 +62,7 @@ export default function StaffEditPage() {
         bio: data.bio ?? '',
         tags: (data.tags ?? []).join(', '),
         active: data.active ?? true,
+        color: data.color ?? '#3498DB',
       })
       setCurrentPhotoUrl(data.photo_url ?? null)
 
@@ -164,6 +166,7 @@ export default function StaffEditPage() {
       bio: form.bio.trim() || null,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
       active: form.active,
+      color: form.color || null,
     }
 
     if (!isNew) {
@@ -243,6 +246,17 @@ export default function StaffEditPage() {
             </Field>
             <Field label="Tags (comma-separated)">
               <input type="text" value={form.tags} onChange={e => setField('tags', e.target.value)} placeholder="Strength, Mobility, HIIT" className={inputCls} />
+            </Field>
+            <Field label="Note color (shown next to trainer's name on lead notes)">
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={form.color}
+                  onChange={e => setField('color', e.target.value)}
+                  className="w-10 h-10 rounded cursor-pointer border border-gray-300 p-0.5"
+                />
+                <span className="text-sm text-gray-500 font-mono">{form.color}</span>
+              </div>
             </Field>
           </div>
 
