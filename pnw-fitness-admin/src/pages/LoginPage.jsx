@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../lib/AuthContext'
 
-export default function LoginPage({ session }) {
+export default function LoginPage() {
   const navigate = useNavigate()
+  const { session } = useAuth()
   const [searchParams] = useSearchParams()
   const timedOut = searchParams.get('timeout') === '1'
   const [email, setEmail] = useState('')

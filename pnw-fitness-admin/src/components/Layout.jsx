@@ -1,33 +1,29 @@
-import { useState, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useNavigate, NavLink } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../lib/AuthContext'
 
 const NAV = [
-  { to: '/',             label: 'Staff'         },
-  { to: '/pricing',      label: 'Pricing'       },
-  { to: '/testimonials', label: 'Testimonials'  },
-  { to: '/faq',          label: 'FAQ'           },
-  { to: '/holidays',       label: 'Holiday Hours'  },
-  { to: '/announcements', label: 'Announcements'  },
-  { to: '/leads',          label: 'Leads',          adminOnly: true },
-  { to: '/admins',       label: 'Admins',        adminOnly: true },
-  { to: '/activity',     label: 'Activity Log',  adminOnly: true },
+  { to: '/',              label: 'Staff',          roles: ['admin', 'staff']            },
+  { to: '/pricing',       label: 'Pricing',        roles: ['admin', 'staff']            },
+  { to: '/testimonials',  label: 'Testimonials',   roles: ['admin', 'staff']            },
+  { to: '/faq',           label: 'FAQ',            roles: ['admin', 'staff']            },
+  { to: '/holidays',      label: 'Holiday Hours',  roles: ['admin', 'staff']            },
+  { to: '/announcements', label: 'Announcements',  roles: ['admin', 'staff']            },
+  { to: '/leads',         label: 'Leads',          roles: ['admin', 'trainer']          },
+  { to: '/admins',        label: 'Admins',         roles: ['admin']                     },
+  { to: '/activity',      label: 'Activity Log',   roles: ['admin']                     },
 ]
 
 export default function Layout({ children }) {
   const navigate = useNavigate()
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    supabase.rpc('is_staff_admin').then(({ data }) => setIsAdmin(!!data))
-  }, [])
+  const { role } = useAuth()
 
   async function handleSignOut() {
     await supabase.auth.signOut()
     navigate('/login')
   }
 
-  const visibleNav = NAV.filter(item => !item.adminOnly || isAdmin)
+  const visibleNav = NAV.filter(item => !role || item.roles.includes(role))
 
   return (
     <div className="min-h-screen bg-gray-50">

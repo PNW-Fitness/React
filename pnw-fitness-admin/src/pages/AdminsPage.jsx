@@ -2,18 +2,32 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Layout from '../components/Layout'
 
+const ROLES = [
+  { value: 'admin',   label: 'Admin'   },
+  { value: 'trainer', label: 'Trainer' },
+  { value: 'staff',   label: 'Staff'   },
+]
+
+const ROLE_BADGE = {
+  admin:   'bg-blue-100 text-blue-700',
+  trainer: 'bg-purple-100 text-purple-700',
+  staff:   'bg-gray-100 text-gray-600',
+}
+
 export default function AdminsPage() {
   const [admins, setAdmins] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('staff')
   const [inviting, setInviting] = useState(false)
   const [inviteMessage, setInviteMessage] = useState({ type: '', text: '' })
   const [inviteLink, setInviteLink] = useState(null)
   const [copied, setCopied] = useState(false)
-  const [resetTarget, setResetTarget] = useState(null) // email being reset
+  const [resetTarget, setResetTarget] = useState(null)
   const [resetMessage, setResetMessage] = useState({ type: '', text: '' })
+  const [changingRole, setChangingRole] = useState(null) // user_id being updated
 
   async function load() {
     const [{ data: profile }, { data: list, error: err }] = await Promise.all([
@@ -39,20 +53,37 @@ export default function AdminsPage() {
       body: { email: inviteEmail.trim() },
     })
 
-    setInviting(false)
     if (fnErr) {
+      setInviting(false)
       setInviteMessage({ type: 'error', text: fnErr.message })
       return
     }
 
+    // Apply the selected role — edge function creates the row with default 'staff'.
+    if (inviteRole !== 'staff') {
+      await supabase
+        .from('admin_profiles')
+        .update({ role: inviteRole })
+        .eq('email', inviteEmail.trim())
+    }
+
+    setInviting(false)
+
     const parsed = typeof data === 'string' ? JSON.parse(data) : data
     if (parsed?.inviteLink) {
       setInviteLink(parsed.inviteLink)
-      setInviteMessage({ type: 'success', text: `Access granted for ${inviteEmail.trim()}. Send them the link below to set their password:` })
+      setInviteMessage({
+        type: 'success',
+        text: `Access granted for ${inviteEmail.trim()} as ${inviteRole}. Send them the link below to set their password:`,
+      })
     } else {
-      setInviteMessage({ type: 'success', text: `Access granted for ${inviteEmail.trim()}. They already have an account and can sign in now.` })
+      setInviteMessage({
+        type: 'success',
+        text: `Access granted for ${inviteEmail.trim()} as ${inviteRole}. They already have an account and can sign in now.`,
+      })
     }
     setInviteEmail('')
+    setInviteRole('staff')
     load()
   }
 
@@ -76,11 +107,23 @@ export default function AdminsPage() {
     }
   }
 
-  async function handleRemove(admin) {
-    if (!window.confirm(`Remove admin access for ${admin.email}?`)) return
+  async function handleRoleChange(admin, newRole) {
+    setChangingRole(admin.user_id)
+    const { error: err } = await supabase
+      .from('admin_profiles')
+      .update({ role: newRole })
+      .eq('user_id', admin.user_id)
+    setChangingRole(null)
+    if (err) {
+      setError(`Failed to update role: ${err.message}`)
+    } else {
+      setAdmins(a => a.map(x => x.user_id === admin.user_id ? { ...x, role: newRole } : x))
+    }
+  }
 
-    // Delete from both tables — admin_profiles cascades via FK, but we delete
-    // staff_admins explicitly to revoke access immediately
+  async function handleRemove(admin) {
+    if (!window.confirm(`Remove access for ${admin.email}?`)) return
+
     const { error: saErr } = await supabase
       .from('staff_admins')
       .delete()
@@ -104,7 +147,7 @@ export default function AdminsPage() {
 
   return (
     <Layout>
-      <h2 className="text-xl font-bold text-gray-800 mb-6">Manage Admins</h2>
+      <h2 className="text-xl font-bold text-gray-800 mb-6">Users &amp; Roles</h2>
 
       {/* Password reset feedback */}
       {resetMessage.text && (
@@ -117,7 +160,6 @@ export default function AdminsPage() {
         </p>
       )}
 
-      {/* Current admins list */}
       {loading && <p className="text-gray-500 text-sm mb-6">Loading…</p>}
       {error && <p className="text-red-600 text-sm mb-6">{error}</p>}
 
@@ -128,6 +170,7 @@ export default function AdminsPage() {
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Display name</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Role</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Added</th>
                 <th className="px-4 py-3 text-right font-semibold text-gray-600">Actions</th>
               </tr>
@@ -142,6 +185,25 @@ export default function AdminsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-500">{a.display_name ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    {a.user_id === currentUserId ? (
+                      // Can't change your own role
+                      <span className={`text-xs font-semibold px-2 py-1 rounded ${ROLE_BADGE[a.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {a.role ?? 'admin'}
+                      </span>
+                    ) : (
+                      <select
+                        value={a.role ?? 'staff'}
+                        disabled={changingRole === a.user_id}
+                        onChange={e => handleRoleChange(a, e.target.value)}
+                        className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-50"
+                      >
+                        {ROLES.map(r => (
+                          <option key={r.value} value={r.value}>{r.label}</option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-400">{formatDate(a.created_at)}</td>
                   <td className="px-4 py-3 text-right space-x-3">
                     <button
@@ -166,7 +228,7 @@ export default function AdminsPage() {
               ))}
               {admins.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-gray-400">No admins yet.</td>
+                  <td colSpan={5} className="px-4 py-6 text-center text-gray-400">No users yet.</td>
                 </tr>
               )}
             </tbody>
@@ -174,9 +236,17 @@ export default function AdminsPage() {
         </div>
       )}
 
+      {/* Role legend */}
+      <div className="bg-white rounded-xl shadow p-4 mb-8 flex flex-wrap gap-4 text-xs text-gray-600">
+        <span className="font-semibold text-gray-700 self-center">Roles:</span>
+        <span><span className="font-semibold text-blue-700">Admin</span> — full access to all pages</span>
+        <span><span className="font-semibold text-purple-700">Trainer</span> — leads page + add notes</span>
+        <span><span className="font-semibold text-gray-700">Staff</span> — content management (staff, pricing, FAQ, etc.)</span>
+      </div>
+
       {/* Invite form */}
       <div className="bg-white rounded-xl shadow p-6 max-w-md">
-        <h3 className="font-semibold text-gray-700 mb-1">Invite a new admin</h3>
+        <h3 className="font-semibold text-gray-700 mb-1">Invite a new user</h3>
         <p className="text-xs text-gray-400 mb-4">
           Generates an invite link you can send via text or email. No rate limits.
         </p>
@@ -185,11 +255,24 @@ export default function AdminsPage() {
           <input
             type="email"
             required
-            placeholder="admin@example.com"
+            placeholder="user@example.com"
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
+            <select
+              value={inviteRole}
+              onChange={e => setInviteRole(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {ROLES.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
 
           {inviteMessage.text && (
             <p className={`text-sm px-3 py-2 rounded border ${

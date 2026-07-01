@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
+import { useAuth } from './lib/AuthContext'
 import LoginPage from './pages/LoginPage'
 import StaffListPage from './pages/StaffListPage'
 import StaffEditPage from './pages/StaffEditPage'
@@ -19,34 +20,44 @@ import AnnouncementsListPage from './pages/AnnouncementsListPage'
 import AnnouncementsEditPage from './pages/AnnouncementsEditPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 
-// Sign out after 30 minutes of no mouse, keyboard, click, or touch activity.
 const INACTIVITY_MS = 30 * 60 * 1000
 
-function ProtectedRoute({ session, children }) {
-  if (session === undefined) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-400">
-        Loading...
-      </div>
-    )
-  }
+// Role groups — used to control which routes each role can access.
+const CONTENT_ROLES = ['admin', 'staff']    // content management pages
+const LEADS_ROLES   = ['admin', 'trainer']  // leads + notes
+const ADMIN_ROLES   = ['admin']             // user/role management, activity log
+
+function Loading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center text-gray-400">
+      Loading…
+    </div>
+  )
+}
+
+// Sends the user to their role's default landing page.
+function DefaultRedirect() {
+  const { session, role } = useAuth()
+  if (session === undefined || (session && role === undefined)) return <Loading />
   if (!session) return <Navigate to="/login" replace />
+  return <Navigate to={role === 'trainer' ? '/leads' : '/'} replace />
+}
+
+// Gate for role-restricted pages. Redirects unauthorized users to their default.
+function ProtectedRoute({ allowedRoles, children }) {
+  const { session, role } = useAuth()
+  if (session === undefined || (session && role === undefined)) return <Loading />
+  if (!session) return <Navigate to="/login" replace />
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    return <Navigate to={role === 'trainer' ? '/leads' : '/'} replace />
+  }
   return children
 }
 
 export default function App() {
-  const [session, setSession] = useState(undefined)
+  const { session } = useAuth()
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  // Inactivity timeout — signs the user out and redirects to /login?timeout=1
-  // after INACTIVITY_MS of no user interaction. Only active while logged in.
+  // Inactivity timeout — signs the user out after 30 minutes of no interaction.
   useEffect(() => {
     if (!session) return
 
@@ -70,38 +81,46 @@ export default function App() {
     }
   }, [session])
 
-  function protect(el) {
-    return <ProtectedRoute session={session}>{el}</ProtectedRoute>
+  function protect(el, allowedRoles) {
+    return <ProtectedRoute allowedRoles={allowedRoles}>{el}</ProtectedRoute>
   }
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login"                element={<LoginPage session={session} />} />
-        <Route path="/accept-invite"        element={<AcceptInvitePage />} />
-        <Route path="/reset-password"       element={<AcceptInvitePage />} />
-        <Route path="/"                     element={protect(<StaffListPage />)} />
-        <Route path="/staff/new"            element={protect(<StaffEditPage />)} />
-        <Route path="/staff/:id"            element={protect(<StaffEditPage />)} />
-        <Route path="/pricing"              element={protect(<PricingListPage />)} />
-        <Route path="/pricing/new"          element={protect(<PricingEditPage />)} />
-        <Route path="/pricing/:id"          element={protect(<PricingEditPage />)} />
-        <Route path="/testimonials"         element={protect(<TestimonialsListPage />)} />
-        <Route path="/testimonials/new"     element={protect(<TestimonialsEditPage />)} />
-        <Route path="/testimonials/:id"     element={protect(<TestimonialsEditPage />)} />
-        <Route path="/faq"                  element={protect(<FaqListPage />)} />
-        <Route path="/faq/new"              element={protect(<FaqEditPage />)} />
-        <Route path="/faq/:id"              element={protect(<FaqEditPage />)} />
-        <Route path="/holidays"             element={protect(<HolidayListPage />)} />
-        <Route path="/holidays/new"         element={protect(<HolidayEditPage />)} />
-        <Route path="/holidays/:id"         element={protect(<HolidayEditPage />)} />
-        <Route path="/leads"                element={protect(<LeadsPage />)} />
-        <Route path="/admins"               element={protect(<AdminsPage />)} />
-        <Route path="/activity"             element={protect(<ActivityLogPage />)} />
-        <Route path="/announcements"        element={protect(<AnnouncementsListPage />)} />
-        <Route path="/announcements/new"    element={protect(<AnnouncementsEditPage />)} />
-        <Route path="/announcements/:id"    element={protect(<AnnouncementsEditPage />)} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Public routes */}
+        <Route path="/login"          element={<LoginPage />} />
+        <Route path="/accept-invite"  element={<AcceptInvitePage />} />
+        <Route path="/reset-password" element={<AcceptInvitePage />} />
+
+        {/* Content management: admin + staff */}
+        <Route path="/"                    element={protect(<StaffListPage />,        CONTENT_ROLES)} />
+        <Route path="/staff/new"           element={protect(<StaffEditPage />,         CONTENT_ROLES)} />
+        <Route path="/staff/:id"           element={protect(<StaffEditPage />,         CONTENT_ROLES)} />
+        <Route path="/pricing"             element={protect(<PricingListPage />,       CONTENT_ROLES)} />
+        <Route path="/pricing/new"         element={protect(<PricingEditPage />,       CONTENT_ROLES)} />
+        <Route path="/pricing/:id"         element={protect(<PricingEditPage />,       CONTENT_ROLES)} />
+        <Route path="/testimonials"        element={protect(<TestimonialsListPage />,  CONTENT_ROLES)} />
+        <Route path="/testimonials/new"    element={protect(<TestimonialsEditPage />,  CONTENT_ROLES)} />
+        <Route path="/testimonials/:id"    element={protect(<TestimonialsEditPage />,  CONTENT_ROLES)} />
+        <Route path="/faq"                 element={protect(<FaqListPage />,           CONTENT_ROLES)} />
+        <Route path="/faq/new"             element={protect(<FaqEditPage />,           CONTENT_ROLES)} />
+        <Route path="/faq/:id"             element={protect(<FaqEditPage />,           CONTENT_ROLES)} />
+        <Route path="/holidays"            element={protect(<HolidayListPage />,       CONTENT_ROLES)} />
+        <Route path="/holidays/new"        element={protect(<HolidayEditPage />,       CONTENT_ROLES)} />
+        <Route path="/holidays/:id"        element={protect(<HolidayEditPage />,       CONTENT_ROLES)} />
+        <Route path="/announcements"       element={protect(<AnnouncementsListPage />, CONTENT_ROLES)} />
+        <Route path="/announcements/new"   element={protect(<AnnouncementsEditPage />, CONTENT_ROLES)} />
+        <Route path="/announcements/:id"   element={protect(<AnnouncementsEditPage />, CONTENT_ROLES)} />
+
+        {/* Leads: admin + trainer */}
+        <Route path="/leads"               element={protect(<LeadsPage />,             LEADS_ROLES)} />
+
+        {/* Admin only */}
+        <Route path="/admins"              element={protect(<AdminsPage />,            ADMIN_ROLES)} />
+        <Route path="/activity"            element={protect(<ActivityLogPage />,       ADMIN_ROLES)} />
+
+        <Route path="*" element={<DefaultRedirect />} />
       </Routes>
     </BrowserRouter>
   )
