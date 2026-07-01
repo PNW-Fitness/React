@@ -3,8 +3,10 @@ import { supabase } from '../lib/supabaseClient'
 import Layout from '../components/Layout'
 
 export default function GuestNotesPage() {
+  const [todayLeads,    setTodayLeads]    = useState([])
+  const [todayLoading,  setTodayLoading]  = useState(true)
   const [search,        setSearch]        = useState('')
-  const [results,       setResults]       = useState([])
+  const [searchResults, setSearchResults] = useState([])
   const [searching,     setSearching]     = useState(false)
   const [expanded,      setExpanded]      = useState(null)
   const [notes,         setNotes]         = useState({})
@@ -12,7 +14,7 @@ export default function GuestNotesPage() {
   const [noteText,      setNoteText]      = useState({})
   const [submitting,    setSubmitting]    = useState(null)
   const [myName,        setMyName]        = useState(null)
-  const [submitMsg,     setSubmitMsg]     = useState({}) // { leadId: 'saved' | 'error' }
+  const [submitMsg,     setSubmitMsg]     = useState({})
 
   const debounceRef = useRef(null)
 
@@ -31,10 +33,29 @@ export default function GuestNotesPage() {
     resolveUser()
   }, [])
 
-  // Debounced search
+  // Load today's check-ins on mount
+  useEffect(() => {
+    async function fetchToday() {
+      setTodayLoading(true)
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+
+      const { data } = await supabase
+        .from('lead_submissions')
+        .select('id, name, email, phone, source, created_at, last_seen, visit_count')
+        .gte('last_seen', todayStart.toISOString())
+        .order('last_seen', { ascending: false })
+
+      setTodayLeads(data ?? [])
+      setTodayLoading(false)
+    }
+    fetchToday()
+  }, [])
+
+  // Debounced search — only runs when search has content
   useEffect(() => {
     clearTimeout(debounceRef.current)
-    if (!search.trim()) { setResults([]); setExpanded(null); return }
+    if (!search.trim()) { setSearchResults([]); return }
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       const term = search.trim().replace(/,/g, '')
@@ -44,7 +65,7 @@ export default function GuestNotesPage() {
         .or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
         .order('last_seen', { ascending: false, nullsFirst: false })
         .limit(15)
-      setResults(data ?? [])
+      setSearchResults(data ?? [])
       setSearching(false)
     }, 300)
   }, [search])
@@ -86,32 +107,51 @@ export default function GuestNotesPage() {
     setSubmitting(null)
   }
 
+  function formatTime(ts) {
+    if (!ts) return null
+    return new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  }
+
   function formatDate(ts) {
     if (!ts) return null
     return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
+  const isSearching = search.trim().length > 0
+  const displayList = isSearching ? searchResults : todayLeads
+
+  const todayLabel = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric',
+  })
+
   return (
     <Layout>
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-xl font-bold text-gray-800 mb-1">Guest Notes</h2>
+        {/* Header */}
+        <div className="flex items-baseline justify-between mb-1">
+          <h2 className="text-xl font-bold text-gray-800">Guest Notes</h2>
+          {!isSearching && !todayLoading && (
+            <span className="text-sm text-gray-400">
+              {todayLeads.length} {todayLeads.length === 1 ? 'guest' : 'guests'} today
+            </span>
+          )}
+        </div>
         <p className="text-sm text-gray-500 mb-5">
-          Search for a guest and leave a note visible to trainers.
+          {isSearching ? 'Search results' : todayLabel}
         </p>
 
         {/* Search */}
-        <div className="relative mb-6">
+        <div className="relative mb-5">
           <input
             type="text"
-            autoFocus
-            placeholder="Search guest by name, email, or phone…"
+            placeholder="Search all guests by name, email, or phone…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {search && (
             <button
-              onClick={() => { setSearch(''); setResults([]); setExpanded(null) }}
+              onClick={() => { setSearch(''); setSearchResults([]); setExpanded(null) }}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl leading-none"
             >
               ×
@@ -119,59 +159,66 @@ export default function GuestNotesPage() {
           )}
         </div>
 
-        {/* State messages */}
-        {searching && (
-          <p className="text-sm text-gray-400 text-center py-6">Searching…</p>
+        {/* Loading / empty states */}
+        {!isSearching && todayLoading && (
+          <p className="text-sm text-gray-400 text-center py-8">Loading today's check-ins…</p>
         )}
-        {!searching && search.trim() && results.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-6">No guests found for "{search}".</p>
+        {!isSearching && !todayLoading && todayLeads.length === 0 && (
+          <div className="text-center py-12 text-gray-400">
+            <p className="text-4xl mb-3">🏋️</p>
+            <p className="text-sm font-medium">No check-ins yet today</p>
+            <p className="text-xs mt-1">Guests will appear here as they check in.</p>
+          </div>
         )}
-        {!search.trim() && (
-          <p className="text-sm text-gray-400 text-center py-10">
-            Type a name, email, or phone number to find a guest.
-          </p>
+        {isSearching && searching && (
+          <p className="text-sm text-gray-400 text-center py-8">Searching…</p>
+        )}
+        {isSearching && !searching && searchResults.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-8">No guests found for "{search}".</p>
         )}
 
-        {/* Results */}
-        {results.length > 0 && (
+        {/* Guest list */}
+        {displayList.length > 0 && (
           <div className="space-y-2">
-            {results.map(lead => {
-              const isOpen = expanded === lead.id
+            {displayList.map(lead => {
+              const isOpen    = expanded === lead.id
               const leadNotes = notes[lead.id] ?? []
+              const checkinTime = lead.last_seen ? formatTime(lead.last_seen) : null
+              const checkinDate = lead.last_seen ? formatDate(lead.last_seen) : null
 
               return (
                 <div key={lead.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  {/* Guest row */}
                   <button
                     className="w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-gray-50 transition"
                     onClick={() => handleExpand(lead.id)}
                   >
-                    {/* Avatar initial */}
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center flex-shrink-0">
-                      {lead.name?.charAt(0)?.toUpperCase() || '?'}
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center flex-shrink-0 uppercase">
+                      {lead.name?.charAt(0) || '?'}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-800 text-sm">{lead.name}</p>
                       <p className="text-xs text-gray-400 truncate">
-                        {lead.email}
-                        {lead.phone ? ` · ${lead.phone}` : ''}
-                        {lead.last_seen ? ` · Last seen ${formatDate(lead.last_seen)}` : lead.created_at ? ` · Added ${formatDate(lead.created_at)}` : ''}
+                        {lead.phone || lead.email || '—'}
+                        {lead.visit_count > 1 ? ` · ${lead.visit_count} visits` : ''}
                       </p>
                     </div>
 
-                    {lead.visit_count > 1 && (
-                      <span className="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full flex-shrink-0">
-                        {lead.visit_count} visits
-                      </span>
-                    )}
-
-                    {/* Note count badge */}
-                    {notes[lead.id] !== undefined && leadNotes.length > 0 && (
-                      <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full flex-shrink-0">
-                        {leadNotes.length} {leadNotes.length === 1 ? 'note' : 'notes'}
-                      </span>
-                    )}
+                    {/* Check-in time (today view) or date (search view) */}
+                    <div className="text-right flex-shrink-0">
+                      {!isSearching && checkinTime && (
+                        <p className="text-sm font-medium text-gray-700">{checkinTime}</p>
+                      )}
+                      {isSearching && checkinDate && (
+                        <p className="text-xs text-gray-400">{checkinDate}</p>
+                      )}
+                      {notes[lead.id] !== undefined && leadNotes.length > 0 && (
+                        <span className="text-xs text-amber-600">
+                          {leadNotes.length} {leadNotes.length === 1 ? 'note' : 'notes'}
+                        </span>
+                      )}
+                    </div>
 
                     <svg
                       className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -185,24 +232,24 @@ export default function GuestNotesPage() {
                   {isOpen && (
                     <div className="px-4 pb-5 pt-3 border-t border-gray-100">
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                        Guest Notes
+                        Notes
                       </p>
 
                       {notesLoading === lead.id ? (
-                        <p className="text-xs text-gray-400 mb-3">Loading notes…</p>
+                        <p className="text-xs text-gray-400 mb-3">Loading…</p>
                       ) : leadNotes.length === 0 ? (
-                        <p className="text-xs text-gray-400 mb-3">No notes yet — be the first to add one.</p>
+                        <p className="text-xs text-gray-400 mb-3">No notes yet.</p>
                       ) : (
                         <div className="space-y-3 mb-4">
                           {leadNotes.map(note => (
                             <div key={note.id} className="bg-gray-50 rounded-lg px-3 py-2">
-                              <div className="flex items-baseline gap-2 mb-1">
+                              <div className="flex items-baseline gap-2 mb-0.5">
                                 <span className="text-xs font-semibold text-gray-700">
                                   {note.author_name || 'Unknown'}
                                 </span>
                                 <span className="text-xs text-gray-400">
                                   {new Date(note.created_at).toLocaleString('en-US', {
-                                    month: 'short', day: 'numeric', year: 'numeric',
+                                    month: 'short', day: 'numeric',
                                     hour: 'numeric', minute: '2-digit',
                                   })}
                                 </span>
@@ -213,7 +260,6 @@ export default function GuestNotesPage() {
                         </div>
                       )}
 
-                      {/* Add note */}
                       <div className="flex gap-2 mt-2">
                         <textarea
                           rows={2}

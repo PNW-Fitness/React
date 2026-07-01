@@ -32,7 +32,7 @@ export default function AdminsPage() {
   const [inviteLink, setInviteLink]   = useState(null)
   const [copied, setCopied]           = useState(false)
   // Direct create
-  const [createEmail, setCreateEmail]       = useState('')
+  const [createUsername, setCreateUsername] = useState('')
   const [createPassword, setCreatePassword] = useState('')
   const [createConfirm, setCreateConfirm]   = useState('')
   const [createRole, setCreateRole]         = useState('staff')
@@ -137,7 +137,7 @@ export default function AdminsPage() {
 
     setCreating(true)
     const { error: fnErr } = await supabase.functions.invoke('create-admin-user', {
-      body: { email: createEmail.trim(), password: createPassword, role: createRole },
+      body: { username: createUsername.trim(), password: createPassword, role: createRole },
     })
     setCreating(false)
 
@@ -153,9 +153,9 @@ export default function AdminsPage() {
 
     setCreateMessage({
       type: 'success',
-      text: `Account created for ${createEmail.trim()} as ${createRole}. They can sign in immediately.`,
+      text: `Account created for "${createUsername.trim()}" as ${createRole}. They can sign in immediately.`,
     })
-    setCreateEmail('')
+    setCreateUsername('')
     setCreatePassword('')
     setCreateConfirm('')
     setCreateRole('staff')
@@ -459,14 +459,18 @@ export default function AdminsPage() {
             <p className="text-xs text-gray-400 -mt-1 mb-2">
               Creates the account immediately — no link needed. Use for shared accounts like Front Desk.
             </p>
-            <input
-              type="email"
-              required
-              placeholder="user@example.com"
-              value={createEmail}
-              onChange={e => setCreateEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. frontdesk or john"
+                value={createUsername}
+                onChange={e => setCreateUsername(e.target.value.replace(/\s/g, ''))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-400 mt-1">No @ needed. They'll sign in with this username.</p>
+            </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
               <input

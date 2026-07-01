@@ -11,10 +11,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, password, role } = await req.json()
-    if (!email)    throw new Error('Email is required')
+    const { username, password, role } = await req.json()
+    if (!username) throw new Error('Username is required')
     if (!password) throw new Error('Password is required')
     if (password.length < 6) throw new Error('Password must be at least 6 characters')
+
+    // Usernames without @ get an internal domain so Supabase auth is satisfied.
+    // Real emails (invite-created accounts) are passed through unchanged.
+    const email = username.includes('@') ? username : `${username}@pnwfitness.internal`
+    const displayName = username.includes('@') ? username.split('@')[0] : username
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceKey  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -62,7 +67,7 @@ Deno.serve(async (req) => {
     const profileRole = role || 'staff'
     const { error: apErr } = await adminClient
       .from('admin_profiles')
-      .insert({ user_id: userId, email, role: profileRole })
+      .insert({ user_id: userId, email: username, display_name: displayName, role: profileRole })
     if (apErr && apErr.code !== '23505') throw apErr
 
     return new Response(JSON.stringify({ success: true }), {

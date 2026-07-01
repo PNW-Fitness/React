@@ -8,7 +8,7 @@ export default function LoginPage() {
   const { session } = useAuth()
   const [searchParams] = useSearchParams()
   const timedOut = searchParams.get('timeout') === '1'
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,6 +21,9 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
+    // Accounts created with a plain username get @pnwfitness.internal appended.
+    // Real email accounts (invite flow) are used as-is.
+    const email = username.includes('@') ? username : `${username}@pnwfitness.internal`
     const { error: err } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (err) {
@@ -44,12 +47,13 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username or email</label>
             <input
-              type="email"
+              type="text"
               required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              autoComplete="username"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
