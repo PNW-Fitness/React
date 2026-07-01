@@ -141,22 +141,22 @@ export default function LeadsPage() {
   const [noteText,       setNoteText]       = useState({})      // { leadId: string }
   const [noteSubmitting, setNoteSubmitting] = useState(null)
 
-  // Current admin's staff_id (needed to author notes)
-  const [myStaffId, setMyStaffId] = useState(null)
+  // Current user's display name for note authorship
+  const [myName, setMyName] = useState(null)
 
-  // On mount: resolve current user → staff_admins → staff_id
+  // On mount: resolve current user's display name from admin_profiles
   useEffect(() => {
-    async function resolveStaffId() {
+    async function resolveUser() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      const { data } = await supabase
-        .from('staff_admins')
-        .select('staff_id')
+      const { data: profile } = await supabase
+        .from('admin_profiles')
+        .select('display_name, email')
         .eq('user_id', user.id)
         .maybeSingle()
-      setMyStaffId(data?.staff_id ?? null)
+      setMyName(profile?.display_name || profile?.email || user.email || null)
     }
-    resolveStaffId()
+    resolveUser()
   }, [])
 
   // Debounce search: also resets page so filter change is clean
@@ -226,7 +226,7 @@ export default function LeadsPage() {
     setNotesLoading(leadId)
     const { data } = await supabase
       .from('lead_notes')
-      .select('id, note_text, created_at, staff(name, color)')
+      .select('id, note_text, created_at, author_name, staff(name, color)')
       .eq('lead_id', leadId)
       .order('created_at', { ascending: false })
     setNotes(n => ({ ...n, [leadId]: data ?? [] }))
@@ -235,12 +235,12 @@ export default function LeadsPage() {
 
   async function handleAddNote(leadId) {
     const text = (noteText[leadId] || '').trim()
-    if (!text || !myStaffId || noteSubmitting) return
+    if (!text || !myName || noteSubmitting) return
     setNoteSubmitting(leadId)
     const { data, error: err } = await supabase
       .from('lead_notes')
-      .insert({ lead_id: leadId, author_id: myStaffId, note_text: text })
-      .select('id, note_text, created_at, staff(name, color)')
+      .insert({ lead_id: leadId, note_text: text, author_name: myName })
+      .select('id, note_text, created_at, author_name, staff(name, color)')
       .single()
     if (!err && data) {
       setNotes(n => ({ ...n, [leadId]: [data, ...(n[leadId] ?? [])] }))
@@ -541,7 +541,7 @@ export default function LeadsPage() {
                                       className="text-xs font-semibold"
                                       style={{ color: note.staff?.color || '#6b7280' }}
                                     >
-                                      {note.staff?.name || 'Unknown'}
+                                      {note.author_name ?? note.staff?.name ?? 'Unknown'}
                                     </span>
                                     <span className="text-xs text-gray-400">
                                       {new Date(note.created_at).toLocaleString('en-US', {
@@ -556,7 +556,7 @@ export default function LeadsPage() {
                             </div>
                           )}
 
-                          {myStaffId ? (
+                          {myName && (
                             <div className="flex gap-2 mt-2">
                               <textarea
                                 rows={2}
@@ -576,10 +576,6 @@ export default function LeadsPage() {
                                 {noteSubmitting === lead.id ? '…' : 'Add Note'}
                               </button>
                             </div>
-                          ) : (
-                            <p className="text-xs text-gray-400">
-                              Your account isn't linked to a staff profile — notes cannot be added.
-                            </p>
                           )}
                         </div>
                       </div>
