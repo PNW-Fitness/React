@@ -55,6 +55,18 @@ export default function AcceptInvitePage() {
         return
       }
 
+      // supabase-js processes the URL hash asynchronously during client
+      // initialization (GoTrueClient.initialize). By the time this effect runs,
+      // the session is typically already established and the original refresh
+      // token has been rotated — calling setSession() with it would fail.
+      // Check for the existing session first.
+      const { data: { session: existing } } = await supabase.auth.getSession()
+      if (existing) {
+        setState('form')
+        return
+      }
+
+      // Fallback: supabase-js hasn't processed the hash yet.
       const { error: sessionError } = await supabase.auth.setSession({
         access_token,
         refresh_token,
