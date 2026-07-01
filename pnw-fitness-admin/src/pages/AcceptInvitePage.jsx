@@ -2,15 +2,22 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
-// Parse the hash once at module load so React StrictMode's double-effect
-// invocation can't race against clearing the URL hash.
-// Handles both type=invite (new user) and type=recovery (password reset).
-const INVITE_HASH = (() => {
-  const p = new URLSearchParams(window.location.hash.slice(1))
+// Parse URL params at module load (before supabase-js or React can clear them).
+// Supabase can redirect with tokens in the hash (implicit flow) OR a code in
+// the query string (PKCE flow) — capture both.
+const INVITE_PARAMS = (() => {
+  const hash   = new URLSearchParams(window.location.hash.slice(1))
+  const search = new URLSearchParams(window.location.search)
   return {
-    access_token: p.get('access_token') || '',
-    refresh_token: p.get('refresh_token') || '',
-    type: p.get('type') || '',
+    // Implicit/hash flow
+    access_token:  hash.get('access_token')  || '',
+    refresh_token: hash.get('refresh_token') || '',
+    type:          hash.get('type') || search.get('type') || '',
+    // PKCE code-exchange flow
+    code:          search.get('code') || '',
+    // Error info (Supabase sometimes sends these)
+    error:             hash.get('error')             || search.get('error')             || '',
+    error_description: hash.get('error_description') || search.get('error_description') || '',
   }
 })()
 
@@ -37,29 +44,51 @@ export default function AcceptInvitePage() {
 
   // Guard against StrictMode's double effect invocation
   const initRef = useRef(false)
+  const [debugInfo, setDebugInfo] = useState(null)
 
   useEffect(() => {
     if (initRef.current) return
     initRef.current = true
 
     // Remove tokens from the address bar / browser history immediately
-    if (window.location.hash) {
+    if (window.location.hash || window.location.search) {
       history.replaceState(null, '', window.location.pathname)
     }
 
     async function init() {
-      const { access_token, refresh_token, type } = INVITE_HASH
+      const { access_token, refresh_token, type, code, error, error_description } = INVITE_PARAMS
 
+      // PKCE flow: Supabase sent a ?code= query param instead of hash tokens.
+      if (code) {
+        const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code)
+        if (exchangeErr) {
+          setDebugInfo({ flow: 'pkce', error: exchangeErr.message })
+          setState('invalid')
+          return
+        }
+        setState('form')
+        return
+      }
+
+      // Implicit flow: tokens arrive in the URL hash.
       if (!access_token || (type !== 'invite' && type !== 'recovery')) {
+        setDebugInfo({
+          flow: 'none',
+          access_token: access_token ? '(present)' : '(empty)',
+          type,
+          code: code ? '(present)' : '(empty)',
+          error,
+          error_description,
+          raw_hash:   window.location.hash   || '(already cleared)',
+          raw_search: window.location.search || '(empty)',
+        })
         setState('invalid')
         return
       }
 
-      // supabase-js processes the URL hash asynchronously during client
-      // initialization (GoTrueClient.initialize). By the time this effect runs,
-      // the session is typically already established and the original refresh
-      // token has been rotated — calling setSession() with it would fail.
-      // Check for the existing session first.
+      // supabase-js processes URL hash tokens asynchronously during init.
+      // By the time this effect runs the session may already exist and the
+      // original refresh token rotated — check before calling setSession().
       const { data: { session: existing } } = await supabase.auth.getSession()
       if (existing) {
         setState('form')
@@ -73,6 +102,7 @@ export default function AcceptInvitePage() {
       })
 
       if (sessionError) {
+        setDebugInfo({ flow: 'implicit', error: sessionError.message })
         setState('invalid')
         return
       }
@@ -129,6 +159,12 @@ export default function AcceptInvitePage() {
             This invite link is invalid or has already been used. Please contact
             your administrator to receive a new invite.
           </p>
+          {/* TEMPORARY DEBUG — remove once invite flow is working */}
+          {debugInfo && (
+            <pre className="text-left text-xs bg-gray-50 border border-gray-200 rounded p-3 mt-4 overflow-auto max-h-48 text-gray-700">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          )}
         </div>
       </div>
     )
@@ -146,7 +182,7 @@ export default function AcceptInvitePage() {
     )
   }
 
-  const isRecovery = INVITE_HASH.type === 'recovery'
+  const isRecovery = INVITE_PARAMS.type === 'recovery'
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">

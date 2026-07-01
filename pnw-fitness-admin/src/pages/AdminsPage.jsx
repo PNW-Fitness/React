@@ -29,7 +29,13 @@ export default function AdminsPage() {
   const [copied, setCopied] = useState(false)
   const [resetTarget, setResetTarget] = useState(null)
   const [resetMessage, setResetMessage] = useState({ type: '', text: '' })
-  const [changingRole, setChangingRole] = useState(null) // user_id being updated
+  const [changingRole, setChangingRole]     = useState(null) // user_id being updated
+  const [setPasswordTarget, setSetPasswordTarget] = useState(null) // { user_id, email }
+  const [newPassword, setNewPassword]       = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [setPasswordLoading, setSetPasswordLoading] = useState(false)
+  const [setPasswordError, setSetPasswordError]     = useState('')
+  const [setPasswordSuccess, setSetPasswordSuccess] = useState('')
 
   async function load() {
     const [{ data: profile }, { data: list, error: err }] = await Promise.all([
@@ -132,6 +138,57 @@ export default function AdminsPage() {
     }
   }
 
+  function openSetPassword(admin) {
+    setSetPasswordTarget(admin)
+    setNewPassword('')
+    setConfirmPassword('')
+    setSetPasswordError('')
+    setSetPasswordSuccess('')
+  }
+
+  function closeSetPassword() {
+    setSetPasswordTarget(null)
+    setNewPassword('')
+    setConfirmPassword('')
+    setSetPasswordError('')
+    setSetPasswordSuccess('')
+  }
+
+  async function handleSetPassword(e) {
+    e.preventDefault()
+    setSetPasswordError('')
+    setSetPasswordSuccess('')
+
+    if (newPassword.length < 6) {
+      setSetPasswordError('Password must be at least 6 characters.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setSetPasswordError('Passwords do not match.')
+      return
+    }
+
+    setSetPasswordLoading(true)
+    const { error: fnErr } = await supabase.functions.invoke('set-user-password', {
+      body: { userId: setPasswordTarget.user_id, password: newPassword },
+    })
+    setSetPasswordLoading(false)
+
+    if (fnErr) {
+      let msg = fnErr.message
+      try {
+        const body = await fnErr.context?.json?.()
+        if (body?.error) msg = body.error
+      } catch {}
+      setSetPasswordError(msg)
+      return
+    }
+
+    setSetPasswordSuccess(`Password updated for ${setPasswordTarget.email}.`)
+    setNewPassword('')
+    setConfirmPassword('')
+  }
+
   async function handleRemove(admin) {
     if (!window.confirm(`Remove access for ${admin.email}?`)) return
 
@@ -218,11 +275,17 @@ export default function AdminsPage() {
                   <td className="px-4 py-3 text-gray-400">{formatDate(a.created_at)}</td>
                   <td className="px-4 py-3 text-right space-x-3">
                     <button
+                      onClick={() => openSetPassword(a)}
+                      className="text-green-600 hover:underline text-sm"
+                    >
+                      Set password
+                    </button>
+                    <button
                       onClick={() => handleResetPassword(a)}
                       disabled={resetTarget === a.email}
                       className="text-blue-500 hover:underline text-sm disabled:opacity-40"
                     >
-                      {resetTarget === a.email ? 'Sending…' : 'Reset password'}
+                      {resetTarget === a.email ? 'Sending…' : 'Email reset'}
                     </button>
                     {a.user_id === currentUserId ? (
                       <span className="text-xs text-gray-300">Cannot remove yourself</span>
@@ -318,6 +381,70 @@ export default function AdminsPage() {
           </button>
         </form>
       </div>
+      {/* Set password modal */}
+      {setPasswordTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="font-bold text-gray-800 mb-1">Set password</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Directly set a new password for <span className="font-medium text-gray-700">{setPasswordTarget.email}</span>.
+            </p>
+
+            <form onSubmit={handleSetPassword} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">New password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Confirm password</label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {setPasswordError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                  {setPasswordError}
+                </p>
+              )}
+              {setPasswordSuccess && (
+                <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
+                  {setPasswordSuccess}
+                </p>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={setPasswordLoading}
+                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition"
+                >
+                  {setPasswordLoading ? 'Saving…' : 'Set password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeSetPassword}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2 rounded-lg transition"
+                >
+                  Close
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }
