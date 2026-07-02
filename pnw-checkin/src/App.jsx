@@ -26,10 +26,16 @@ import ClassPassForm from "./screens/classpass/ClassPassForm.jsx";
 import ClassPassWaiver from "./screens/classpass/ClassPassWaiver.jsx";
 import ClassPassConfirmation from "./screens/classpass/ClassPassConfirmation.jsx";
 
-import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, saveClassPassReturning, updateClassPassPdfPath, localNow, queuePendingLead } from "./lib/db.js";
+import TanningAgeCheck from "./screens/tanning/TanningAgeCheck.jsx";
+import TanningForm from "./screens/tanning/TanningForm.jsx";
+import TanningWaiver from "./screens/tanning/TanningWaiver.jsx";
+import TanningConfirmation from "./screens/tanning/TanningConfirmation.jsx";
+
+import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, saveClassPassReturning, updateClassPassPdfPath, saveTanningCheckin, updateTanningPdfPath, localNow, queuePendingLead } from "./lib/db.js";
 import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, retryPendingLeads } from "./lib/leadSync.js";
 import { exportGuestFiles, exportDeclinedGuestRecord } from "./lib/fileExport/fileExport.js";
 import { exportClassPassFile } from "./lib/classpassExport.js";
+import { exportTanningFile } from "./lib/tanningExport.js";
 import { usePendingCheckinsQueue } from "./lib/pendingQueue.js";
 import {
   formatIsoAsLocal,
@@ -68,6 +74,13 @@ export default function App() {
   const [cpSubmitError, setCpSubmitError] = useState("");
   const [cpSubmitting, setCpSubmitting] = useState(false);
   const [cpExportDir, setCpExportDir] = useState(null);
+
+  // ── Tanning flow state ────────────────────────────────────────────────────
+  const EMPTY_TANNING_SESSION = { fullName: "", contact: "", zipCode: "" };
+  const [tanningSession, setTanningSession] = useState(EMPTY_TANNING_SESSION);
+  const [tanningSubmitError, setTanningSubmitError] = useState("");
+  const [tanningSubmitting, setTanningSubmitting] = useState(false);
+  const [tanningExportDir, setTanningExportDir] = useState(null);
 
   // ── Check-in queue (phone-submitted, awaiting ID verification) ───────────
   const { queue: pendingQueue, removeLocally: removeQueueEntryLocally } = usePendingCheckinsQueue();
@@ -223,6 +236,51 @@ export default function App() {
     }
   }
 
+  // ── Tanning helpers ───────────────────────────────────────────────────────
+  function resetTanningToLanding() {
+    setTanningSession(EMPTY_TANNING_SESSION);
+    setTanningSubmitError("");
+    setTanningSubmitting(false);
+    setTanningExportDir(null);
+    setScreen("landing");
+  }
+
+  async function handleSubmitTanning(signatureDataUrl) {
+    setTanningSubmitError("");
+    setTanningSubmitting(true);
+    try {
+      const signedAt = localNow();
+
+      const checkinId = await saveTanningCheckin({
+        fullName: tanningSession.fullName,
+        contact:  tanningSession.contact,
+        zipCode:  tanningSession.zipCode,
+        signedAt,
+      });
+
+      const { pdfPath, exportDir: dir } = await exportTanningFile({
+        tanningSession,
+        signatureDataUrl,
+        checkinId,
+        signedAt,
+      });
+
+      await updateTanningPdfPath(checkinId, pdfPath);
+
+      setTanningExportDir(dir);
+      setScreen("tanning_confirm");
+    } catch (err) {
+      console.error("Tanning check-in failed:", err);
+      setTanningSubmitError(
+        typeof err === "string"
+          ? err
+          : err?.message || "Failed to complete check-in — please try again or get staff assistance."
+      );
+    } finally {
+      setTanningSubmitting(false);
+    }
+  }
+
   // ── Queue helpers ─────────────────────────────────────────────────────────
   function resetQueueToList() {
     setQueueEntry(null);
@@ -344,6 +402,7 @@ export default function App() {
         <Landing
           onGuest={() => setScreen("guest_age_check")}
           onClassPass={() => setScreen("classpass_verify")}
+          onTanning={() => setScreen("tanning_age_check")}
           onVendor={() => setScreen("vendor_form")}
           onSettings={() => setScreen("settings")}
           onOpenQueue={() => setScreen("queue_list")}
@@ -588,6 +647,43 @@ export default function App() {
         />
       );
 
+    // ── Tanning flow ────────────────────────────────────────────────────────
+    case "tanning_age_check":
+      return (
+        <TanningAgeCheck
+          onConfirm={() => setScreen("tanning_form")}
+          onBack={() => setScreen("landing")}
+        />
+      );
+
+    case "tanning_form":
+      return (
+        <TanningForm
+          onSubmit={(data) => { setTanningSession(data); setScreen("tanning_waiver"); }}
+          onBack={() => setScreen("tanning_age_check")}
+        />
+      );
+
+    case "tanning_waiver":
+      return (
+        <TanningWaiver
+          tanningSession={tanningSession}
+          onSubmit={handleSubmitTanning}
+          onBack={() => setScreen("tanning_form")}
+          submitError={tanningSubmitError}
+          submitting={tanningSubmitting}
+        />
+      );
+
+    case "tanning_confirm":
+      return (
+        <TanningConfirmation
+          tanningSession={tanningSession}
+          exportDir={tanningExportDir}
+          onDone={resetTanningToLanding}
+        />
+      );
+
     // ── Vendor flow ─────────────────────────────────────────────────────────
     case "vendor_form":
       return (
@@ -605,6 +701,7 @@ export default function App() {
         <Landing
           onGuest={() => setScreen("guest_age_check")}
           onClassPass={() => setScreen("classpass_verify")}
+          onTanning={() => setScreen("tanning_age_check")}
           onVendor={() => setScreen("vendor_form")}
           onSettings={() => setScreen("settings")}
           onOpenQueue={() => setScreen("queue_list")}

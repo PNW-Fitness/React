@@ -188,6 +188,8 @@ a { color: var(--color-accent); text-decoration: none; }
 .btn-landing.btn-primary  { background: var(--color-accent); color: #fff; }
 .btn-landing.btn-classpass { background: #0d9488; color: #fff; }
 .btn-landing.btn-classpass:hover { background: #0f766e; }
+.btn-landing.btn-tanning { background: #d97706; color: #fff; }
+.btn-landing.btn-tanning:hover { background: #b45309; }
 .btn-landing.btn-secondary { background: rgba(255,255,255,0.15); color: #fff; border: 2px solid rgba(255,255,255,0.3); }
 .btn-landing.btn-secondary:hover { background: rgba(255,255,255,0.25); }
 

@@ -82,6 +82,18 @@ async function getDb() {
   } catch { /* column already exists — safe to ignore */ }
 
   await _db.execute(`
+    CREATE TABLE IF NOT EXISTS tanning_checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      full_name TEXT NOT NULL,
+      contact TEXT NOT NULL,
+      zip_code TEXT NOT NULL,
+      signed_at TEXT NOT NULL,
+      pdf_path TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
+
+  await _db.execute(`
     CREATE TABLE IF NOT EXISTS pending_lead_sync (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       guest_id INTEGER NOT NULL,
@@ -317,6 +329,26 @@ export async function saveClassPassReturning(data) {
     [data.guestName, data.contact, data.zipCode, data.signedAt, localNow()]
   );
   return result.lastInsertId;
+}
+
+// Inserts a tanning check-in row. Returns the new row id.
+export async function saveTanningCheckin(data) {
+  const db = await getDb();
+  const result = await db.execute(
+    `INSERT INTO tanning_checkins (full_name, contact, zip_code, signed_at, created_at)
+     VALUES (?, ?, ?, ?, ?)`,
+    [data.fullName, data.contact, data.zipCode, data.signedAt, localNow()]
+  );
+  return result.lastInsertId;
+}
+
+// Updates pdf_path on a tanning_checkins row after successful file export.
+export async function updateTanningPdfPath(checkinId, pdfPath) {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE tanning_checkins SET pdf_path = ? WHERE id = ?`,
+    [pdfPath, checkinId]
+  );
 }
 
 // Returns vendor log rows within [from, to] (YYYY-MM-DD inclusive).

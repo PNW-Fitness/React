@@ -1,4 +1,4 @@
-export default function Landing({ onGuest, onClassPass, onVendor, onSettings, onOpenQueue, pendingCount = 0 }) {
+export default function Landing({ onGuest, onClassPass, onTanning, onVendor, onSettings, onOpenQueue, pendingCount = 0 }) {
   return (
     <div className="screen landing">
       <button className="landing-settings-btn" onClick={onSettings} title="Settings">
@@ -23,6 +23,10 @@ export default function Landing({ onGuest, onClassPass, onVendor, onSettings, on
         <button className="btn-landing btn-classpass" onClick={onClassPass}>
           <span className="btn-landing-icon">📱</span>
           <span className="btn-landing-label">ClassPass</span>
+        </button>
+        <button className="btn-landing btn-tanning" onClick={onTanning}>
+          <span className="btn-landing-icon">☀️</span>
+          <span className="btn-landing-label">Tanning</span>
         </button>
         <button className="btn-landing btn-secondary" onClick={onVendor}>
           <span className="btn-landing-icon">🏢</span>
