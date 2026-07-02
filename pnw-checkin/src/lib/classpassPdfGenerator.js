@@ -202,11 +202,24 @@ export async function generateClassPassPdf({
   drawField("Contact", contact);
   drawField("Zip",     zipCode);
 
-  // Booking verification note
+  // Booking verification note — draw checkmark as lines (✓ is outside WinAnsi)
   rightY -= 4;
   if (rightY - 8 > BOT_BTM) {
-    page.drawText("✓ Booking verified by staff", {
-      x: RIGHT_X, y: rightY - 8, size: 8, font: bold, color: C_GREEN,
+    const chkBaseline = rightY - 8;
+    const chkX = RIGHT_X;
+    const chkSz = 5;
+    page.drawLine({
+      start: { x: chkX,                    y: chkBaseline + chkSz * 0.4 },
+      end:   { x: chkX + chkSz * 0.35,     y: chkBaseline },
+      thickness: 1.5, color: C_GREEN,
+    });
+    page.drawLine({
+      start: { x: chkX + chkSz * 0.35,     y: chkBaseline },
+      end:   { x: chkX + chkSz,             y: chkBaseline + chkSz * 0.8 },
+      thickness: 1.5, color: C_GREEN,
+    });
+    page.drawText("Booking verified by staff", {
+      x: RIGHT_X + chkSz + 4, y: chkBaseline, size: 8, font: bold, color: C_GREEN,
     });
   }
 
