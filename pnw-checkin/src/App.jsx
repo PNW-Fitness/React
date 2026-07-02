@@ -20,11 +20,13 @@ import IdTypeCheck from "./components/IdCapture/IdTypeCheck.jsx";
 import IdCapture from "./components/IdCapture/IdCapture.jsx";
 
 import ClassPassBookingVerify from "./screens/classpass/ClassPassBookingVerify.jsx";
+import ClassPassNewOrReturn from "./screens/classpass/ClassPassNewOrReturn.jsx";
+import ClassPassReturnLookup from "./screens/classpass/ClassPassReturnLookup.jsx";
 import ClassPassForm from "./screens/classpass/ClassPassForm.jsx";
 import ClassPassWaiver from "./screens/classpass/ClassPassWaiver.jsx";
 import ClassPassConfirmation from "./screens/classpass/ClassPassConfirmation.jsx";
 
-import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, updateClassPassPdfPath, localNow, queuePendingLead } from "./lib/db.js";
+import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, saveClassPassReturning, updateClassPassPdfPath, localNow, queuePendingLead } from "./lib/db.js";
 import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, retryPendingLeads } from "./lib/leadSync.js";
 import { exportGuestFiles, exportDeclinedGuestRecord } from "./lib/fileExport/fileExport.js";
 import { exportClassPassFile } from "./lib/classpassExport.js";
@@ -62,6 +64,7 @@ export default function App() {
 
   // ── ClassPass flow state ──────────────────────────────────────────────────
   const [cpSession, setCpSession] = useState(EMPTY_CP_SESSION);
+  const [cpReturning, setCpReturning] = useState(false);
   const [cpSubmitError, setCpSubmitError] = useState("");
   const [cpSubmitting, setCpSubmitting] = useState(false);
   const [cpExportDir, setCpExportDir] = useState(null);
@@ -156,10 +159,32 @@ export default function App() {
 
   function resetCpToLanding() {
     setCpSession(EMPTY_CP_SESSION);
+    setCpReturning(false);
     setCpSubmitError("");
     setCpSubmitting(false);
     setCpExportDir(null);
     setScreen("landing");
+  }
+
+  async function handleSubmitClassPassReturning(sessionData) {
+    setCpSubmitError("");
+    setCpSubmitting(true);
+    try {
+      const signedAt = localNow();
+      await saveClassPassReturning({
+        guestName: sessionData.guestName,
+        contact:   sessionData.contact,
+        zipCode:   sessionData.zipCode,
+        signedAt,
+      });
+      setCpReturning(true);
+      setScreen("classpass_confirm");
+    } catch (err) {
+      console.error("Returning ClassPass check-in failed:", err);
+      setCpSubmitError(err?.message || "Failed to log check-in — please try again.");
+    } finally {
+      setCpSubmitting(false);
+    }
   }
 
   async function handleSubmitClassPass(signatureDataUrl) {
@@ -488,8 +513,28 @@ export default function App() {
     case "classpass_verify":
       return (
         <ClassPassBookingVerify
-          onConfirm={() => setScreen("classpass_form")}
+          onConfirm={() => setScreen("classpass_new_or_return")}
           onBack={resetCpToLanding}
+        />
+      );
+
+    case "classpass_new_or_return":
+      return (
+        <ClassPassNewOrReturn
+          onNew={() => setScreen("classpass_form")}
+          onReturning={() => setScreen("classpass_return_lookup")}
+          onBack={() => setScreen("classpass_verify")}
+        />
+      );
+
+    case "classpass_return_lookup":
+      return (
+        <ClassPassReturnLookup
+          onFound={(data) => {
+            navigateCp("classpass_confirm", data);
+            handleSubmitClassPassReturning(data);
+          }}
+          onBack={() => setScreen("classpass_new_or_return")}
         />
       );
 
@@ -539,6 +584,7 @@ export default function App() {
           cpSession={cpSession}
           exportDir={cpExportDir}
           onDone={resetCpToLanding}
+          isReturning={cpReturning}
         />
       );
 

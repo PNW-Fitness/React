@@ -1,4 +1,4 @@
-export default function ClassPassConfirmation({ cpSession, exportDir, onDone }) {
+export default function ClassPassConfirmation({ cpSession, exportDir, onDone, isReturning }) {
   const { guestName } = cpSession;
 
   return (
@@ -6,7 +6,7 @@ export default function ClassPassConfirmation({ cpSession, exportDir, onDone }) 
       <div className="screen-body centered">
         <div className="confirmation-card">
           <div className="confirmation-icon">✅</div>
-          <h2>Check-In Complete</h2>
+          <h2>{isReturning ? "Welcome Back!" : "Check-In Complete"}</h2>
           <p className="confirmation-name">{guestName}</p>
           <p className="confirmation-time">
             {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}

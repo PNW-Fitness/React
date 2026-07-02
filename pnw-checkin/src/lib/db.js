@@ -70,9 +70,16 @@ async function getDb() {
       booking_verified INTEGER NOT NULL DEFAULT 0,
       signed_at TEXT NOT NULL,
       pdf_path TEXT,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      is_returning INTEGER NOT NULL DEFAULT 0
     )
   `);
+  // Add is_returning to existing databases that predate this column.
+  try {
+    await _db.execute(
+      `ALTER TABLE classpass_checkins ADD COLUMN is_returning INTEGER NOT NULL DEFAULT 0`
+    );
+  } catch { /* column already exists — safe to ignore */ }
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS pending_lead_sync (
@@ -280,6 +287,36 @@ export async function getClassPassByDateRange(from, to) {
      ORDER BY signed_at ASC`,
     [from, to]
   );
+}
+
+// Searches classpass_checkins by name or contact, returning one row per unique
+// contact (most recent visit + total visit count). Used for returning-guest lookup.
+export async function lookupClassPassGuest(term) {
+  const db = await getDb();
+  const like = `%${term.trim()}%`;
+  return await db.select(
+    `SELECT guest_name, contact, zip_code,
+            MAX(signed_at) as last_visit,
+            COUNT(*) as visit_count
+     FROM classpass_checkins
+     WHERE guest_name LIKE ? OR contact LIKE ?
+     GROUP BY contact
+     ORDER BY last_visit DESC
+     LIMIT 10`,
+    [like, like]
+  );
+}
+
+// Logs a returning ClassPass guest (no new waiver PDF — waiver is already on file).
+export async function saveClassPassReturning(data) {
+  const db = await getDb();
+  const result = await db.execute(
+    `INSERT INTO classpass_checkins
+       (guest_name, contact, zip_code, booking_verified, signed_at, created_at, is_returning)
+     VALUES (?, ?, ?, 1, ?, ?, 1)`,
+    [data.guestName, data.contact, data.zipCode, data.signedAt, localNow()]
+  );
+  return result.lastInsertId;
 }
 
 // Returns vendor log rows within [from, to] (YYYY-MM-DD inclusive).
