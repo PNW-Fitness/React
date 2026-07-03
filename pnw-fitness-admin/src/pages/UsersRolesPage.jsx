@@ -51,16 +51,20 @@ function UsersTab() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: profiles, error: e1 }, { data: roleList, error: e2 }] = await Promise.all([
-      supabase
-        .from('admin_profiles')
-        .select('user_id, email, display_name, role, is_active, user_roles(role_id, roles(id, name))')
-        .order('created_at'),
+    const [
+      { data: profiles, error: e1 },
+      { data: userRolesList, error: e2 },
+      { data: roleList, error: e3 },
+    ] = await Promise.all([
+      supabase.from('admin_profiles').select('user_id, email, display_name, role, is_active').order('created_at'),
+      supabase.from('user_roles').select('user_id, role_id, roles(id, name)'),
       supabase.from('roles').select('id, name').order('name'),
     ])
-    if (e1 || e2) setError((e1 || e2).message)
+    if (e1 || e2 || e3) setError((e1 || e2 || e3).message)
     else {
-      setUsers(profiles ?? [])
+      // Merge user_roles into profiles client-side — no direct FK between the two tables.
+      const urMap = Object.fromEntries((userRolesList ?? []).map(ur => [ur.user_id, ur]))
+      setUsers((profiles ?? []).map(p => ({ ...p, user_roles: urMap[p.user_id] ?? null })))
       setRoles(roleList ?? [])
     }
     setLoading(false)

@@ -4,16 +4,16 @@ import { useAuth } from '../lib/AuthContext'
 import { usePermissions } from '../lib/PermissionsContext'
 
 const ROLE_NAV = [
-  { to: '/',              label: 'Staff',          roles: ['admin', 'staff']            },
-  { to: '/pricing',       label: 'Pricing',        roles: ['admin', 'staff']            },
-  { to: '/testimonials',  label: 'Testimonials',   roles: ['admin', 'staff']            },
-  { to: '/faq',           label: 'FAQ',            roles: ['admin', 'staff']            },
-  { to: '/holidays',      label: 'Holiday Hours',  roles: ['admin', 'staff']            },
-  { to: '/announcements', label: 'Announcements',  roles: ['admin', 'staff']            },
+  { to: '/',              label: 'Staff',          roles: ['admin', 'staff']                      },
+  { to: '/pricing',       label: 'Pricing',        roles: ['admin', 'staff']                      },
+  { to: '/testimonials',  label: 'Testimonials',   roles: ['admin', 'staff']                      },
+  { to: '/faq',           label: 'FAQ',            roles: ['admin', 'staff']                      },
+  { to: '/holidays',      label: 'Holiday Hours',  roles: ['admin', 'staff']                      },
+  { to: '/announcements', label: 'Announcements',  roles: ['admin', 'staff']                      },
   { to: '/leads',         label: 'Leads',          roles: ['admin', 'fitness_manager', 'trainer'] },
-  { to: '/guest-notes',   label: 'Guest Notes',    roles: ['admin', 'front_desk']       },
-  { to: '/admins',        label: 'Admins',         roles: ['admin']                     },
-  { to: '/activity',      label: 'Activity Log',   roles: ['admin']                     },
+  { to: '/guest-notes',   label: 'Guest Notes',    roles: ['admin', 'front_desk']                 },
+  { to: '/admins',        label: 'Admins',         roles: ['admin']                               },
+  { to: '/activity',      label: 'Activity Log',   roles: ['admin']                               },
 ]
 
 export default function Layout({ children }) {
@@ -28,34 +28,29 @@ export default function Layout({ children }) {
 
   const visibleNav = [
     ...ROLE_NAV.filter(item => !role || item.roles.includes(role)),
-    // Users & Roles is permission-gated, not role-gated
     ...(can('roles.manage') && can('users.manage')
       ? [{ to: '/users-roles', label: 'Users & Roles' }]
       : []),
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-blue-700 text-white shadow">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <span className="text-lg font-semibold tracking-wide">PNW Fitness Admin</span>
-          <button
-            onClick={handleSignOut}
-            className="text-sm bg-blue-900 hover:bg-blue-800 px-3 py-1.5 rounded transition"
-          >
-            Sign out
-          </button>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* ── Sidebar ── */}
+      <aside className="w-52 flex-shrink-0 bg-blue-700 flex flex-col">
+        <div className="px-5 py-5">
+          <span className="text-white font-bold text-base leading-tight">PNW Fitness Admin</span>
         </div>
-        <nav className="max-w-5xl mx-auto px-4 pb-0 flex gap-1 overflow-x-auto">
+
+        <nav className="flex-1 px-3 pb-4 flex flex-col gap-0.5">
           {visibleNav.map(({ to, label }) => (
             <NavLink
               key={to}
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `text-sm font-medium px-3 py-2 rounded-t whitespace-nowrap transition-colors ${
+                `text-sm font-medium px-3 py-2 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-gray-50 text-blue-700'
+                    ? 'bg-white text-blue-700'
                     : 'text-blue-100 hover:text-white hover:bg-blue-600'
                 }`
               }
@@ -64,8 +59,21 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
-      </header>
-      <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
+
+        <div className="px-3 pb-5">
+          <button
+            onClick={handleSignOut}
+            className="w-full text-sm text-blue-200 hover:text-white hover:bg-blue-600 px-3 py-2 rounded-lg transition-colors text-left"
+          >
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main content ── */}
+      <main className="flex-1 min-w-0 px-8 py-8 overflow-y-auto">
+        {children}
+      </main>
     </div>
   )
 }
