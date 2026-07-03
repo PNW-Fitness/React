@@ -1,8 +1,9 @@
 import { useNavigate, NavLink } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../lib/AuthContext'
+import { usePermissions } from '../lib/PermissionsContext'
 
-const NAV = [
+const ROLE_NAV = [
   { to: '/',              label: 'Staff',          roles: ['admin', 'staff']            },
   { to: '/pricing',       label: 'Pricing',        roles: ['admin', 'staff']            },
   { to: '/testimonials',  label: 'Testimonials',   roles: ['admin', 'staff']            },
@@ -18,13 +19,20 @@ const NAV = [
 export default function Layout({ children }) {
   const navigate = useNavigate()
   const { role } = useAuth()
+  const { can } = usePermissions()
 
   async function handleSignOut() {
     await supabase.auth.signOut()
     navigate('/login')
   }
 
-  const visibleNav = NAV.filter(item => !role || item.roles.includes(role))
+  const visibleNav = [
+    ...ROLE_NAV.filter(item => !role || item.roles.includes(role)),
+    // Users & Roles is permission-gated, not role-gated
+    ...(can('roles.manage') && can('users.manage')
+      ? [{ to: '/users-roles', label: 'Users & Roles' }]
+      : []),
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50">

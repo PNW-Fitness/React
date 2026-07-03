@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import Layout from '../components/Layout'
 import { SOURCE_LABELS } from '../lib/sourceLabels'
 import { useAuth } from '../lib/AuthContext'
+import { usePermissions } from '../lib/PermissionsContext'
 
 // ── Source badge colours ──────────────────────────────────────────────────────
 const SOURCE_COLORS = {
@@ -153,7 +154,10 @@ export default function LeadsPage() {
   const [filterAssigned, setFilterAssigned] = useState('all')
 
   const { role } = useAuth()
-  const canAssign = role === 'admin' || role === 'fitness_manager'
+  const { can } = usePermissions()
+  const canAssign    = role === 'admin' || role === 'fitness_manager'
+  const canEditStatus = can('leads.edit_status')
+  const canAddNotes   = can('leads.notes.add')
 
   // Resolve current user's name + id
   useEffect(() => {
@@ -526,16 +530,22 @@ export default function LeadsPage() {
                         })}
                       </span>
 
-                      <select
-                        value={lead.status}
-                        disabled={updating === lead.id}
-                        onChange={e => updateStatus(lead.id, e.target.value)}
-                        className={`text-xs font-medium border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-shrink-0 cursor-pointer disabled:opacity-50 ${statusCls(lead.status)}`}
-                      >
-                        {STATUS_OPTIONS.map(s => (
-                          <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                        ))}
-                      </select>
+                      {canEditStatus ? (
+                        <select
+                          value={lead.status}
+                          disabled={updating === lead.id}
+                          onChange={e => updateStatus(lead.id, e.target.value)}
+                          className={`text-xs font-medium border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-shrink-0 cursor-pointer disabled:opacity-50 ${statusCls(lead.status)}`}
+                        >
+                          {STATUS_OPTIONS.map(s => (
+                            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className={`text-xs font-medium border rounded-lg px-2 py-1 flex-shrink-0 ${statusCls(lead.status)}`}>
+                          {STATUS_LABELS[lead.status] ?? lead.status}
+                        </span>
+                      )}
 
                       <button
                         onClick={() => handleExpand(lead.id)}
@@ -657,7 +667,7 @@ export default function LeadsPage() {
                             </div>
                           )}
 
-                          {myName && (
+                          {myName && canAddNotes && (
                             <div className="flex gap-2 mt-2">
                               <textarea
                                 rows={2}

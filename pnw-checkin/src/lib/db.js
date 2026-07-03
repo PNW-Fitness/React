@@ -105,6 +105,49 @@ async function getDb() {
     )
   `);
 
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS db_migrations (
+      name TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL
+    )
+  `);
+
+  // v1: fixed formatted phones (e.g. "(253) 555-0123") — already ran on most installs.
+  const migV1 = await _db.select(
+    `SELECT name FROM db_migrations WHERE name = 'normalize_phones_v1'`
+  );
+  if (migV1.length === 0) {
+    await _db.execute(
+      `INSERT INTO db_migrations (name, applied_at) VALUES ('normalize_phones_v1', ?)`,
+      [localNow()]
+    );
+  }
+
+  // v2: normalize ALL phone rows to exactly 10 digits — catches 11-digit country-code
+  // prefixes (e.g. "12535550123") that v1 missed because they contain only digits.
+  const migV2 = await _db.select(
+    `SELECT name FROM db_migrations WHERE name = 'normalize_phones_v2'`
+  );
+  if (migV2.length === 0) {
+    const allGuests = await _db.select(
+      `SELECT id, phone, guardian_phone FROM guests`
+    );
+    for (const row of allGuests) {
+      const cleanPhone    = (row.phone    || "").replace(/\D/g, "").slice(-10);
+      const cleanGuardian = row.guardian_phone
+        ? row.guardian_phone.replace(/\D/g, "").slice(-10)
+        : null;
+      await _db.execute(
+        `UPDATE guests SET phone = ?, guardian_phone = ? WHERE id = ?`,
+        [cleanPhone, cleanGuardian, row.id]
+      );
+    }
+    await _db.execute(
+      `INSERT INTO db_migrations (name, applied_at) VALUES ('normalize_phones_v2', ?)`,
+      [localNow()]
+    );
+  }
+
   return _db;
 }
 

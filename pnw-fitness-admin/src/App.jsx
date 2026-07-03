@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
 import { useAuth } from './lib/AuthContext'
+import { usePermissions } from './lib/PermissionsContext'
 import LoginPage from './pages/LoginPage'
 import StaffListPage from './pages/StaffListPage'
 import StaffEditPage from './pages/StaffEditPage'
@@ -20,6 +21,7 @@ import AnnouncementsListPage from './pages/AnnouncementsListPage'
 import AnnouncementsEditPage from './pages/AnnouncementsEditPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import GuestNotesPage from './pages/GuestNotesPage'
+import UsersRolesPage from './pages/UsersRolesPage'
 
 const INACTIVITY_MS = 30 * 60 * 1000
 
@@ -52,6 +54,20 @@ function ProtectedRoute({ allowedRoles, children }) {
   if (session === undefined || (session && role === undefined)) return <Loading />
   if (!session) return <Navigate to="/login" replace />
   if (allowedRoles && !allowedRoles.includes(role)) {
+    if (role === 'front_desk') return <Navigate to="/guest-notes" replace />
+    return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
+  }
+  return children
+}
+
+// Gate for permission-based pages (new RBAC system).
+// requiredPerms: array of permission keys — user must have ALL of them.
+function PermissionRoute({ requiredPerms, children }) {
+  const { session, role } = useAuth()
+  const { can, permissionsReady } = usePermissions()
+  if (session === undefined || (session && role === undefined) || !permissionsReady) return <Loading />
+  if (!session) return <Navigate to="/login" replace />
+  if (!requiredPerms.every(p => can(p))) {
     if (role === 'front_desk') return <Navigate to="/guest-notes" replace />
     return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
   }
@@ -126,6 +142,13 @@ export default function App() {
         {/* Admin only */}
         <Route path="/admins"              element={protect(<AdminsPage />,            ADMIN_ROLES)} />
         <Route path="/activity"            element={protect(<ActivityLogPage />,       ADMIN_ROLES)} />
+
+        {/* Users & Roles — permission-gated (Super Admin only) */}
+        <Route path="/users-roles" element={
+          <PermissionRoute requiredPerms={['roles.manage', 'users.manage']}>
+            <UsersRolesPage />
+          </PermissionRoute>
+        } />
 
         <Route path="*" element={<DefaultRedirect />} />
       </Routes>
