@@ -136,6 +136,9 @@ export default function LeadsPage() {
   // Status update
   const [updating, setUpdating] = useState(null)
 
+  // Delete confirm
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
   // Expand / notes
   const [expanded,       setExpanded]       = useState(null)
   const [notes,          setNotes]          = useState({})      // { leadId: Note[] }
@@ -155,9 +158,10 @@ export default function LeadsPage() {
 
   const { role } = useAuth()
   const { can } = usePermissions()
-  const canAssign    = role === 'admin' || role === 'fitness_manager'
+  const canAssign     = role === 'admin' || role === 'fitness_manager'
   const canEditStatus = can('leads.edit_status')
   const canAddNotes   = can('leads.notes.add')
+  const canDelete     = role === 'admin'
 
   // Resolve current user's name + id
   useEffect(() => {
@@ -302,6 +306,19 @@ export default function LeadsPage() {
       setNoteText(t => ({ ...t, [leadId]: '' }))
     }
     setNoteSubmitting(null)
+  }
+
+  async function handleDelete(leadId) {
+    const { error: err } = await supabase
+      .from('lead_submissions')
+      .delete()
+      .eq('id', leadId)
+    if (!err) {
+      setLeads(l => l.filter(x => x.id !== leadId))
+      setExpanded(null)
+      setConfirmDelete(null)
+      setTotalCount(c => c - 1)
+    }
   }
 
   function clearFilters() {
@@ -689,6 +706,36 @@ export default function LeadsPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* ── Delete lead ── */}
+                        {canDelete && (
+                          <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
+                            {confirmDelete === lead.id ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">Delete this lead permanently?</span>
+                                <button
+                                  onClick={() => handleDelete(lead.id)}
+                                  className="text-xs font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition"
+                                >
+                                  Yes, delete
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDelete(null)}
+                                  className="text-xs text-gray-500 hover:text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg transition"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmDelete(lead.id)}
+                                className="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 px-3 py-1.5 rounded-lg transition"
+                              >
+                                Delete lead
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

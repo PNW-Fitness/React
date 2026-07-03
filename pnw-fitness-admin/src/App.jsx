@@ -14,7 +14,6 @@ import FaqListPage from './pages/FaqListPage'
 import FaqEditPage from './pages/FaqEditPage'
 import HolidayListPage from './pages/HolidayListPage'
 import HolidayEditPage from './pages/HolidayEditPage'
-import AdminsPage from './pages/AdminsPage'
 import ActivityLogPage from './pages/ActivityLogPage'
 import LeadsPage from './pages/LeadsPage'
 import AnnouncementsListPage from './pages/AnnouncementsListPage'
@@ -140,10 +139,10 @@ export default function App() {
         <Route path="/guest-notes"         element={protect(<GuestNotesPage />,        GUEST_NOTES_ROLES)} />
 
         {/* Admin only */}
-        <Route path="/admins"              element={protect(<AdminsPage />,            ADMIN_ROLES)} />
-        <Route path="/activity"            element={protect(<ActivityLogPage />,       ADMIN_ROLES)} />
+        <Route path="/activity"    element={protect(<ActivityLogPage />, ADMIN_ROLES)} />
 
-        {/* Users & Roles — permission-gated (Super Admin only) */}
+        {/* Users & Roles — permission-gated */}
+        <Route path="/admins"      element={<Navigate to="/users-roles" replace />} />
         <Route path="/users-roles" element={
           <PermissionRoute requiredPerms={['roles.manage', 'users.manage']}>
             <UsersRolesPage />
