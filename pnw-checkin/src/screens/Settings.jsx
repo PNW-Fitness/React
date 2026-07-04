@@ -6,10 +6,36 @@ import { getPendingSyncStats } from "../lib/db.js";
 import { retryPendingLeads } from "../lib/leadSync.js";
 import { exportDateRangeCsv } from "../lib/csvExport.js";
 import FrontDeskQrCode from "../components/FrontDeskQrCode.jsx";
+import { getSettingsPin, setSettingsPin } from "./SettingsPinGate.jsx";
 
 export default function Settings({ onBack }) {
   const [path, setPath] = useState("");
   const [savedPath, setSavedPath] = useState("");
+
+  // PIN change state
+  const [pinCurrent, setPinCurrent] = useState("");
+  const [pinNew,     setPinNew]     = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
+  const [pinMsg,     setPinMsg]     = useState({ type: "", text: "" });
+
+  function handleChangePin(e) {
+    e.preventDefault();
+    if (pinCurrent !== getSettingsPin()) {
+      setPinMsg({ type: "error", text: "Current PIN is incorrect." });
+      return;
+    }
+    if (!/^\d{4}$/.test(pinNew)) {
+      setPinMsg({ type: "error", text: "New PIN must be exactly 4 digits." });
+      return;
+    }
+    if (pinNew !== pinConfirm) {
+      setPinMsg({ type: "error", text: "PINs do not match." });
+      return;
+    }
+    setSettingsPin(pinNew);
+    setPinCurrent(""); setPinNew(""); setPinConfirm("");
+    setPinMsg({ type: "success", text: "PIN updated." });
+  }
   const [status, setStatus] = useState(null); // null | 'checking' | 'ready' | 'error'
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -225,6 +251,66 @@ export default function Settings({ onBack }) {
           {exportError && (
             <div className="settings-status settings-status-error">{exportError}</div>
           )}
+        </div>
+
+        <div className="settings-divider" />
+
+        <div className="settings-section">
+          <h2 className="settings-section-title">Settings PIN</h2>
+          <p className="settings-section-desc">
+            Change the 4-digit PIN required to open Settings from the kiosk landing screen.
+            Default PIN is <strong>0000</strong>.
+          </p>
+          <form onSubmit={handleChangePin} className="settings-pin-form">
+            <div className="settings-pin-fields">
+              <div className="settings-date-field">
+                <label className="settings-date-label">Current PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="settings-date-input"
+                  value={pinCurrent}
+                  onChange={e => { setPinCurrent(e.target.value.replace(/\D/g, '')); setPinMsg({ type: "", text: "" }); }}
+                  placeholder="••••"
+                />
+              </div>
+              <div className="settings-date-field">
+                <label className="settings-date-label">New PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="settings-date-input"
+                  value={pinNew}
+                  onChange={e => { setPinNew(e.target.value.replace(/\D/g, '')); setPinMsg({ type: "", text: "" }); }}
+                  placeholder="••••"
+                />
+              </div>
+              <div className="settings-date-field">
+                <label className="settings-date-label">Confirm PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="settings-date-input"
+                  value={pinConfirm}
+                  onChange={e => { setPinConfirm(e.target.value.replace(/\D/g, '')); setPinMsg({ type: "", text: "" }); }}
+                  placeholder="••••"
+                />
+              </div>
+            </div>
+            {pinMsg.text && (
+              <div className={`settings-status ${pinMsg.type === "error" ? "settings-status-error" : "settings-status-ready"}`}>
+                {pinMsg.type === "success" ? "✓ " : "✗ "}{pinMsg.text}
+              </div>
+            )}
+            <div className="settings-save-row">
+              <button type="submit" className="btn-primary" disabled={!pinCurrent || !pinNew || !pinConfirm}>
+                Update PIN
+              </button>
+            </div>
+          </form>
         </div>
 
         <div className="settings-divider" />

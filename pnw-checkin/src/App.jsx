@@ -10,6 +10,7 @@ import GuestForm from "./screens/guest/GuestForm.jsx";
 import WaiverView from "./screens/guest/WaiverView.jsx";
 import GuestConfirmation from "./screens/guest/GuestConfirmation.jsx";
 import Settings from "./screens/Settings.jsx";
+import SettingsPinGate from "./screens/SettingsPinGate.jsx";
 import VendorForm from "./screens/vendor/VendorForm.jsx";
 import VendorLog from "./screens/vendor/VendorLog.jsx";
 import QueueList from "./screens/QueueList.jsx";
@@ -310,6 +311,14 @@ export default function App() {
         guestId: row.id,
         signedAt,
       });
+
+      // Push to Supabase leads so declined-ID guests still appear in the admin panel.
+      if (isQualifyingLead(guestFromRow)) {
+        const payload = buildLeadPayload(guestFromRow, signedAt);
+        const { success, error: syncError } = await pushLeadToSupabase(payload);
+        if (!success) console.warn("Lead sync failed for declined-ID queue entry:", syncError);
+      }
+
       await markPendingCheckinDeclinedId(row.id);
       removeQueueEntryLocally(row.id);
       setQueueDeclineDone({ message: "Record saved. This guest has not been checked in." });
@@ -404,9 +413,17 @@ export default function App() {
           onClassPass={() => setScreen("classpass_verify")}
           onTanning={() => setScreen("tanning_age_check")}
           onVendor={() => setScreen("vendor_form")}
-          onSettings={() => setScreen("settings")}
+          onSettings={() => setScreen("settings_pin_gate")}
           onOpenQueue={() => setScreen("queue_list")}
           pendingCount={pendingQueue.length}
+        />
+      );
+
+    case "settings_pin_gate":
+      return (
+        <SettingsPinGate
+          onSuccess={() => setScreen("settings")}
+          onBack={() => setScreen("landing")}
         />
       );
 
@@ -536,6 +553,7 @@ export default function App() {
         <IdTypeCheck
           onConfirm={() => setScreen("guest_id_capture")}
           onBack={() => setScreen("guest_form")}
+          onDeclineId={() => navigate("guest_waiver", { idPhoto: null })}
         />
       );
 
@@ -545,6 +563,7 @@ export default function App() {
           guestSession={guestSession}
           onConfirm={(idPhoto) => navigate("guest_waiver", { idPhoto })}
           onBack={() => setScreen("guest_id_type_check")}
+          onDeclineId={() => navigate("guest_waiver", { idPhoto: null })}
         />
       );
 
@@ -703,7 +722,7 @@ export default function App() {
           onClassPass={() => setScreen("classpass_verify")}
           onTanning={() => setScreen("tanning_age_check")}
           onVendor={() => setScreen("vendor_form")}
-          onSettings={() => setScreen("settings")}
+          onSettings={() => setScreen("settings_pin_gate")}
           onOpenQueue={() => setScreen("queue_list")}
           pendingCount={pendingQueue.length}
         />

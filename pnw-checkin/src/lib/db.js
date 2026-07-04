@@ -170,7 +170,8 @@ export async function lookupByPhone(rawPhone) {
     `SELECT g.id, g.first_name, g.last_name, g.zip_code, g.phone, g.email,
             g.visit_reason, g.how_heard, g.how_heard_specify, g.interests,
             g.is_minor, g.supervision_required, g.guardian_name, g.guardian_phone,
-            MAX(w.signed_at) as last_waiver_date
+            MAX(w.signed_at) as last_waiver_date,
+            MAX(CASE WHEN w.id_photo_path IS NOT NULL THEN 1 ELSE 0 END) as has_id
      FROM guests g
      LEFT JOIN waivers w ON w.guest_id = g.id
      WHERE g.phone = ?

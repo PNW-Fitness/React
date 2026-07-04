@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 const VISIT_REASONS = [
   "Day/week pass workout",
   "Interested in membership",
-  "ClassPass",
+  "Staff Guest",
   "Event/Promotion",
 ];
 

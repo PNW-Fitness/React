@@ -4,15 +4,15 @@ import { useAuth } from '../lib/AuthContext'
 import { usePermissions } from '../lib/PermissionsContext'
 
 const ROLE_NAV = [
-  { to: '/',              label: 'Staff',          roles: ['admin', 'staff']                      },
-  { to: '/pricing',       label: 'Pricing',        roles: ['admin', 'staff']                      },
-  { to: '/testimonials',  label: 'Testimonials',   roles: ['admin', 'staff']                      },
-  { to: '/faq',           label: 'FAQ',            roles: ['admin', 'staff']                      },
-  { to: '/holidays',      label: 'Holiday Hours',  roles: ['admin', 'staff']                      },
-  { to: '/announcements', label: 'Announcements',  roles: ['admin', 'staff']                      },
-  { to: '/leads',         label: 'Leads',          roles: ['admin', 'fitness_manager', 'trainer'] },
-  { to: '/guest-notes',   label: 'Guest Notes',    roles: ['admin', 'front_desk']                 },
-  { to: '/activity',      label: 'Activity Log',   roles: ['admin']                               },
+  { to: '/',              label: 'Staff',          roles: ['admin', 'staff'],                       permKey: 'pages.staff'        },
+  { to: '/pricing',       label: 'Pricing',        roles: ['admin', 'staff'],                       permKey: 'pages.pricing'      },
+  { to: '/testimonials',  label: 'Testimonials',   roles: ['admin', 'staff'],                       permKey: 'pages.testimonials' },
+  { to: '/faq',           label: 'FAQ',            roles: ['admin', 'staff'],                       permKey: 'pages.faq'          },
+  { to: '/holidays',      label: 'Holiday Hours',  roles: ['admin', 'staff'],                       permKey: 'pages.holiday_hours'},
+  { to: '/announcements', label: 'Announcements',  roles: ['admin', 'staff'],                       permKey: 'pages.announcements'},
+  { to: '/leads',         label: 'Leads',          roles: ['admin', 'fitness_manager', 'trainer'],  permKey: 'pages.leads'        },
+  { to: '/guest-notes',   label: 'Guest Notes',    roles: ['admin', 'front_desk'],                  permKey: 'pages.guest_notes'  },
+  { to: '/activity',      label: 'Activity Log',   roles: ['admin'],                                permKey: 'pages.activity_log' },
 ]
 
 export default function Layout({ children }) {
@@ -26,8 +26,10 @@ export default function Layout({ children }) {
   }
 
   const visibleNav = [
-    ...ROLE_NAV.filter(item => !role || item.roles.includes(role)),
-    ...(can('roles.manage') && can('users.manage')
+    ...ROLE_NAV.filter(item =>
+      can(item.permKey) || (!role || item.roles.includes(role))
+    ),
+    ...((can('pages.users_roles') || (can('roles.manage') && can('users.manage')))
       ? [{ to: '/users-roles', label: 'Users & Roles' }]
       : []),
   ]

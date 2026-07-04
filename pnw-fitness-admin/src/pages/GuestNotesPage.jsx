@@ -42,7 +42,7 @@ export default function GuestNotesPage() {
 
       const { data } = await supabase
         .from('lead_submissions')
-        .select('id, name, email, phone, source, created_at, last_seen, visit_count')
+        .select('id, name, email, phone, source, created_at, last_seen, visit_count, details')
         .gte('last_seen', todayStart.toISOString())
         .order('last_seen', { ascending: false })
 
@@ -61,7 +61,7 @@ export default function GuestNotesPage() {
       const term = search.trim().replace(/,/g, '')
       const { data } = await supabase
         .from('lead_submissions')
-        .select('id, name, email, phone, source, created_at, last_seen, visit_count')
+        .select('id, name, email, phone, source, created_at, last_seen, visit_count, details')
         .or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
         .order('last_seen', { ascending: false, nullsFirst: false })
         .limit(15)
@@ -203,6 +203,9 @@ export default function GuestNotesPage() {
                         {lead.phone || lead.email || '—'}
                         {lead.visit_count > 1 ? ` · ${lead.visit_count} visits` : ''}
                       </p>
+                      {lead.details?.visit_reason && (
+                        <p className="text-xs text-blue-600 truncate mt-0.5">{lead.details.visit_reason}</p>
+                      )}
                     </div>
 
                     {/* Check-in time (today view) or date (search view) */}
@@ -231,9 +234,12 @@ export default function GuestNotesPage() {
                   {/* Expanded notes panel */}
                   {isOpen && (
                     <div className="px-4 pb-5 pt-3 border-t border-gray-100">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                        Notes
-                      </p>
+                      <div className="flex items-center gap-3 mb-3">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</p>
+                        {lead.details?.visit_reason && (
+                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{lead.details.visit_reason}</span>
+                        )}
+                      </div>
 
                       {notesLoading === lead.id ? (
                         <p className="text-xs text-gray-400 mb-3">Loading…</p>

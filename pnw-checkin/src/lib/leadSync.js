@@ -36,6 +36,7 @@ export function buildLeadPayload(guestSession, signedAt) {
     p_how_heard:    howHeard,
     p_interests:    interests.join(', '),
     p_signed_at:    new Date(signedAt.replace(' ', 'T')).toISOString(),
+    p_status:       formData.visit_reason === 'Day/week pass workout' ? 'closed' : 'new',
   }
 }
 

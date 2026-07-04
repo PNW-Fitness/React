@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // JPEG quality used for the captured still frame
 const JPEG_QUALITY = 0.88;
 
+const PREF_CAMERA_KEY = 'pnw_cam_pref';
+
 function formatDob(isoDate) {
   if (!isoDate) return "";
   const [year, month, day] = isoDate.split("-");
@@ -44,7 +46,7 @@ export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId
     }
   }
 
-  // deviceId null → first open, let browser pick (environment hint).
+  // deviceId null → first open; restore saved preference or fall back to environment hint.
   // deviceId string → explicit device selected by the user.
   const startCamera = useCallback(async (deviceId = null) => {
     stopStream();
@@ -52,8 +54,10 @@ export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId
     setCamState("requesting");
     setErrorMessage("");
 
-    const videoConstraints = deviceId
-      ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+    // On first open (no explicit deviceId), try the last-used camera first.
+    const savedId = deviceId ?? localStorage.getItem(PREF_CAMERA_KEY) ?? null;
+    const videoConstraints = savedId
+      ? { deviceId: { ideal: savedId }, width: { ideal: 1280 }, height: { ideal: 720 } }
       : { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } };
 
     try {
@@ -71,12 +75,15 @@ export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId
       // facingMode is unreliable on Windows/WebView2 — we cycle by deviceId instead.
       const allDevices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = allDevices.filter((d) => d.kind === "videoinput");
+      const activeId = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
       if (mountedRef.current) {
         setDevices(videoDevices);
-        const activeId = stream.getVideoTracks()[0]?.getSettings()?.deviceId;
         const idx = videoDevices.findIndex((d) => d.deviceId === activeId);
         setDeviceIndex(idx >= 0 ? idx : 0);
       }
+
+      // Persist this camera so the same one opens next time.
+      if (activeId) localStorage.setItem(PREF_CAMERA_KEY, activeId);
 
       streamRef.current = stream;
       if (videoRef.current) {
@@ -155,10 +162,17 @@ export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId
         >
           ← Back
         </button>
-        <div className="step-indicator">Step 3 of 4 — ID photo</div>
+        <div className="step-indicator">
+          Step 3 of 4 — {isMinor ? "Guardian ID" : "ID photo"}
+        </div>
       </div>
 
       <div className="screen-body id-capture-body">
+        {isMinor && (
+          <div className="cam-guardian-banner">
+            <strong>Guardian ID required</strong> — photograph the parent or guardian's government-issued ID, not the minor's.
+          </div>
+        )}
         {/* ── Requesting ── */}
         {camState === "requesting" && (
           <div className="cam-status-card">
@@ -234,8 +248,13 @@ export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId
               />
             </div>
 
-            {/* Minor DOB cross-check reminder */}
-            {isMinor && dob && (
+            {/* Minor: show guardian ID reminder; adult: confirm DOB */}
+            {isMinor ? (
+              <div className="cam-minor-reminder">
+                <strong>Guardian ID captured.</strong> Confirm the guardian is present and this is their valid government-issued ID. Guest DOB on file: <span className="cam-dob-highlight">{dob ? formatDob(dob) : "—"}</span>
+                {guestName && ` (for minor guest ${guestName})`}.
+              </div>
+            ) : dob && (
               <div className="cam-minor-reminder">
                 <strong>Staff check:</strong> confirm the date of birth on the ID
                 matches the date entered —{" "}

@@ -18,7 +18,7 @@ export default function Landing({ onGuest, onClassPass, onTanning, onVendor, onS
       <div className="landing-buttons">
         <button className="btn-landing btn-primary" onClick={onGuest}>
           <span className="btn-landing-icon">🏋️</span>
-          <span className="btn-landing-label">Guest</span>
+          <span className="btn-landing-label">Guest/Membership</span>
         </button>
         <button className="btn-landing btn-classpass" onClick={onClassPass}>
           <span className="btn-landing-icon">📱</span>

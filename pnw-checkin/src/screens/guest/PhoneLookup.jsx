@@ -37,10 +37,33 @@ export default function PhoneLookup({ navigate, onBack }) {
   }
 
   function handleSamePerson() {
-    navigate("guest_form", {
-      prefillData: match,
-      existingGuestId: match.id,
-    });
+    if (!match.has_id) {
+      // Guest has never provided an ID — skip the form (we have their data) and
+      // go straight to ID capture so staff can collect it this visit.
+      navigate("guest_id_type_check", {
+        existingGuestId: match.id,
+        isMinor: match.is_minor === 1,
+        supervisionRequired: match.supervision_required === 1,
+        formData: {
+          first_name:        match.first_name       || '',
+          last_name:         match.last_name        || '',
+          zip_code:          match.zip_code         || '',
+          phone:             match.phone            || '',
+          email:             match.email            || '',
+          visit_reason:      match.visit_reason     || '',
+          how_heard:         match.how_heard        || '',
+          how_heard_specify: match.how_heard_specify || '',
+          interests:         match.interests ? (() => { try { return JSON.parse(match.interests) } catch { return [] } })() : [],
+          guardian_name:     match.guardian_name    || '',
+          guardian_phone:    match.guardian_phone   || '',
+        },
+      });
+    } else {
+      navigate("guest_form", {
+        prefillData: match,
+        existingGuestId: match.id,
+      });
+    }
   }
 
   function handleStartFresh() {
@@ -80,6 +103,9 @@ export default function PhoneLookup({ navigate, onBack }) {
             <div className="lookup-match-card">
               <p className="match-name">{match.first_name} {match.last_name}</p>
               <p className="match-waiver">Last waiver: {formatDate(match.last_waiver_date)}</p>
+              {!match.has_id && (
+                <p className="match-no-id">⚠ No ID on file — will go to ID capture</p>
+              )}
             </div>
             <div className="lookup-actions">
               <button className="btn-primary" onClick={handleSamePerson}>

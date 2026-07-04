@@ -337,6 +337,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .match-name   { font-size: 1.2rem; font-weight: 700; }
 .match-waiver { color: var(--color-text-muted); font-size: 0.9rem; margin-top: 4px; }
+.match-no-id  { color: #92400e; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; font-size: 0.85rem; margin-top: 8px; padding: 6px 10px; }
 
 .lookup-actions {
   display: flex;
@@ -470,9 +471,39 @@ textarea { resize: vertical; }
   color: var(--color-text);
 }
 
+.waiver-scroll-wrap {
+  position: relative;
+}
+
+.waiver-scroll-arrow {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-accent);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  animation: waiver-bounce 1.1s ease-in-out infinite;
+}
+
+@keyframes waiver-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(7px); }
+}
+
 .waiver-scroll-hint {
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
+  color: var(--color-accent);
+  font-size: 0.88rem;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -723,6 +754,19 @@ textarea { resize: vertical; }
   accent-color: var(--color-accent);
   cursor: pointer;
   flex-shrink: 0;
+}
+
+/* ── Guardian ID banner ──────────────────────────────── */
+.cam-guardian-banner {
+  background: var(--color-minor-bg);
+  border: 1.5px solid var(--color-minor-border);
+  color: var(--color-minor-text);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  width: 100%;
+  max-width: 680px;
 }
 
 /* ── ID camera capture ───────────────────────────────── */
@@ -1094,6 +1138,10 @@ textarea { resize: vertical; }
   border-radius: 4px;
 }
 
+/* ── Settings: PIN change form ───────────────────────── */
+.settings-pin-form { display: flex; flex-direction: column; gap: 12px; }
+.settings-pin-fields { display: flex; gap: 16px; flex-wrap: wrap; }
+
 /* ── Settings: date range export ─────────────────────── */
 .settings-date-row {
   display: flex;
@@ -1163,6 +1211,113 @@ textarea { resize: vertical; }
   font-weight: 600;
 }
 
+/* ── Settings PIN gate ───────────────────────────────── */
+.pin-dots {
+  display: flex;
+  gap: 20px;
+  margin: 32px 0 36px;
+}
+.pin-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid var(--color-border);
+  background: transparent;
+  transition: background 0.1s, border-color 0.1s;
+}
+.pin-dot-filled {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+@keyframes pin-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-10px); }
+  40%       { transform: translateX(10px); }
+  60%       { transform: translateX(-8px); }
+  80%       { transform: translateX(8px); }
+}
+.pin-dots-shake { animation: pin-shake 0.5s ease; }
+.pin-dots-shake .pin-dot-filled { background: var(--color-danger); border-color: var(--color-danger); }
+
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 100px);
+  gap: 14px;
+}
+.pin-key {
+  width: 100px;
+  height: 100px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.pin-key:active { background: var(--color-bg); }
+.pin-key-empty { visibility: hidden; cursor: default; }
+.pin-key-del   { font-size: 1.4rem; }
+
+/* ── Responsive scaling ──────────────────────────────── */
+
+/* Compact layout for narrower/shorter windows */
+@media (max-width: 900px) {
+  .landing-buttons {
+    gap: 16px;
+  }
+  .btn-landing {
+    width: 180px;
+    height: 165px;
+  }
+  .btn-landing-icon  { font-size: 2.4rem; }
+  .btn-landing-label { font-size: 1.15rem; }
+  .gym-name { font-size: 1.8rem; }
+  .landing-header { margin-bottom: 32px; }
+}
+
+@media (max-width: 700px) {
+  .landing-buttons {
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  .btn-landing {
+    width: 155px;
+    height: 140px;
+  }
+  .btn-landing-icon  { font-size: 2rem; }
+  .btn-landing-label { font-size: 1rem; }
+  .screen-body { padding: 16px 12px 32px; }
+  .field-row { flex-direction: column; gap: 0; }
+  fieldset { padding: 14px; }
+}
+
+@media (max-height: 700px) {
+  .waiver-scroll { height: 220px; }
+  .screen-header { padding: 8px 16px; }
+  .screen-body { padding: 14px 16px 24px; }
+  .btn-landing { width: 160px; height: 140px; }
+  .btn-landing-icon  { font-size: 2rem; }
+  .btn-landing-label { font-size: 1rem; }
+  .landing-header { margin-bottom: 24px; }
+  .gym-name { font-size: 1.6rem; }
+}
+
+@media (max-height: 560px) {
+  .waiver-scroll { height: 160px; }
+  .landing-header { margin-bottom: 16px; }
+  .gym-name { font-size: 1.35rem; }
+  .btn-landing { width: 140px; height: 120px; }
+}
+
+/* Ensure id-lists go single-column on narrow windows */
+@media (max-width: 560px) {
+  .id-lists { grid-template-columns: 1fr; }
+}
+
+/* ── Print ───────────────────────────────────────────── */
 @media print {
   body * { visibility: hidden; }
   .qr-print-area, .qr-print-area * { visibility: visible; }

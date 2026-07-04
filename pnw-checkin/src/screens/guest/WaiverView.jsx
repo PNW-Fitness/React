@@ -41,18 +41,23 @@ export default function WaiverView({ guestSession, onSubmit, onBack, submitError
         <h2 className="waiver-heading">{heading}</h2>
         <p className="waiver-intro">{intro}</p>
 
-        <div
-          className="waiver-scroll"
-          ref={scrollRef}
-          onScroll={handleScroll}
-          tabIndex={0}
-          aria-label="Waiver text — scroll to bottom to enable agreement"
-        >
-          <pre className="waiver-text">{WAIVER_TEXT}</pre>
+        <div className="waiver-scroll-wrap">
+          <div
+            className="waiver-scroll"
+            ref={scrollRef}
+            onScroll={handleScroll}
+            tabIndex={0}
+            aria-label="Waiver text — scroll to bottom to enable agreement"
+          >
+            <pre className="waiver-text">{WAIVER_TEXT}</pre>
+          </div>
+          {!hasScrolled && (
+            <div className="waiver-scroll-arrow" aria-hidden="true">↓</div>
+          )}
         </div>
 
         {!hasScrolled && (
-          <p className="waiver-scroll-hint">↓ Scroll to the bottom to enable the agreement checkbox</p>
+          <p className="waiver-scroll-hint">Scroll to the bottom to unlock the agreement</p>
         )}
 
         <div className="waiver-agree-row">
