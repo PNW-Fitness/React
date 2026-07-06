@@ -51,6 +51,25 @@ export async function pushLeadToSupabase(payload) {
   }
 }
 
+// Pushes a ClassPass check-in to Supabase. Best-effort — no local retry queue.
+export async function pushClassPassToSupabase(cpSession, signedAt) {
+  const { guestName, contact, zipCode } = cpSession
+  const isEmail = contact.includes('@')
+  try {
+    const { error } = await supabase.rpc('upsert_classpass_lead', {
+      p_name:      guestName,
+      p_email:     isEmail ? contact : '',
+      p_phone:     isEmail ? '' : contact.replace(/\D/g, '').slice(-10),
+      p_zip_code:  zipCode,
+      p_signed_at: new Date(signedAt.replace(' ', 'T')).toISOString(),
+    })
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err?.message ?? String(err) }
+  }
+}
+
 // Retries every pending lead that has fewer than 10 failed attempts.
 export async function retryPendingLeads() {
   let pending

@@ -13,6 +13,7 @@ const SOURCE_COLORS = {
   training_assessment: 'bg-yellow-100 text-yellow-700',
   nasm_partnership:    'bg-indigo-100 text-indigo-700',
   checkin_app:         'bg-teal-100 text-teal-700',
+  classpass:           'bg-pink-100 text-pink-700',
 }
 
 // ── Status ────────────────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ const VISIT_REASONS = [
   'Day/week pass workout',
   'Staff Guest',
   'Event/Promotion',
+  'ClassPass',
 ]
 
 // ── Summary line (collapsed row) ──────────────────────────────────────────────

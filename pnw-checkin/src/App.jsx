@@ -33,7 +33,7 @@ import TanningWaiver from "./screens/tanning/TanningWaiver.jsx";
 import TanningConfirmation from "./screens/tanning/TanningConfirmation.jsx";
 
 import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, saveClassPassReturning, updateClassPassPdfPath, saveTanningCheckin, updateTanningPdfPath, localNow, queuePendingLead } from "./lib/db.js";
-import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, retryPendingLeads } from "./lib/leadSync.js";
+import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, pushClassPassToSupabase, retryPendingLeads } from "./lib/leadSync.js";
 import { exportGuestFiles, exportDeclinedGuestRecord } from "./lib/fileExport/fileExport.js";
 import { exportClassPassFile } from "./lib/classpassExport.js";
 import { exportTanningFile } from "./lib/tanningExport.js";
@@ -191,6 +191,8 @@ export default function App() {
         zipCode:   sessionData.zipCode,
         signedAt,
       });
+      const { success, error: syncError } = await pushClassPassToSupabase(sessionData, signedAt);
+      if (!success) console.warn("ClassPass lead sync failed:", syncError);
       setCpReturning(true);
       setScreen("classpass_confirm");
     } catch (err) {
@@ -222,6 +224,9 @@ export default function App() {
       });
 
       await updateClassPassPdfPath(checkinId, pdfPath);
+
+      const { success, error: syncError } = await pushClassPassToSupabase(cpSession, signedAt);
+      if (!success) console.warn("ClassPass lead sync failed:", syncError);
 
       setCpExportDir(dir);
       setScreen("classpass_confirm");
