@@ -291,6 +291,14 @@ export async function deletePendingLead(id) {
   await db.execute(`DELETE FROM pending_lead_sync WHERE id = ?`, [id]);
 }
 
+// Resets attempt_count on all stuck leads so they will be retried again.
+export async function resetStuckLeads() {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE pending_lead_sync SET attempt_count = 0, last_error = NULL WHERE attempt_count >= 10`
+  );
+}
+
 // Increments attempt_count and records the last error message.
 export async function updatePendingLeadAttempt(id, error) {
   const db = await getDb();

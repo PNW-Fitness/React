@@ -51,11 +51,11 @@ const PRIORITY_LEGEND = [
 ]
 
 // ── Visit reasons for filter dropdown ────────────────────────────────────────
+// These must match the exact strings stored in details->>visit_reason by the kiosk.
 const VISIT_REASONS = [
   'Interested in membership',
-  'Personal Training',
-  'Day Pass',
-  'ClassPass',
+  'Day/week pass workout',
+  'Staff Guest',
   'Event/Promotion',
 ]
 
@@ -221,7 +221,7 @@ export default function LeadsPage() {
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-    if (hideTest) q = q.eq('is_test', false)
+    q = q.eq('is_test', !hideTest)
 
     if (filterSource      !== 'all') q = q.eq('source', filterSource)
     if (filterStatus      !== 'all') q = q.eq('status', filterStatus)

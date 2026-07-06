@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getExportDir } from "../lib/fileExport/fileExport.js";
-import { getPendingSyncStats } from "../lib/db.js";
+import { getPendingSyncStats, resetStuckLeads } from "../lib/db.js";
 import { retryPendingLeads } from "../lib/leadSync.js";
 import { exportDateRangeCsv } from "../lib/csvExport.js";
 import FrontDeskQrCode from "../components/FrontDeskQrCode.jsx";
@@ -41,6 +41,7 @@ export default function Settings({ onBack }) {
   const [justSaved, setJustSaved] = useState(false);
   const [syncStats, setSyncStats] = useState({ total: 0, stuck: 0 });
   const [syncRetrying, setSyncRetrying] = useState(false);
+  const [syncResetting, setSyncResetting] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = (() => {
@@ -91,6 +92,18 @@ export default function Settings({ onBack }) {
       const stats = await getPendingSyncStats();
       setSyncStats(stats);
       setSyncRetrying(false);
+    }
+  }
+
+  async function handleResetStuck() {
+    setSyncResetting(true);
+    try {
+      await resetStuckLeads();
+      await retryPendingLeads();
+    } finally {
+      const stats = await getPendingSyncStats();
+      setSyncStats(stats);
+      setSyncResetting(false);
     }
   }
 
@@ -334,10 +347,20 @@ export default function Settings({ onBack }) {
                 <button
                   className="btn-primary"
                   onClick={handleSyncRetry}
-                  disabled={syncRetrying}
+                  disabled={syncRetrying || syncResetting}
                 >
                   {syncRetrying ? "Retrying…" : "Retry now"}
                 </button>
+                {syncStats.stuck > 0 && (
+                  <button
+                    className="btn-outline"
+                    onClick={handleResetStuck}
+                    disabled={syncRetrying || syncResetting}
+                    title="Reset stuck records and try again"
+                  >
+                    {syncResetting ? "Resetting…" : "Reset stuck & retry"}
+                  </button>
+                )}
               </div>
             </>
           )}

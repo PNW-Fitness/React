@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // JPEG quality used for the captured still frame
 const JPEG_QUALITY = 0.88;
 
-const PREF_CAMERA_KEY = 'pnw_cam_pref';
+const PREF_CAMERA_KEY = 'pnw_cam_pref_v2';
 
 function formatDob(isoDate) {
   if (!isoDate) return "";
@@ -54,11 +54,16 @@ export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId
     setCamState("requesting");
     setErrorMessage("");
 
-    // On first open (no explicit deviceId), try the last-used camera first.
-    const savedId = deviceId ?? localStorage.getItem(PREF_CAMERA_KEY) ?? null;
-    const videoConstraints = savedId
-      ? { deviceId: { ideal: savedId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-      : { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } };
+    let videoConstraints;
+    if (deviceId) {
+      // Explicit user selection — exact ensures WebView2 uses that specific device.
+      videoConstraints = { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } };
+    } else {
+      const savedId = localStorage.getItem(PREF_CAMERA_KEY);
+      videoConstraints = savedId
+        ? { deviceId: { ideal: savedId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } };
+    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -81,9 +86,6 @@ export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId
         const idx = videoDevices.findIndex((d) => d.deviceId === activeId);
         setDeviceIndex(idx >= 0 ? idx : 0);
       }
-
-      // Persist this camera so the same one opens next time.
-      if (activeId) localStorage.setItem(PREF_CAMERA_KEY, activeId);
 
       streamRef.current = stream;
       if (videoRef.current) {
@@ -117,7 +119,9 @@ export default function IdCapture({ guestSession, onConfirm, onBack, onDeclineId
     if (devices.length < 2) return;
     const nextIndex = (deviceIndex + 1) % devices.length;
     setDeviceIndex(nextIndex);
-    startCamera(devices[nextIndex].deviceId);
+    const nextId = devices[nextIndex].deviceId;
+    localStorage.setItem(PREF_CAMERA_KEY, nextId);
+    startCamera(nextId);
   }
 
   function handleCapture() {
