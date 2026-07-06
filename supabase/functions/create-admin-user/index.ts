@@ -36,9 +36,9 @@ Deno.serve(async (req) => {
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     })
-    const { data: callerRole } = await callerClient.rpc('get_my_role')
-    if (callerRole !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden — admin role required' }), {
+    const { data: isAdmin } = await callerClient.rpc('is_staff_admin')
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden — not a staff admin' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

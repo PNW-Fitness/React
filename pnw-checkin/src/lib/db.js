@@ -325,18 +325,22 @@ export async function getPendingSyncStats() {
   return { total: Number(row.total ?? 0), stuck: Number(row.stuck ?? 0) };
 }
 
-// Returns guest+waiver rows whose waiver was signed within [from, to] (YYYY-MM-DD inclusive).
+// Returns one row per unique guest who checked in within [from, to] (YYYY-MM-DD inclusive).
+// visit_count_in_range = number of waivers in that window (visits); first/last signed_at for the range.
 export async function getGuestsByDateRange(from, to) {
   const db = await getDb();
   return await db.select(
     `SELECT g.first_name, g.last_name, g.phone, g.email, g.zip_code,
             g.visit_reason, g.how_heard, g.how_heard_specify, g.interests,
             g.is_minor, g.guardian_name, g.guardian_phone,
-            w.signed_at
+            MIN(w.signed_at) as first_visit_in_range,
+            MAX(w.signed_at) as last_visit_in_range,
+            COUNT(w.id)      as visit_count_in_range
      FROM guests g
      JOIN waivers w ON w.guest_id = g.id
      WHERE date(w.signed_at) >= ? AND date(w.signed_at) <= ?
-     ORDER BY w.signed_at ASC`,
+     GROUP BY g.id
+     ORDER BY last_visit_in_range ASC`,
     [from, to]
   );
 }

@@ -14,13 +14,14 @@ export async function getExportDir() {
   return invoke("get_export_dir");
 }
 
-export async function exportGuestFiles({ guestSession, signatureDataUrl, guestId, signedAt }) {
+export async function exportGuestFiles({ guestSession, signatureDataUrl, guestId, waiverId, signedAt }) {
   const { formData, isMinor, supervisionRequired, idPhoto } = guestSession;
 
   const baseDir = await getExportDir();
   const dateStr = signedAt.split(" ")[0]; // YYYY-MM-DD
   const safeName = `${formData.first_name}-${formData.last_name}`.replace(/[^a-zA-Z0-9-]/g, "_");
-  const filename = `${safeName}_${guestId}`;
+  // Include waiverId so same-day return visits never overwrite each other.
+  const filename = waiverId ? `${safeName}_${guestId}_w${waiverId}` : `${safeName}_${guestId}`;
 
   const pdfBytes = await generateWaiverPdf({
     formData,

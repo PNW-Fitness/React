@@ -21,7 +21,8 @@ function row(...values) {
 function buildGuestsCsv(rows) {
   const lines = [
     row(
-      "Signed At", "First Name", "Last Name", "Phone", "Email", "Zip",
+      "First Visit", "Last Visit", "Visits",
+      "First Name", "Last Name", "Phone", "Email", "Zip",
       "Visit Reason", "How Heard", "Interests", "Is Minor",
       "Guardian Name", "Guardian Phone"
     ),
@@ -32,7 +33,8 @@ function buildGuestsCsv(rows) {
       try { interests = JSON.parse(interests).join("; "); } catch { /* leave as-is */ }
     }
     lines.push(row(
-      r.signed_at, r.first_name, r.last_name, r.phone, r.email, r.zip_code,
+      r.first_visit_in_range, r.last_visit_in_range, r.visit_count_in_range,
+      r.first_name, r.last_name, r.phone, r.email, r.zip_code,
       r.visit_reason,
       r.how_heard_specify ? `${r.how_heard} — ${r.how_heard_specify}` : r.how_heard,
       interests,

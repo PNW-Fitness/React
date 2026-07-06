@@ -63,7 +63,7 @@ const VISIT_REASONS = [
 
 // ── Summary line (collapsed row) ──────────────────────────────────────────────
 function summaryLine(source, details, visitCount) {
-  if (!details && source !== 'checkin_app') return null
+  if (!details && source !== 'checkin_app' && source !== 'classpass') return null
   switch (source) {
     case 'join':    return details?.plan ? `Plan: ${details.plan}` : null
     case 'tour':    return [details?.date, details?.time, details?.group].filter(Boolean).join(' · ') || null
@@ -72,7 +72,8 @@ function summaryLine(source, details, visitCount) {
       return [details?.membership_status, details?.fitness_level].filter(Boolean).join(' · ') || null
     case 'nasm_partnership':
       return details?.course || null
-    case 'checkin_app': {
+    case 'checkin_app':
+    case 'classpass': {
       const parts = [
         details?.visit_reason,
         visitCount > 1 ? `${visitCount} visits` : null,
@@ -102,6 +103,7 @@ const DETAIL_ORDER = {
   training_assessment: ['contact_method', 'membership_status', 'goals', 'fitness_level', 'availability', 'medical_notes'],
   nasm_partnership:    ['mailing_address', 'course', 'questions'],
   checkin_app:         ['visit_reason', 'interests', 'how_heard', 'zip_code'],
+  classpass:           ['visit_reason', 'zip_code'],
 }
 
 function detailRows(source, details) {
@@ -235,7 +237,7 @@ export default function LeadsPage() {
 
     let q = supabase
       .from('lead_submissions')
-      .select('*', { count: 'exact' })
+      .select('*, lead_notes!left(id)', { count: 'exact' })
       .order('last_seen', { ascending: false, nullsFirst: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
@@ -414,6 +416,10 @@ export default function LeadsPage() {
     if (!err && data) {
       setNotes(n => ({ ...n, [leadId]: [data, ...(n[leadId] ?? [])] }))
       setNoteText(t => ({ ...t, [leadId]: '' }))
+      setLeads(l => l.map(x => x.id === leadId
+        ? { ...x, lead_notes: [...(x.lead_notes ?? []), { id: data.id }] }
+        : x
+      ))
     }
     setNoteSubmitting(null)
   }
@@ -776,6 +782,15 @@ export default function LeadsPage() {
                           month: 'short', day: 'numeric', year: 'numeric',
                         })}
                       </span>
+
+                      {(lead.lead_notes?.length ?? 0) > 0 && (
+                        <span className="text-xs text-amber-600 font-medium flex-shrink-0 flex items-center gap-0.5" title={`${lead.lead_notes.length} note${lead.lead_notes.length === 1 ? '' : 's'}`}>
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          {lead.lead_notes.length}
+                        </span>
+                      )}
 
                       {canEditStatus ? (
                         <select

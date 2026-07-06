@@ -6,6 +6,7 @@ import AgeCheck from "./screens/guest/AgeCheck.jsx";
 import MinorBlocked from "./screens/guest/MinorBlocked.jsx";
 import ReturnVisitCheck from "./screens/guest/ReturnVisitCheck.jsx";
 import PhoneLookup from "./screens/guest/PhoneLookup.jsx";
+import GuestReturnQuick from "./screens/guest/GuestReturnQuick.jsx";
 import GuestForm from "./screens/guest/GuestForm.jsx";
 import WaiverView from "./screens/guest/WaiverView.jsx";
 import GuestConfirmation from "./screens/guest/GuestConfirmation.jsx";
@@ -146,6 +147,7 @@ export default function App() {
         guestSession,
         signatureDataUrl,
         guestId,
+        waiverId,
         signedAt,
       });
 
@@ -170,6 +172,35 @@ export default function App() {
           ? err
           : err?.message || "Failed to complete check-in — please try again or get staff assistance."
       );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleReturnVisitCheckin(visitReason) {
+    setSubmitError("");
+    setSubmitting(true);
+    try {
+      const signedAt = localNow();
+      const sessionWithReason = {
+        ...guestSession,
+        formData: { ...guestSession.formData, visit_reason: visitReason },
+      };
+      if (isQualifyingLead(sessionWithReason)) {
+        const payload = buildLeadPayload(sessionWithReason, signedAt);
+        const { success, error: syncError } = await pushLeadToSupabase(payload);
+        if (!success) {
+          console.warn("Return visit lead sync failed:", syncError);
+          if (guestSession.existingGuestId) {
+            await queuePendingLead(guestSession.existingGuestId, payload);
+          }
+        }
+      }
+      setExportDir(null);
+      setScreen("guest_confirm");
+    } catch (err) {
+      console.error("Return check-in failed:", err);
+      setSubmitError(err?.message || "Failed to complete check-in — please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -560,6 +591,17 @@ export default function App() {
         <PhoneLookup
           navigate={navigate}
           onBack={() => setScreen("guest_return_visit")}
+        />
+      );
+
+    case "guest_return_quick":
+      return (
+        <GuestReturnQuick
+          guestSession={guestSession}
+          onCheckIn={handleReturnVisitCheckin}
+          onBack={() => setScreen("guest_phone_lookup")}
+          submitting={submitting}
+          submitError={submitError}
         />
       );
 
