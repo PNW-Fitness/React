@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 import Landing from "./screens/Landing.jsx";
@@ -11,6 +11,7 @@ import WaiverView from "./screens/guest/WaiverView.jsx";
 import GuestConfirmation from "./screens/guest/GuestConfirmation.jsx";
 import Settings from "./screens/Settings.jsx";
 import SettingsPinGate from "./screens/SettingsPinGate.jsx";
+import ManagerOverrideGate from "./screens/ManagerOverrideGate.jsx";
 import VendorForm from "./screens/vendor/VendorForm.jsx";
 import VendorLog from "./screens/vendor/VendorLog.jsx";
 import QueueList from "./screens/QueueList.jsx";
@@ -82,6 +83,16 @@ export default function App() {
   const [tanningSubmitError, setTanningSubmitError] = useState("");
   const [tanningSubmitting, setTanningSubmitting] = useState(false);
   const [tanningExportDir, setTanningExportDir] = useState(null);
+
+  // ── Manager override gate ─────────────────────────────────────────────────
+  const pendingOverrideRef = useRef(null);
+  const [overrideBackScreen, setOverrideBackScreen] = useState("landing");
+
+  function requireManagerOverride(approvedAction, backScreen) {
+    pendingOverrideRef.current = approvedAction;
+    setOverrideBackScreen(backScreen);
+    setScreen("manager_override_gate");
+  }
 
   // ── Check-in queue (phone-submitted, awaiting ID verification) ───────────
   const { queue: pendingQueue, removeLocally: removeQueueEntryLocally } = usePendingCheckinsQueue();
@@ -435,6 +446,18 @@ export default function App() {
     case "settings":
       return <Settings onBack={() => setScreen("landing")} />;
 
+    case "manager_override_gate":
+      return (
+        <ManagerOverrideGate
+          onApproved={() => {
+            const action = pendingOverrideRef.current;
+            pendingOverrideRef.current = null;
+            if (action) action();
+          }}
+          onBack={() => setScreen(overrideBackScreen)}
+        />
+      );
+
     // ── Check-in queue ────────────────────────────────────────────────────
     case "queue_list":
       return (
@@ -469,7 +492,7 @@ export default function App() {
           }
           onConfirm={() => setScreen("queue_id_capture")}
           onBack={resetQueueToList}
-          onDeclineId={enterDeclineFlow}
+          onDeclineId={() => requireManagerOverride(enterDeclineFlow, "queue_id_type_check")}
         />
       );
 
@@ -486,7 +509,7 @@ export default function App() {
             setScreen("queue_finalizing");
           }}
           onBack={() => setScreen("queue_id_type_check")}
-          onDeclineId={enterDeclineFlow}
+          onDeclineId={() => requireManagerOverride(enterDeclineFlow, "queue_id_capture")}
         />
       );
 
@@ -558,7 +581,10 @@ export default function App() {
         <IdTypeCheck
           onConfirm={() => setScreen("guest_id_capture")}
           onBack={() => setScreen("guest_form")}
-          onDeclineId={() => navigate("guest_waiver", { idPhoto: null })}
+          onDeclineId={() => requireManagerOverride(
+            () => navigate("guest_waiver", { idPhoto: null }),
+            "guest_id_type_check"
+          )}
         />
       );
 
@@ -568,7 +594,10 @@ export default function App() {
           guestSession={guestSession}
           onConfirm={(idPhoto) => navigate("guest_waiver", { idPhoto })}
           onBack={() => setScreen("guest_id_type_check")}
-          onDeclineId={() => navigate("guest_waiver", { idPhoto: null })}
+          onDeclineId={() => requireManagerOverride(
+            () => navigate("guest_waiver", { idPhoto: null }),
+            "guest_id_capture"
+          )}
         />
       );
 

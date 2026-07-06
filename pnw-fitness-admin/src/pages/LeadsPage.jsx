@@ -138,6 +138,20 @@ export default function LeadsPage() {
   // Status update
   const [updating, setUpdating] = useState(null)
 
+  // Inline edit
+  const [editingLead,  setEditingLead]  = useState(null)
+  const [editForm,     setEditForm]     = useState({})
+  const [editSaving,   setEditSaving]   = useState(false)
+  const [editError,    setEditError]    = useState(null)
+
+  // New lead form
+  const EMPTY_NEW = { name: '', email: '', phone: '', source: 'checkin_app', status: 'new',
+                      visit_reason: '', how_heard: '', zip_code: '', first_seen: '' }
+  const [showNewLead,   setShowNewLead]   = useState(false)
+  const [newLeadForm,   setNewLeadForm]   = useState(EMPTY_NEW)
+  const [newLeadSaving, setNewLeadSaving] = useState(false)
+  const [newLeadError,  setNewLeadError]  = useState(null)
+
   // Delete confirm
   const [confirmDelete, setConfirmDelete] = useState(null)
 
@@ -163,11 +177,13 @@ export default function LeadsPage() {
 
   const { role } = useAuth()
   const { can } = usePermissions()
-  const canAssign     = role === 'admin' || role === 'fitness_manager'
-  const canEditStatus = can('leads.edit_status')
-  const canAddNotes   = can('leads.notes.add')
-  const canDelete     = role === 'admin'
-  const canMarkTest   = role === 'admin'
+  const canAssign       = role === 'admin' || role === 'fitness_manager'
+  const canEditStatus   = can('leads.edit_status')
+  const canAddNotes     = can('leads.notes.add')
+  const canDelete       = role === 'admin'
+  const canMarkTest     = role === 'admin'
+  const canEditDetails  = can('leads.edit_details')
+  const canCreateLead   = can('leads.create')
 
   // Resolve current user's name + id
   useEffect(() => {
@@ -220,7 +236,7 @@ export default function LeadsPage() {
     let q = supabase
       .from('lead_submissions')
       .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
+      .order('last_seen', { ascending: false, nullsFirst: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     q = q.eq('is_test', !hideTest)
@@ -287,7 +303,7 @@ export default function LeadsPage() {
   }
 
   async function handleExpand(leadId) {
-    if (expanded === leadId) { setExpanded(null); return }
+    if (expanded === leadId) { setExpanded(null); setEditingLead(null); return }
     setExpanded(leadId)
     if (notes[leadId] !== undefined) return   // already loaded
     setNotesLoading(leadId)
@@ -298,6 +314,92 @@ export default function LeadsPage() {
       .order('created_at', { ascending: false })
     setNotes(n => ({ ...n, [leadId]: data ?? [] }))
     setNotesLoading(null)
+  }
+
+  function handleStartEdit(lead) {
+    setEditingLead(lead.id)
+    setEditError(null)
+    setEditForm({
+      name:         lead.name || '',
+      email:        lead.email || '',
+      phone:        lead.phone || '',
+      source:       lead.source || 'checkin_app',
+      status:       lead.status || 'new',
+      visit_count:  lead.visit_count ?? 1,
+      first_seen:   lead.first_seen ? lead.first_seen.slice(0, 16) : '',
+      visit_reason: lead.details?.visit_reason || '',
+      how_heard:    lead.details?.how_heard    || '',
+      interests:    lead.details?.interests    || '',
+      zip_code:     lead.details?.zip_code     || '',
+    })
+  }
+
+  async function handleEditSave(lead) {
+    setEditSaving(true)
+    setEditError(null)
+    const details = {
+      ...(lead.details || {}),
+      visit_reason: editForm.visit_reason,
+      how_heard:    editForm.how_heard,
+      interests:    editForm.interests,
+      zip_code:     editForm.zip_code,
+    }
+    const updates = {
+      name:        editForm.name.trim(),
+      email:       editForm.email.trim()  || null,
+      phone:       editForm.phone.trim()  || null,
+      source:      editForm.source,
+      status:      editForm.status,
+      visit_count: parseInt(editForm.visit_count) || 1,
+      first_seen:  editForm.first_seen ? new Date(editForm.first_seen).toISOString() : lead.first_seen,
+      details,
+    }
+    const { error: err } = await supabase.from('lead_submissions').update(updates).eq('id', lead.id)
+    if (err) {
+      setEditError(err.message)
+    } else {
+      setLeads(l => l.map(x => x.id === lead.id ? { ...x, ...updates } : x))
+      setEditingLead(null)
+    }
+    setEditSaving(false)
+  }
+
+  async function handleNewLeadSave() {
+    if (!newLeadForm.name.trim()) { setNewLeadError('Name is required.'); return }
+    if (!newLeadForm.email.trim() && !newLeadForm.phone.trim()) {
+      setNewLeadError('At least one contact method (email or phone) is required.'); return
+    }
+    setNewLeadSaving(true)
+    setNewLeadError(null)
+    const ts = newLeadForm.first_seen
+      ? new Date(newLeadForm.first_seen).toISOString()
+      : new Date().toISOString()
+    const details = newLeadForm.source === 'checkin_app' ? {
+      visit_reason: newLeadForm.visit_reason,
+      how_heard:    newLeadForm.how_heard,
+      zip_code:     newLeadForm.zip_code,
+    } : {}
+    const { error: err } = await supabase.from('lead_submissions').insert({
+      name:        newLeadForm.name.trim(),
+      email:       newLeadForm.email.trim()  || null,
+      phone:       newLeadForm.phone.trim()  || null,
+      source:      newLeadForm.source,
+      status:      newLeadForm.status,
+      details,
+      visit_count: 1,
+      first_seen:  ts,
+      last_seen:   ts,
+      created_at:  ts,
+    })
+    if (err) {
+      setNewLeadError(err.message)
+    } else {
+      setShowNewLead(false)
+      setNewLeadForm(EMPTY_NEW)
+      setPage(0)
+      fetchLeads()
+    }
+    setNewLeadSaving(false)
   }
 
   async function handleAddNote(leadId) {
@@ -372,12 +474,102 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-800">Leads</h2>
-        {!loading && totalCount > 0 && (
-          <span className="text-sm text-gray-400">
-            Showing {rangeStart}–{rangeEnd} of {totalCount}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {!loading && totalCount > 0 && (
+            <span className="text-sm text-gray-400">
+              Showing {rangeStart}–{rangeEnd} of {totalCount}
+            </span>
+          )}
+          {canCreateLead && (
+            <button
+              onClick={() => { setShowNewLead(v => !v); setNewLeadError(null) }}
+              className="text-sm font-medium bg-blue-700 hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg transition"
+            >
+              {showNewLead ? 'Cancel' : '+ Add Lead'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Manual lead creation form */}
+      {showNewLead && canCreateLead && (
+        <div className="bg-white border border-blue-200 rounded-xl shadow-sm p-5 mb-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">New Lead — Manual Entry</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Name *</label>
+              <input value={newLeadForm.name} onChange={e => setNewLeadForm(f => ({...f, name: e.target.value}))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Full name" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Email</label>
+              <input value={newLeadForm.email} onChange={e => setNewLeadForm(f => ({...f, email: e.target.value}))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="email@example.com" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Phone</label>
+              <input value={newLeadForm.phone} onChange={e => setNewLeadForm(f => ({...f, phone: e.target.value}))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="2535550123" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Source</label>
+              <select value={newLeadForm.source} onChange={e => setNewLeadForm(f => ({...f, source: e.target.value}))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {Object.entries(SOURCE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Status</label>
+              <select value={newLeadForm.status} onChange={e => setNewLeadForm(f => ({...f, status: e.target.value}))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 block mb-1">Check-in Date &amp; Time</label>
+              <input type="datetime-local" value={newLeadForm.first_seen}
+                onChange={e => setNewLeadForm(f => ({...f, first_seen: e.target.value}))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            {newLeadForm.source === 'checkin_app' && <>
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Visit Reason</label>
+                <select value={newLeadForm.visit_reason} onChange={e => setNewLeadForm(f => ({...f, visit_reason: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">— Select —</option>
+                  {VISIT_REASONS.map(vr => <option key={vr} value={vr}>{vr}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">How Heard</label>
+                <input value={newLeadForm.how_heard} onChange={e => setNewLeadForm(f => ({...f, how_heard: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Google, Friend" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Zip Code</label>
+                <input value={newLeadForm.zip_code} onChange={e => setNewLeadForm(f => ({...f, zip_code: e.target.value}))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="98402" />
+              </div>
+            </>}
+          </div>
+          {newLeadError && <p className="text-xs text-red-600 mt-3">{newLeadError}</p>}
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleNewLeadSave} disabled={newLeadSaving}
+              className="bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+              {newLeadSaving ? 'Saving…' : 'Save Lead'}
+            </button>
+            <button onClick={() => { setShowNewLead(false); setNewLeadError(null) }}
+              className="text-sm text-gray-500 hover:text-gray-700 border border-gray-300 px-4 py-2 rounded-lg transition">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Priority legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4 bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
@@ -619,11 +811,103 @@ export default function LeadsPage() {
                     {/* ── Expanded panel ── */}
                     {isExpanded && (
                       <div className="px-4 pb-5 pt-3 border-t border-gray-100 bg-white">
-                        {/* Top section: contact + details — side-by-side on wide screens, stacked on narrow */}
+
+                        {/* ── Edit form (super admin) ── */}
+                        {editingLead === lead.id ? (
+                          <div className="mb-4">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Editing Lead</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Name</label>
+                                <input value={editForm.name} onChange={e => setEditForm(f => ({...f, name: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Email</label>
+                                <input value={editForm.email} onChange={e => setEditForm(f => ({...f, email: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Phone</label>
+                                <input value={editForm.phone} onChange={e => setEditForm(f => ({...f, phone: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Source</label>
+                                <select value={editForm.source} onChange={e => setEditForm(f => ({...f, source: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                  {Object.entries(SOURCE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Status</label>
+                                <select value={editForm.status} onChange={e => setEditForm(f => ({...f, status: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                  {STATUS_OPTIONS.map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Check-in Date &amp; Time</label>
+                                <input type="datetime-local" value={editForm.first_seen}
+                                  onChange={e => setEditForm(f => ({...f, first_seen: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Visit Count</label>
+                                <input type="number" min="1" value={editForm.visit_count}
+                                  onChange={e => setEditForm(f => ({...f, visit_count: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Visit Reason</label>
+                                <select value={editForm.visit_reason} onChange={e => setEditForm(f => ({...f, visit_reason: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                  <option value="">— None —</option>
+                                  {VISIT_REASONS.map(vr => <option key={vr} value={vr}>{vr}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">How Heard</label>
+                                <input value={editForm.how_heard} onChange={e => setEditForm(f => ({...f, how_heard: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Interests</label>
+                                <input value={editForm.interests} onChange={e => setEditForm(f => ({...f, interests: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-1">Zip Code</label>
+                                <input value={editForm.zip_code} onChange={e => setEditForm(f => ({...f, zip_code: e.target.value}))}
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              </div>
+                            </div>
+                            {editError && <p className="text-xs text-red-600 mt-2">{editError}</p>}
+                            <div className="flex gap-2 mt-3">
+                              <button onClick={() => handleEditSave(lead)} disabled={editSaving}
+                                className="bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white text-xs font-medium px-4 py-1.5 rounded-lg transition">
+                                {editSaving ? 'Saving…' : 'Save Changes'}
+                              </button>
+                              <button onClick={() => setEditingLead(null)}
+                                className="text-xs text-gray-500 hover:text-gray-700 border border-gray-300 px-4 py-1.5 rounded-lg transition">
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                        /* ── Read-only contact + details ── */
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-4">
                           {/* Contact block */}
                           <div>
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{srcLabel}</p>
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{srcLabel}</p>
+                              {canEditDetails && (
+                                <button onClick={() => handleStartEdit(lead)}
+                                  className="text-xs text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-2 py-0.5 rounded-lg transition">
+                                  Edit
+                                </button>
+                              )}
+                            </div>
                             <p className="text-sm font-medium text-gray-800">{lead.name}</p>
                             <a href={`mailto:${lead.email}`} className="text-sm text-blue-600 hover:underline block">{lead.email}</a>
                             {lead.phone && <p className="text-sm text-gray-700">{lead.phone}</p>}
@@ -665,6 +949,7 @@ export default function LeadsPage() {
                             </div>
                           )}
                         </div>
+                        )}
 
                         {/* ── Trainer assignment ── */}
                         <div className="mt-4 pt-4 border-t border-gray-100">

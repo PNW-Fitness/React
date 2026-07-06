@@ -7,16 +7,23 @@ import { retryPendingLeads } from "../lib/leadSync.js";
 import { exportDateRangeCsv } from "../lib/csvExport.js";
 import FrontDeskQrCode from "../components/FrontDeskQrCode.jsx";
 import { getSettingsPin, setSettingsPin } from "./SettingsPinGate.jsx";
+import { getMgrOverridePin, setMgrOverridePin } from "./ManagerOverrideGate.jsx";
 
 export default function Settings({ onBack }) {
   const [path, setPath] = useState("");
   const [savedPath, setSavedPath] = useState("");
 
-  // PIN change state
+  // Settings PIN change state
   const [pinCurrent, setPinCurrent] = useState("");
   const [pinNew,     setPinNew]     = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
   const [pinMsg,     setPinMsg]     = useState({ type: "", text: "" });
+
+  // Manager override PIN change state
+  const [mgrPinCurrent, setMgrPinCurrent] = useState("");
+  const [mgrPinNew,     setMgrPinNew]     = useState("");
+  const [mgrPinConfirm, setMgrPinConfirm] = useState("");
+  const [mgrPinMsg,     setMgrPinMsg]     = useState({ type: "", text: "" });
 
   function handleChangePin(e) {
     e.preventDefault();
@@ -35,6 +42,25 @@ export default function Settings({ onBack }) {
     setSettingsPin(pinNew);
     setPinCurrent(""); setPinNew(""); setPinConfirm("");
     setPinMsg({ type: "success", text: "PIN updated." });
+  }
+
+  function handleChangeMgrPin(e) {
+    e.preventDefault();
+    if (mgrPinCurrent !== getMgrOverridePin()) {
+      setMgrPinMsg({ type: "error", text: "Current PIN is incorrect." });
+      return;
+    }
+    if (!/^\d{4}$/.test(mgrPinNew)) {
+      setMgrPinMsg({ type: "error", text: "New PIN must be exactly 4 digits." });
+      return;
+    }
+    if (mgrPinNew !== mgrPinConfirm) {
+      setMgrPinMsg({ type: "error", text: "PINs do not match." });
+      return;
+    }
+    setMgrOverridePin(mgrPinNew);
+    setMgrPinCurrent(""); setMgrPinNew(""); setMgrPinConfirm("");
+    setMgrPinMsg({ type: "success", text: "PIN updated." });
   }
   const [status, setStatus] = useState(null); // null | 'checking' | 'ready' | 'error'
   const [saving, setSaving] = useState(false);
@@ -320,6 +346,67 @@ export default function Settings({ onBack }) {
             )}
             <div className="settings-save-row">
               <button type="submit" className="btn-primary" disabled={!pinCurrent || !pinNew || !pinConfirm}>
+                Update PIN
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div className="settings-divider" />
+
+        <div className="settings-section">
+          <h2 className="settings-section-title">Manager Override PIN</h2>
+          <p className="settings-section-desc">
+            Required when front desk staff tap "Guest declined to provide ID."
+            Keep this PIN separate from the Settings PIN and share it only with managers.
+            Default is <strong>0000</strong> — change it before going live.
+          </p>
+          <form onSubmit={handleChangeMgrPin} className="settings-pin-form">
+            <div className="settings-pin-fields">
+              <div className="settings-date-field">
+                <label className="settings-date-label">Current PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="settings-date-input"
+                  value={mgrPinCurrent}
+                  onChange={e => { setMgrPinCurrent(e.target.value.replace(/\D/g, '')); setMgrPinMsg({ type: "", text: "" }); }}
+                  placeholder="••••"
+                />
+              </div>
+              <div className="settings-date-field">
+                <label className="settings-date-label">New PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="settings-date-input"
+                  value={mgrPinNew}
+                  onChange={e => { setMgrPinNew(e.target.value.replace(/\D/g, '')); setMgrPinMsg({ type: "", text: "" }); }}
+                  placeholder="••••"
+                />
+              </div>
+              <div className="settings-date-field">
+                <label className="settings-date-label">Confirm PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="settings-date-input"
+                  value={mgrPinConfirm}
+                  onChange={e => { setMgrPinConfirm(e.target.value.replace(/\D/g, '')); setMgrPinMsg({ type: "", text: "" }); }}
+                  placeholder="••••"
+                />
+              </div>
+            </div>
+            {mgrPinMsg.text && (
+              <div className={`settings-status ${mgrPinMsg.type === "error" ? "settings-status-error" : "settings-status-ready"}`}>
+                {mgrPinMsg.type === "success" ? "✓ " : "✗ "}{mgrPinMsg.text}
+              </div>
+            )}
+            <div className="settings-save-row">
+              <button type="submit" className="btn-primary" disabled={!mgrPinCurrent || !mgrPinNew || !mgrPinConfirm}>
                 Update PIN
               </button>
             </div>

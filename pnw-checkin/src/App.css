@@ -1138,6 +1138,16 @@ textarea { resize: vertical; }
   border-radius: 4px;
 }
 
+/* ── Manager override gate ───────────────────────────── */
+.override-gate-icon { font-size: 2.5rem; margin-bottom: 0.25rem; }
+.override-gate-desc {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  max-width: 320px;
+  margin-bottom: 1rem;
+}
+
 /* ── Settings: PIN change form ───────────────────────── */
 .settings-pin-form { display: flex; flex-direction: column; gap: 12px; }
 .settings-pin-fields { display: flex; gap: 16px; flex-wrap: wrap; }
