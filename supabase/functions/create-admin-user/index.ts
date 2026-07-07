@@ -16,9 +16,10 @@ Deno.serve(async (req) => {
     if (!password) throw new Error('Password is required')
     if (password.length < 6) throw new Error('Password must be at least 6 characters')
 
-    // Usernames without @ get an internal domain so Supabase auth is satisfied.
+    // Usernames without @ get a placeholder domain so Supabase auth is satisfied.
     // Real emails (invite-created accounts) are passed through unchanged.
-    const email = username.includes('@') ? username : `${username}@pnwfitness.internal`
+    // Uses .app (a registered TLD) so validators never reject the format.
+    const email = username.includes('@') ? username : `${username}@pnwfitness.app`
     const displayName = username.includes('@') ? username.split('@')[0] : username
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!

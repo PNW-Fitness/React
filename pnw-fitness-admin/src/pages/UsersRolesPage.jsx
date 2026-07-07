@@ -733,7 +733,13 @@ function AddUserTab() {
     setCreating(false)
     if (fnErr) {
       let msg = fnErr.message
-      try { const body = await fnErr.context?.json?.(); if (body?.error) msg = body.error } catch {}
+      try {
+        const body = typeof fnErr.context?.json === 'function' ? await fnErr.context.json() : null
+        if (body?.error) msg = body.error
+      } catch {}
+      if (msg.toLowerCase().includes('failed to send') || msg.toLowerCase().includes('not found')) {
+        msg = 'Account creation service is not deployed yet. See the deployment instructions above.'
+      }
       setCreateMsg({ type: 'error', text: msg })
       return
     }
@@ -827,7 +833,7 @@ function AddUserTab() {
       {mode === 'create' && (
         <form onSubmit={handleCreate} className="space-y-3">
           <p className="text-xs text-gray-400 mb-2">
-            Creates the account immediately. Use for shared accounts like Front Desk.
+            Creates a staff account immediately with a username and password. Works for Front Desk, Staff, Trainers, and any other role — no email address needed.
           </p>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>

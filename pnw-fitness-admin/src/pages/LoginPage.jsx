@@ -21,9 +21,9 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    // Accounts created with a plain username get @pnwfitness.internal appended.
+    // Accounts created with a plain username get @pnwfitness.app appended.
     // Real email accounts (invite flow) are used as-is.
-    const email = username.includes('@') ? username : `${username}@pnwfitness.internal`
+    const email = username.includes('@') ? username : `${username}@pnwfitness.app`
     const { error: err } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (err) {
