@@ -1,4 +1,4 @@
-export default function ClassPassConfirmation({ cpSession, exportDir, onDone, isReturning }) {
+export default function ClassPassConfirmation({ cpSession, exportDir, onDone, isReturning, syncError }) {
   const { guestName } = cpSession;
 
   return (
@@ -14,6 +14,11 @@ export default function ClassPassConfirmation({ cpSession, exportDir, onDone, is
           {exportDir && (
             <p className="confirmation-export-path" title={exportDir}>
               Files saved to: <span className="export-path-text">{exportDir}</span>
+            </p>
+          )}
+          {syncError && (
+            <p className="field-error" style={{ marginTop: "0.75rem", fontSize: "0.75rem" }}>
+              ⚠ Leads sync failed: {syncError}
             </p>
           )}
           <button className="btn-primary btn-large" onClick={onDone}>

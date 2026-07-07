@@ -34,8 +34,8 @@ import TanningForm from "./screens/tanning/TanningForm.jsx";
 import TanningWaiver from "./screens/tanning/TanningWaiver.jsx";
 import TanningConfirmation from "./screens/tanning/TanningConfirmation.jsx";
 
-import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, saveClassPassReturning, updateClassPassPdfPath, saveTanningCheckin, updateTanningPdfPath, localNow, queuePendingLead } from "./lib/db.js";
-import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, pushClassPassToSupabase, retryPendingLeads } from "./lib/leadSync.js";
+import { saveGuest, saveWaiver, updateWaiverPaths, saveClassPassCheckin, saveClassPassReturning, updateClassPassPdfPath, saveTanningCheckin, updateTanningPdfPath, localNow, queuePendingLead, queuePendingClassPass } from "./lib/db.js";
+import { isQualifyingLead, buildLeadPayload, pushLeadToSupabase, pushClassPassToSupabase, retryPendingLeads, retryPendingClassPass } from "./lib/leadSync.js";
 import { exportGuestFiles, exportDeclinedGuestRecord } from "./lib/fileExport/fileExport.js";
 import { exportClassPassFile } from "./lib/classpassExport.js";
 import { exportTanningFile } from "./lib/tanningExport.js";
@@ -77,6 +77,7 @@ export default function App() {
   const [cpSubmitError, setCpSubmitError] = useState("");
   const [cpSubmitting, setCpSubmitting] = useState(false);
   const [cpExportDir, setCpExportDir] = useState(null);
+  const [cpSyncError, setCpSyncError] = useState("");
 
   // ── Tanning flow state ────────────────────────────────────────────────────
   const EMPTY_TANNING_SESSION = { fullName: "", contact: "", zipCode: "" };
@@ -107,7 +108,11 @@ export default function App() {
   // ── Lead sync: retry on startup and every 5 minutes ──────────────────────
   useEffect(() => {
     retryPendingLeads();
-    const interval = setInterval(retryPendingLeads, 5 * 60 * 1000);
+    retryPendingClassPass();
+    const interval = setInterval(() => {
+      retryPendingLeads();
+      retryPendingClassPass();
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -219,22 +224,28 @@ export default function App() {
     setCpSubmitError("");
     setCpSubmitting(false);
     setCpExportDir(null);
+    setCpSyncError("");
     setScreen("landing");
   }
 
   async function handleSubmitClassPassReturning(sessionData) {
     setCpSubmitError("");
+    setCpSyncError("");
     setCpSubmitting(true);
     try {
       const signedAt = localNow();
-      await saveClassPassReturning({
+      const checkinId = await saveClassPassReturning({
         guestName: sessionData.guestName,
         contact:   sessionData.contact,
         zipCode:   sessionData.zipCode,
         signedAt,
       });
       const { success, error: syncError } = await pushClassPassToSupabase(sessionData, signedAt);
-      if (!success) console.warn("ClassPass lead sync failed:", syncError);
+      if (!success) {
+        console.warn("ClassPass lead sync failed:", syncError);
+        setCpSyncError(syncError || "Sync failed — will retry automatically.");
+        await queuePendingClassPass(checkinId, { ...sessionData, signedAt });
+      }
       setCpReturning(true);
       setScreen("classpass_confirm");
     } catch (err) {
@@ -247,6 +258,7 @@ export default function App() {
 
   async function handleSubmitClassPass(signatureDataUrl) {
     setCpSubmitError("");
+    setCpSyncError("");
     setCpSubmitting(true);
     try {
       const signedAt = localNow();
@@ -268,7 +280,11 @@ export default function App() {
       await updateClassPassPdfPath(checkinId, pdfPath);
 
       const { success, error: syncError } = await pushClassPassToSupabase(cpSession, signedAt);
-      if (!success) console.warn("ClassPass lead sync failed:", syncError);
+      if (!success) {
+        console.warn("ClassPass lead sync failed:", syncError);
+        setCpSyncError(syncError || "Sync failed — will retry automatically.");
+        await queuePendingClassPass(checkinId, { ...cpSession, signedAt });
+      }
 
       setCpExportDir(dir);
       setScreen("classpass_confirm");
@@ -739,6 +755,7 @@ export default function App() {
           exportDir={cpExportDir}
           onDone={resetCpToLanding}
           isReturning={cpReturning}
+          syncError={cpSyncError}
         />
       );
 

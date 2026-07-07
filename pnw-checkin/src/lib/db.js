@@ -106,6 +106,18 @@ async function getDb() {
   `);
 
   await _db.execute(`
+    CREATE TABLE IF NOT EXISTS pending_classpass_sync (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      checkin_id INTEGER NOT NULL,
+      payload TEXT NOT NULL,
+      attempt_count INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      created_at TEXT NOT NULL,
+      last_attempted_at TEXT
+    )
+  `);
+
+  await _db.execute(`
     CREATE TABLE IF NOT EXISTS db_migrations (
       name TEXT PRIMARY KEY,
       applied_at TEXT NOT NULL
@@ -304,6 +316,44 @@ export async function updatePendingLeadAttempt(id, error) {
   const db = await getDb();
   await db.execute(
     `UPDATE pending_lead_sync
+     SET attempt_count = attempt_count + 1,
+         last_error = ?,
+         last_attempted_at = ?
+     WHERE id = ?`,
+    [error, localNow(), id]
+  );
+}
+
+// ── ClassPass pending sync queue ──────────────────────────────────────────────
+
+export async function queuePendingClassPass(checkinId, payload) {
+  const db = await getDb();
+  await db.execute(
+    `INSERT INTO pending_classpass_sync (checkin_id, payload, created_at)
+     VALUES (?, ?, ?)`,
+    [checkinId, JSON.stringify(payload), localNow()]
+  );
+}
+
+export async function getPendingClassPass() {
+  const db = await getDb();
+  return await db.select(
+    `SELECT id, checkin_id, payload, attempt_count, last_error
+     FROM pending_classpass_sync
+     WHERE attempt_count < 10
+     ORDER BY id ASC`
+  );
+}
+
+export async function deletePendingClassPass(id) {
+  const db = await getDb();
+  await db.execute(`DELETE FROM pending_classpass_sync WHERE id = ?`, [id]);
+}
+
+export async function updatePendingClassPassAttempt(id, error) {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE pending_classpass_sync
      SET attempt_count = attempt_count + 1,
          last_error = ?,
          last_attempted_at = ?

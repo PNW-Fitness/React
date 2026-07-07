@@ -1,5 +1,8 @@
 import { supabase } from './supabase.js'
-import { getPendingLeads, deletePendingLead, updatePendingLeadAttempt } from './db.js'
+import {
+  getPendingLeads, deletePendingLead, updatePendingLeadAttempt,
+  getPendingClassPass, deletePendingClassPass, updatePendingClassPassAttempt,
+} from './db.js'
 
 function parseInterests(raw) {
   if (Array.isArray(raw)) return raw
@@ -67,6 +70,26 @@ export async function pushClassPassToSupabase(cpSession, signedAt) {
     return { success: true }
   } catch (err) {
     return { success: false, error: err?.message ?? String(err) }
+  }
+}
+
+// Retries every pending ClassPass sync that has fewer than 10 failed attempts.
+export async function retryPendingClassPass() {
+  let pending
+  try {
+    pending = await getPendingClassPass()
+  } catch {
+    return
+  }
+  for (const row of pending) {
+    let payload
+    try { payload = JSON.parse(row.payload) } catch { continue }
+    const { success, error } = await pushClassPassToSupabase(payload, payload.signedAt)
+    if (success) {
+      await deletePendingClassPass(row.id)
+    } else {
+      await updatePendingClassPassAttempt(row.id, error)
+    }
   }
 }
 
