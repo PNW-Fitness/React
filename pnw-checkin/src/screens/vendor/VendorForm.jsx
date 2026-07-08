@@ -39,14 +39,13 @@ export default function VendorForm({ onDone, onBack }) {
     try {
       await saveVendor({ ...form, id_photo: idPhotoDataUrl });
 
-      // Push to Supabase so the admin panel can see it.
-      const { error } = await supabase.from("vendor_submissions").insert({
-        name:         form.name,
-        company:      form.company,
-        phone:        form.phone,
-        reason:       form.reason,
-        id_photo_url: idPhotoDataUrl,
-        submitted_at: new Date().toISOString(),
+      // Push to Supabase via RPC (SECURITY DEFINER bypasses RLS).
+      const { error } = await supabase.rpc("insert_vendor_submission", {
+        p_name:         form.name,
+        p_company:      form.company,
+        p_phone:        form.phone,
+        p_reason:       form.reason,
+        p_id_photo_url: idPhotoDataUrl,
       });
       if (error) console.warn("Vendor Supabase push failed:", error.message);
 
@@ -64,13 +63,12 @@ export default function VendorForm({ onDone, onBack }) {
     try {
       await saveVendor({ ...form, id_photo: null });
 
-      const { error } = await supabase.from("vendor_submissions").insert({
-        name:         form.name,
-        company:      form.company,
-        phone:        form.phone,
-        reason:       form.reason,
-        id_photo_url: null,
-        submitted_at: new Date().toISOString(),
+      const { error } = await supabase.rpc("insert_vendor_submission", {
+        p_name:         form.name,
+        p_company:      form.company,
+        p_phone:        form.phone,
+        p_reason:       form.reason,
+        p_id_photo_url: null,
       });
       if (error) console.warn("Vendor Supabase push failed:", error.message);
 
