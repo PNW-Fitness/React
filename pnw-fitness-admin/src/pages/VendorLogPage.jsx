@@ -20,15 +20,22 @@ export default function VendorLogPage() {
   const [selectedDate, setSelectedDate] = useState(todayStr)
   const [deleting,     setDeleting]     = useState(null)  // id being deleted
   const [confirmId,    setConfirmId]    = useState(null)  // id awaiting confirm
+  const [deleteError,  setDeleteError]  = useState(null)  // error message
 
   const isAdmin = role === 'admin'
 
   async function handleDelete(id) {
     setDeleting(id)
+    setDeleteError(null)
     const { error } = await supabase.from('vendor_submissions').delete().eq('id', id)
-    if (!error) setVendors(prev => prev.filter(v => v.id !== id))
+    if (error) {
+      setDeleteError(`Delete failed: ${error.message} (${error.code})`)
+      setConfirmId(null)
+    } else {
+      setVendors(prev => prev.filter(v => v.id !== id))
+      setConfirmId(null)
+    }
     setDeleting(null)
-    setConfirmId(null)
   }
 
   async function fetchVendors(dateStr) {
@@ -89,6 +96,12 @@ export default function VendorLogPage() {
 
         {loading && (
           <p className="text-sm text-gray-400 text-center py-8">Loading…</p>
+        )}
+
+        {deleteError && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-5 py-3 text-sm text-red-700">
+            {deleteError} — make sure the DELETE policy has been added in Supabase.
+          </div>
         )}
 
         {!loading && fetchError && (
