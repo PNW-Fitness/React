@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../lib/AuthContext'
 import Layout from '../components/Layout'
 
 function todayStr() {
@@ -12,10 +13,23 @@ function formatTime(iso) {
 }
 
 export default function VendorLogPage() {
+  const { role } = useAuth()
   const [vendors,      setVendors]      = useState([])
   const [loading,      setLoading]      = useState(true)
   const [fetchError,   setFetchError]   = useState(null)
   const [selectedDate, setSelectedDate] = useState(todayStr)
+  const [deleting,     setDeleting]     = useState(null)  // id being deleted
+  const [confirmId,    setConfirmId]    = useState(null)  // id awaiting confirm
+
+  const isAdmin = role === 'admin'
+
+  async function handleDelete(id) {
+    setDeleting(id)
+    const { error } = await supabase.from('vendor_submissions').delete().eq('id', id)
+    if (!error) setVendors(prev => prev.filter(v => v.id !== id))
+    setDeleting(null)
+    setConfirmId(null)
+  }
 
   async function fetchVendors(dateStr) {
     setLoading(true)
@@ -108,6 +122,7 @@ export default function VendorLogPage() {
                     <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Company</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Phone</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Reason for Visit</th>
+                    {isAdmin && <th className="px-4 py-3"></th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -118,6 +133,35 @@ export default function VendorLogPage() {
                       <td className="px-4 py-3 text-gray-600">{v.company}</td>
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{v.phone || '—'}</td>
                       <td className="px-4 py-3 text-gray-600">{v.reason}</td>
+                      {isAdmin && (
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          {confirmId === v.id ? (
+                            <span className="inline-flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Delete?</span>
+                              <button
+                                onClick={() => handleDelete(v.id)}
+                                disabled={deleting === v.id}
+                                className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                              >
+                                {deleting === v.id ? 'Deleting…' : 'Yes'}
+                              </button>
+                              <button
+                                onClick={() => setConfirmId(null)}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                              >
+                                No
+                              </button>
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmId(v.id)}
+                              className="text-xs text-gray-400 hover:text-red-600 transition"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
