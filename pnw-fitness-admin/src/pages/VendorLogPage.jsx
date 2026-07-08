@@ -14,20 +14,23 @@ function formatTime(iso) {
 export default function VendorLogPage() {
   const [vendors,      setVendors]      = useState([])
   const [loading,      setLoading]      = useState(true)
+  const [fetchError,   setFetchError]   = useState(null)
   const [selectedDate, setSelectedDate] = useState(todayStr)
 
   async function fetchVendors(dateStr) {
     setLoading(true)
+    setFetchError(null)
     const start = new Date(dateStr + 'T00:00:00')
     const end   = new Date(dateStr + 'T23:59:59.999')
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('vendor_submissions')
-      .select('id, name, company, phone, reason, submitted_at')
+      .select('*')
       .gte('submitted_at', start.toISOString())
       .lte('submitted_at', end.toISOString())
       .order('submitted_at', { ascending: false })
 
+    if (error) setFetchError(`${error.message} (${error.code})`)
     setVendors(data ?? [])
     setLoading(false)
   }
@@ -74,7 +77,14 @@ export default function VendorLogPage() {
           <p className="text-sm text-gray-400 text-center py-8">Loading…</p>
         )}
 
-        {!loading && vendors.length === 0 && (
+        {!loading && fetchError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-sm text-red-700">
+            <p className="font-semibold mb-1">Failed to load vendor log</p>
+            <p className="font-mono text-xs">{fetchError}</p>
+          </div>
+        )}
+
+        {!loading && !fetchError && vendors.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             <p className="text-4xl mb-3">🏢</p>
             <p className="text-sm font-medium">No vendors signed in {isToday ? 'today' : 'that day'}</p>
@@ -82,7 +92,7 @@ export default function VendorLogPage() {
           </div>
         )}
 
-        {!loading && vendors.length > 0 && (
+        {!loading && !fetchError && vendors.length > 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-5 py-3 border-b border-gray-100">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">

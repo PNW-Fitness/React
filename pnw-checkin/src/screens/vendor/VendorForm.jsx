@@ -33,27 +33,33 @@ export default function VendorForm({ onDone, onBack }) {
     setStep("id_capture");
   }
 
+  async function pushToSupabase() {
+    const { error } = await supabase.rpc("insert_vendor_submission", {
+      p_name:    form.name,
+      p_company: form.company,
+      p_phone:   form.phone,
+      p_reason:  form.reason,
+    });
+    return error;
+  }
+
   async function handleIdConfirm(idPhotoDataUrl) {
     setSaving(true);
     setSaveError("");
     try {
       await saveVendor({ ...form, id_photo: idPhotoDataUrl });
-
-      // Push to Supabase via RPC — photo stays local only (too large for DB row).
-      const { error } = await supabase.rpc("insert_vendor_submission", {
-        p_name:    form.name,
-        p_company: form.company,
-        p_phone:   form.phone,
-        p_reason:  form.reason,
-      });
-      if (error) console.warn("Vendor Supabase push failed:", error.message);
-
-      onDone();
     } catch (err) {
-      console.error(err);
-      setSaveError("Failed to save — please try again.");
+      setSaveError("Failed to save locally — please try again.");
       setSaving(false);
+      return;
     }
+    const error = await pushToSupabase();
+    if (error) {
+      setSaveError(`Sync failed: ${error.message} (${error.code})`);
+      setSaving(false);
+      return;
+    }
+    onDone();
   }
 
   async function handleSkipId() {
@@ -61,21 +67,18 @@ export default function VendorForm({ onDone, onBack }) {
     setSaveError("");
     try {
       await saveVendor({ ...form, id_photo: null });
-
-      const { error } = await supabase.rpc("insert_vendor_submission", {
-        p_name:    form.name,
-        p_company: form.company,
-        p_phone:   form.phone,
-        p_reason:  form.reason,
-      });
-      if (error) console.warn("Vendor Supabase push failed:", error.message);
-
-      onDone();
     } catch (err) {
-      console.error(err);
-      setSaveError("Failed to save — please try again.");
+      setSaveError("Failed to save locally — please try again.");
       setSaving(false);
+      return;
     }
+    const error = await pushToSupabase();
+    if (error) {
+      setSaveError(`Sync failed: ${error.message} (${error.code})`);
+      setSaving(false);
+      return;
+    }
+    onDone();
   }
 
   if (step === "id_capture") {

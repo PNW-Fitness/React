@@ -73,10 +73,9 @@ export default function Settings({ onBack }) {
   const [cpSyncStats, setCpSyncStats] = useState({ total: 0, stuck: 0, lastError: null });
   const [cpSyncRetrying, setCpSyncRetrying] = useState(false);
   const [cpSyncResetting, setCpSyncResetting] = useState(false);
-  const [cpTestResult,     setCpTestResult]     = useState(null); // null | { ok, msg }
-  const [cpTesting,        setCpTesting]        = useState(false);
-  const [vendorTestResult, setVendorTestResult] = useState(null); // null | { ok, msg }
-  const [vendorTesting,    setVendorTesting]    = useState(false);
+  const [cpTestResult, setCpTestResult] = useState(null); // null | { ok, msg }
+  const [cpTesting,    setCpTesting]    = useState(false);
+  const [vendorTesting, setVendorTesting] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = (() => {
@@ -173,20 +172,24 @@ export default function Settings({ onBack }) {
 
   async function handleVendorTestSync() {
     setVendorTesting(true);
-    setVendorTestResult(null);
-    const { error } = await supabase.rpc("insert_vendor_submission", {
-      p_name:         "TEST VENDOR — DELETE ME",
-      p_company:      "Test Company",
-      p_phone:        "0000000000",
-      p_reason:       "Connection test",
-      p_id_photo_url: null,
-    });
-    setVendorTestResult(
-      error
-        ? { ok: false, msg: `✗ Failed: ${error.message} (code: ${error.code})` }
-        : { ok: true,  msg: "✓ Success — test entry created. Delete it from the admin panel Vendor Log." }
-    );
-    setVendorTesting(false);
+    try {
+      const { error } = await supabase.rpc("insert_vendor_submission", {
+        p_name:    "TEST VENDOR — DELETE ME",
+        p_company: "Test Company",
+        p_phone:   "0000000000",
+        p_reason:  "Connection test",
+      });
+      // Use alert so the result is always visible regardless of scroll position.
+      if (error) {
+        alert(`Vendor sync FAILED:\n${error.message}\nCode: ${error.code}`);
+      } else {
+        alert("Vendor sync OK — test entry created. Delete it from the Vendor Log.");
+      }
+    } catch (err) {
+      alert(`Vendor sync EXCEPTION:\n${err?.message ?? String(err)}`);
+    } finally {
+      setVendorTesting(false);
+    }
   }
 
   async function handleCpResetStuck() {
@@ -493,11 +496,6 @@ export default function Settings({ onBack }) {
               {vendorTesting ? "Testing…" : "Test vendor sync"}
             </button>
           </div>
-          {vendorTestResult && (
-            <div className={`settings-status ${vendorTestResult.ok ? "settings-status-ready" : "settings-status-error"}`} style={{ wordBreak: "break-word" }}>
-              {vendorTestResult.msg}
-            </div>
-          )}
         </div>
 
         <div className="settings-divider" />
