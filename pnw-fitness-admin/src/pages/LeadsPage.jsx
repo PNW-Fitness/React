@@ -133,9 +133,10 @@ export default function LeadsPage() {
   const [totalCount, setTotalCount] = useState(0)
 
   // Data
-  const [leads,   setLeads]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
+  const [leads,       setLeads]       = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState(null)
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   // Status update
   const [updating, setUpdating] = useState(null)
@@ -223,13 +224,13 @@ export default function LeadsPage() {
   }, [search])
 
   // Main data fetch — re-runs whenever any filter or page changes
-  const fetchLeads = useCallback(async () => {
+  const fetchLeads = useCallback(async ({ silent = false } = {}) => {
     // Wait until role is resolved. For trainers, also wait for their user ID
     // so we never accidentally show them the full unfiltered list.
     if (role === undefined) return
     if (role === 'trainer' && !currentUserId) return
 
-    setLoading(true)
+    if (!silent) setLoading(true)
     setError(null)
 
     // Sanitise search term — strip commas which break PostgREST .or() syntax
@@ -275,11 +276,18 @@ export default function LeadsPage() {
     } else {
       setLeads(data ?? [])
       setTotalCount(count ?? 0)
+      setLastUpdated(new Date())
     }
     setLoading(false)
   }, [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterAssigned, hideTest, role, currentUserId])
 
   useEffect(() => { fetchLeads() }, [fetchLeads])
+
+  // Auto-refresh every 30 seconds without showing the loading spinner
+  useEffect(() => {
+    const interval = setInterval(() => { fetchLeads({ silent: true }) }, 30_000)
+    return () => clearInterval(interval)
+  }, [fetchLeads])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -485,6 +493,11 @@ export default function LeadsPage() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-800">Leads</h2>
         <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <span className="text-xs text-gray-400" title={lastUpdated.toLocaleTimeString()}>
+              Updated {lastUpdated.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+            </span>
+          )}
           {!loading && totalCount > 0 && (
             <span className="text-sm text-gray-400">
               Showing {rangeStart}–{rangeEnd} of {totalCount}

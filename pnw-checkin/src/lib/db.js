@@ -375,6 +375,33 @@ export async function getPendingSyncStats() {
   return { total: Number(row.total ?? 0), stuck: Number(row.stuck ?? 0) };
 }
 
+// Returns { total, stuck, lastError } counts for the ClassPass sync section.
+export async function getPendingClassPassStats() {
+  const db = await getDb();
+  const rows = await db.select(
+    `SELECT COUNT(*) as total,
+       SUM(CASE WHEN attempt_count >= 10 THEN 1 ELSE 0 END) as stuck
+     FROM pending_classpass_sync`
+  );
+  const errRows = await db.select(
+    `SELECT last_error FROM pending_classpass_sync
+     WHERE last_error IS NOT NULL ORDER BY last_attempted_at DESC LIMIT 1`
+  );
+  const row = rows[0] ?? {};
+  return {
+    total:     Number(row.total ?? 0),
+    stuck:     Number(row.stuck ?? 0),
+    lastError: errRows[0]?.last_error || null,
+  };
+}
+
+export async function resetStuckClassPass() {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE pending_classpass_sync SET attempt_count = 0, last_error = NULL WHERE attempt_count >= 10`
+  );
+}
+
 // Returns one row per unique guest who checked in within [from, to] (YYYY-MM-DD inclusive).
 // visit_count_in_range = number of waivers in that window (visits); first/last signed_at for the range.
 export async function getGuestsByDateRange(from, to) {

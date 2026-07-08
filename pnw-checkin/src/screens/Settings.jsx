@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getExportDir } from "../lib/fileExport/fileExport.js";
-import { getPendingSyncStats, resetStuckLeads } from "../lib/db.js";
-import { retryPendingLeads } from "../lib/leadSync.js";
+import { getPendingSyncStats, resetStuckLeads, getPendingClassPassStats, resetStuckClassPass } from "../lib/db.js";
+import { retryPendingLeads, retryPendingClassPass } from "../lib/leadSync.js";
 import { exportDateRangeCsv } from "../lib/csvExport.js";
 import FrontDeskQrCode from "../components/FrontDeskQrCode.jsx";
 import { getSettingsPin, setSettingsPin } from "./SettingsPinGate.jsx";
@@ -69,6 +69,10 @@ export default function Settings({ onBack }) {
   const [syncRetrying, setSyncRetrying] = useState(false);
   const [syncResetting, setSyncResetting] = useState(false);
 
+  const [cpSyncStats, setCpSyncStats] = useState({ total: 0, stuck: 0, lastError: null });
+  const [cpSyncRetrying, setCpSyncRetrying] = useState(false);
+  const [cpSyncResetting, setCpSyncResetting] = useState(false);
+
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = (() => {
     const d = new Date();
@@ -88,6 +92,7 @@ export default function Settings({ onBack }) {
       checkWritable(dir);
     });
     getPendingSyncStats().then(setSyncStats);
+    getPendingClassPassStats().then(setCpSyncStats);
   }, []);
 
   async function checkWritable(dir) {
@@ -130,6 +135,27 @@ export default function Settings({ onBack }) {
       const stats = await getPendingSyncStats();
       setSyncStats(stats);
       setSyncResetting(false);
+    }
+  }
+
+  async function handleCpSyncRetry() {
+    setCpSyncRetrying(true);
+    try {
+      await retryPendingClassPass();
+    } finally {
+      setCpSyncStats(await getPendingClassPassStats());
+      setCpSyncRetrying(false);
+    }
+  }
+
+  async function handleCpResetStuck() {
+    setCpSyncResetting(true);
+    try {
+      await resetStuckClassPass();
+      await retryPendingClassPass();
+    } finally {
+      setCpSyncStats(await getPendingClassPassStats());
+      setCpSyncResetting(false);
     }
   }
 
@@ -446,6 +472,51 @@ export default function Settings({ onBack }) {
                     title="Reset stuck records and try again"
                   >
                     {syncResetting ? "Resetting…" : "Reset stuck & retry"}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="settings-divider" />
+
+        <div className="settings-section">
+          <h2 className="settings-section-title">ClassPass Lead Sync</h2>
+          <p className="settings-section-desc">
+            ClassPass check-ins are pushed to the admin panel leads.
+            Records that fail to sync are retried automatically every 5 minutes.
+          </p>
+
+          {cpSyncStats.total === 0 ? (
+            <div className="settings-status settings-status-ready">✓ No pending records</div>
+          ) : (
+            <>
+              <div className={`settings-status ${cpSyncStats.stuck > 0 ? "settings-status-error" : "settings-status-checking"}`}>
+                {cpSyncStats.total} pending
+                {cpSyncStats.stuck > 0 && ` · ${cpSyncStats.stuck} stuck (≥10 failed attempts)`}
+              </div>
+              {cpSyncStats.lastError && (
+                <div className="settings-status settings-status-error" style={{ marginTop: "0.5rem", fontSize: "0.8rem", wordBreak: "break-word" }}>
+                  Last error: {cpSyncStats.lastError}
+                </div>
+              )}
+              <div className="settings-save-row">
+                <button
+                  className="btn-primary"
+                  onClick={handleCpSyncRetry}
+                  disabled={cpSyncRetrying || cpSyncResetting}
+                >
+                  {cpSyncRetrying ? "Retrying…" : "Retry now"}
+                </button>
+                {cpSyncStats.stuck > 0 && (
+                  <button
+                    className="btn-outline"
+                    onClick={handleCpResetStuck}
+                    disabled={cpSyncRetrying || cpSyncResetting}
+                    title="Reset stuck records and try again"
+                  >
+                    {cpSyncResetting ? "Resetting…" : "Reset stuck & retry"}
                   </button>
                 )}
               </div>
