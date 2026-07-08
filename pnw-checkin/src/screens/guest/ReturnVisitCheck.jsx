@@ -1,7 +1,7 @@
+import { useState } from "react";
+
 export default function ReturnVisitCheck({ guestSession, navigate, onBack }) {
-  function handleYes() {
-    navigate("guest_phone_lookup", { returnVisit: true });
-  }
+  const [showFrontDesk, setShowFrontDesk] = useState(false);
 
   function handleNo() {
     navigate("guest_form", { returnVisit: false, prefillData: null, existingGuestId: null });
@@ -19,11 +19,27 @@ export default function ReturnVisitCheck({ guestSession, navigate, onBack }) {
             Minor guest {guestSession.supervisionRequired ? "(14–15, supervision required)" : "(16–17)"}
           </div>
         )}
-        <h2 className="question">Have you been here before?</h2>
-        <div className="choice-row">
-          <button className="btn-choice btn-yes" onClick={handleYes}>Yes</button>
-          <button className="btn-choice btn-no" onClick={handleNo}>No</button>
-        </div>
+
+        {showFrontDesk ? (
+          <div className="cp-verify-card">
+            <div className="cp-verify-icon">🙋</div>
+            <h2 className="cp-verify-heading">Please see front desk</h2>
+            <p className="cp-verify-instruction">
+              A staff member will look up your record, verify your ID, and log your visit.
+            </p>
+            <button className="btn-secondary btn-large" onClick={onBack} style={{ marginTop: "8px" }}>
+              Back to Start
+            </button>
+          </div>
+        ) : (
+          <>
+            <h2 className="question">Have you been here before?</h2>
+            <div className="choice-row">
+              <button className="btn-choice btn-yes" onClick={() => setShowFrontDesk(true)}>Yes</button>
+              <button className="btn-choice btn-no" onClick={handleNo}>No</button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

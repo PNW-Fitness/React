@@ -307,10 +307,11 @@ export default function LeadsPage() {
       .from('lead_submissions')
       .update({ visit_count: (lead.visit_count ?? 1) + 1, last_seen: now })
       .eq('id', lead.id)
-    if (!err) setLeads(l => l.map(x => x.id === lead.id
-      ? { ...x, visit_count: (x.visit_count ?? 1) + 1, last_seen: now }
-      : x
-    ))
+    if (!err) {
+      // Re-fetch so the updated lead bubbles to the top of the list (sorted by last_seen DESC)
+      setExpanded(null)
+      fetchLeads({ silent: true })
+    }
   }
 
   async function handleAssign(leadId, userId) {
