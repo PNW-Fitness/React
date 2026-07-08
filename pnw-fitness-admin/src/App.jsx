@@ -25,13 +25,6 @@ import UsersRolesPage from './pages/UsersRolesPage'
 
 const INACTIVITY_MS = 30 * 60 * 1000
 
-// Role groups — used to control which routes each role can access.
-const CONTENT_ROLES     = ['admin', 'staff']
-const LEADS_ROLES       = ['admin', 'fitness_manager', 'trainer']
-const GUEST_NOTES_ROLES  = ['admin', 'front_desk']
-const VENDOR_LOG_ROLES   = ['admin', 'front_desk', 'fitness_manager']
-const ADMIN_ROLES        = ['admin']
-
 function Loading() {
   return (
     <div className="min-h-screen flex items-center justify-center text-gray-400">
@@ -40,37 +33,48 @@ function Loading() {
   )
 }
 
-// Sends the user to their role's default landing page.
+function NoAccess() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="text-center">
+        <p className="font-medium text-gray-700">No pages are assigned to your account.</p>
+        <p className="text-sm text-gray-400 mt-1">Contact an admin to assign you an RBAC role.</p>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="mt-4 text-sm text-blue-600 hover:underline"
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Sends signed-in users to their first accessible page.
 function DefaultRedirect() {
   const { session, role } = useAuth()
-  if (session === undefined || (session && role === undefined)) return <Loading />
+  const { can, permissionsReady } = usePermissions()
+  if (session === undefined || (session && (role === undefined || !permissionsReady))) return <Loading />
   if (!session) return <Navigate to="/login" replace />
-  if (role === 'front_desk') return <Navigate to="/guest-notes" replace />
-  return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
+  if (can('pages.staff'))       return <Navigate to="/" replace />
+  if (can('pages.leads'))       return <Navigate to="/leads" replace />
+  if (can('pages.guest_notes')) return <Navigate to="/guest-notes" replace />
+  if (can('pages.vendor_log'))  return <Navigate to="/vendor-log" replace />
+  return <Navigate to="/no-access" replace />
 }
 
-// Gate for role-restricted pages. Redirects unauthorized users to their default.
-function ProtectedRoute({ allowedRoles, children }) {
-  const { session, role } = useAuth()
-  if (session === undefined || (session && role === undefined)) return <Loading />
-  if (!session) return <Navigate to="/login" replace />
-  if (allowedRoles && !allowedRoles.includes(role)) {
-    if (role === 'front_desk') return <Navigate to="/guest-notes" replace />
-    return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
-  }
-  return children
-}
-
-// Gate for permission-based pages (new RBAC system).
-// requiredPerms: array of permission keys — user must have ALL of them.
+// Gate for permission-based pages. Redirects to first accessible page if denied.
 function PermissionRoute({ requiredPerms, children }) {
   const { session, role } = useAuth()
   const { can, permissionsReady } = usePermissions()
-  if (session === undefined || (session && role === undefined) || !permissionsReady) return <Loading />
+  if (session === undefined || (session && (role === undefined || !permissionsReady))) return <Loading />
   if (!session) return <Navigate to="/login" replace />
   if (!requiredPerms.every(p => can(p))) {
-    if (role === 'front_desk') return <Navigate to="/guest-notes" replace />
-    return <Navigate to={['trainer', 'fitness_manager'].includes(role) ? '/leads' : '/'} replace />
+    if (can('pages.staff'))       return <Navigate to="/" replace />
+    if (can('pages.leads'))       return <Navigate to="/leads" replace />
+    if (can('pages.guest_notes')) return <Navigate to="/guest-notes" replace />
+    if (can('pages.vendor_log'))  return <Navigate to="/vendor-log" replace />
+    return <Navigate to="/no-access" replace />
   }
   return children
 }
@@ -102,57 +106,48 @@ export default function App() {
     }
   }, [session])
 
-  function protect(el, allowedRoles) {
-    return <ProtectedRoute allowedRoles={allowedRoles}>{el}</ProtectedRoute>
+  function perm(el, permKey) {
+    return <PermissionRoute requiredPerms={[permKey]}>{el}</PermissionRoute>
   }
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
+        {/* Public */}
         <Route path="/login"          element={<LoginPage />} />
         <Route path="/accept-invite"  element={<AcceptInvitePage />} />
         <Route path="/reset-password" element={<AcceptInvitePage />} />
+        <Route path="/no-access"      element={<NoAccess />} />
 
-        {/* Content management: admin + staff */}
-        <Route path="/"                    element={protect(<StaffListPage />,        CONTENT_ROLES)} />
-        <Route path="/staff/new"           element={protect(<StaffEditPage />,         CONTENT_ROLES)} />
-        <Route path="/staff/:id"           element={protect(<StaffEditPage />,         CONTENT_ROLES)} />
-        <Route path="/pricing"             element={protect(<PricingListPage />,       CONTENT_ROLES)} />
-        <Route path="/pricing/new"         element={protect(<PricingEditPage />,       CONTENT_ROLES)} />
-        <Route path="/pricing/:id"         element={protect(<PricingEditPage />,       CONTENT_ROLES)} />
-        <Route path="/testimonials"        element={protect(<TestimonialsListPage />,  CONTENT_ROLES)} />
-        <Route path="/testimonials/new"    element={protect(<TestimonialsEditPage />,  CONTENT_ROLES)} />
-        <Route path="/testimonials/:id"    element={protect(<TestimonialsEditPage />,  CONTENT_ROLES)} />
-        <Route path="/faq"                 element={protect(<FaqListPage />,           CONTENT_ROLES)} />
-        <Route path="/faq/new"             element={protect(<FaqEditPage />,           CONTENT_ROLES)} />
-        <Route path="/faq/:id"             element={protect(<FaqEditPage />,           CONTENT_ROLES)} />
-        <Route path="/holidays"            element={protect(<HolidayListPage />,       CONTENT_ROLES)} />
-        <Route path="/holidays/new"        element={protect(<HolidayEditPage />,       CONTENT_ROLES)} />
-        <Route path="/holidays/:id"        element={protect(<HolidayEditPage />,       CONTENT_ROLES)} />
-        <Route path="/announcements"       element={protect(<AnnouncementsListPage />, CONTENT_ROLES)} />
-        <Route path="/announcements/new"   element={protect(<AnnouncementsEditPage />, CONTENT_ROLES)} />
-        <Route path="/announcements/:id"   element={protect(<AnnouncementsEditPage />, CONTENT_ROLES)} />
+        {/* Content management */}
+        <Route path="/"                    element={perm(<StaffListPage />,        'pages.staff'        )} />
+        <Route path="/staff/new"           element={perm(<StaffEditPage />,         'pages.staff'        )} />
+        <Route path="/staff/:id"           element={perm(<StaffEditPage />,         'pages.staff'        )} />
+        <Route path="/pricing"             element={perm(<PricingListPage />,       'pages.pricing'      )} />
+        <Route path="/pricing/new"         element={perm(<PricingEditPage />,       'pages.pricing'      )} />
+        <Route path="/pricing/:id"         element={perm(<PricingEditPage />,       'pages.pricing'      )} />
+        <Route path="/testimonials"        element={perm(<TestimonialsListPage />,  'pages.testimonials' )} />
+        <Route path="/testimonials/new"    element={perm(<TestimonialsEditPage />,  'pages.testimonials' )} />
+        <Route path="/testimonials/:id"    element={perm(<TestimonialsEditPage />,  'pages.testimonials' )} />
+        <Route path="/faq"                 element={perm(<FaqListPage />,           'pages.faq'          )} />
+        <Route path="/faq/new"             element={perm(<FaqEditPage />,           'pages.faq'          )} />
+        <Route path="/faq/:id"             element={perm(<FaqEditPage />,           'pages.faq'          )} />
+        <Route path="/holidays"            element={perm(<HolidayListPage />,       'pages.holiday_hours')} />
+        <Route path="/holidays/new"        element={perm(<HolidayEditPage />,       'pages.holiday_hours')} />
+        <Route path="/holidays/:id"        element={perm(<HolidayEditPage />,       'pages.holiday_hours')} />
+        <Route path="/announcements"       element={perm(<AnnouncementsListPage />, 'pages.announcements')} />
+        <Route path="/announcements/new"   element={perm(<AnnouncementsEditPage />, 'pages.announcements')} />
+        <Route path="/announcements/:id"   element={perm(<AnnouncementsEditPage />, 'pages.announcements')} />
 
-        {/* Leads: admin + trainer */}
-        <Route path="/leads"               element={protect(<LeadsPage />,             LEADS_ROLES)} />
+        {/* Operational pages */}
+        <Route path="/leads"       element={perm(<LeadsPage />,      'pages.leads'       )} />
+        <Route path="/guest-notes" element={perm(<GuestNotesPage />, 'pages.guest_notes' )} />
+        <Route path="/vendor-log"  element={perm(<VendorLogPage />,  'pages.vendor_log'  )} />
+        <Route path="/activity"    element={perm(<ActivityLogPage />, 'pages.activity_log')} />
 
-        {/* Guest notes: admin + front desk */}
-        <Route path="/guest-notes"         element={protect(<GuestNotesPage />,        GUEST_NOTES_ROLES)} />
-
-        {/* Vendor log: admin + front desk + fitness manager */}
-        <Route path="/vendor-log"          element={protect(<VendorLogPage />,         VENDOR_LOG_ROLES)} />
-
-        {/* Admin only */}
-        <Route path="/activity"    element={protect(<ActivityLogPage />, ADMIN_ROLES)} />
-
-        {/* Users & Roles — permission-gated */}
+        {/* Users & Roles */}
         <Route path="/admins"      element={<Navigate to="/users-roles" replace />} />
-        <Route path="/users-roles" element={
-          <PermissionRoute requiredPerms={['roles.manage', 'users.manage']}>
-            <UsersRolesPage />
-          </PermissionRoute>
-        } />
+        <Route path="/users-roles" element={perm(<UsersRolesPage />, 'pages.users_roles')} />
 
         <Route path="*" element={<DefaultRedirect />} />
       </Routes>

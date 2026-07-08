@@ -12,14 +12,6 @@ function groupBy(arr, key) {
   }, {})
 }
 
-const LEGACY_ROLES = [
-  { value: 'admin',           label: 'Admin'           },
-  { value: 'fitness_manager', label: 'Fitness Manager' },
-  { value: 'trainer',         label: 'Trainer'         },
-  { value: 'front_desk',      label: 'Front Desk'      },
-  { value: 'staff',           label: 'Staff'           },
-]
-
 // ── Page shell ────────────────────────────────────────────────────────────────
 export default function UsersRolesPage() {
   const [tab, setTab] = useState('users')
@@ -63,8 +55,7 @@ function UsersTab() {
   const [error,         setError]         = useState('')
   const [currentUserId, setCurrentUserId] = useState(null)
 
-  const [saving,         setSaving]         = useState(null) // user_id
-  const [changingLegacy, setChangingLegacy] = useState(null) // user_id
+  const [saving, setSaving] = useState(null) // user_id
 
   const [resetTarget,  setResetTarget]  = useState(null)
   const [resetMessage, setResetMessage] = useState({ type: '', text: '' })
@@ -141,17 +132,6 @@ function UsersTab() {
     if (err) setError(err.message)
     else await load()
     setSaving(null)
-  }
-
-  async function handleLegacyChange(user, newRole) {
-    setChangingLegacy(user.user_id)
-    const { error: err } = await supabase
-      .from('admin_profiles')
-      .update({ role: newRole })
-      .eq('user_id', user.user_id)
-    if (err) setError(err.message)
-    else setUsers(u => u.map(x => x.user_id === user.user_id ? { ...x, role: newRole } : x))
-    setChangingLegacy(null)
   }
 
   async function handleToggleActive(user) {
@@ -251,8 +231,7 @@ function UsersTab() {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Legacy role</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">RBAC role</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
             </tr>
@@ -260,7 +239,7 @@ function UsersTab() {
           <tbody className="divide-y divide-gray-100">
             {users.map(user => {
               const isSelf   = user.user_id === currentUserId
-              const isBusy   = saving === user.user_id || changingLegacy === user.user_id
+              const isBusy   = saving === user.user_id
               const rbacRole = user.userRole?.roles
 
               return (
@@ -273,23 +252,6 @@ function UsersTab() {
                       )}
                     </p>
                     <p className="text-xs text-gray-400">{user.email}</p>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    {isSelf ? (
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{user.role}</span>
-                    ) : (
-                      <select
-                        value={user.role ?? 'staff'}
-                        disabled={isBusy}
-                        onChange={e => handleLegacyChange(user, e.target.value)}
-                        className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-50"
-                      >
-                        {LEGACY_ROLES.map(r => (
-                          <option key={r.value} value={r.value}>{r.label}</option>
-                        ))}
-                      </select>
-                    )}
                   </td>
 
                   <td className="px-4 py-3">
@@ -355,7 +317,7 @@ function UsersTab() {
             })}
             {users.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-400">No users yet.</td>
+                <td colSpan={4} className="px-4 py-6 text-center text-gray-400">No users yet.</td>
               </tr>
             )}
           </tbody>
@@ -649,20 +611,18 @@ function AddUserTab() {
   const [mode, setMode] = useState('invite') // 'invite' | 'create'
 
   // Invite link
-  const [inviteEmail,   setInviteEmail]   = useState('')
-  const [inviteRole,    setInviteRole]    = useState('staff')
-  const [inviting,      setInviting]      = useState(false)
-  const [inviteMsg,     setInviteMsg]     = useState({ type: '', text: '' })
-  const [inviteLink,    setInviteLink]    = useState(null)
-  const [copied,        setCopied]        = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviting,    setInviting]    = useState(false)
+  const [inviteMsg,   setInviteMsg]   = useState({ type: '', text: '' })
+  const [inviteLink,  setInviteLink]  = useState(null)
+  const [copied,      setCopied]      = useState(false)
 
   // Direct create
-  const [username,      setUsername]      = useState('')
-  const [password,      setPassword]      = useState('')
-  const [confirmPw,     setConfirmPw]     = useState('')
-  const [createRole,    setCreateRole]    = useState('staff')
-  const [creating,      setCreating]      = useState(false)
-  const [createMsg,     setCreateMsg]     = useState({ type: '', text: '' })
+  const [username,  setUsername]  = useState('')
+  const [password,  setPassword]  = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [creating,  setCreating]  = useState(false)
+  const [createMsg, setCreateMsg] = useState({ type: '', text: '' })
 
   async function handleInvite(e) {
     e.preventDefault()
@@ -683,29 +643,21 @@ function AddUserTab() {
       return
     }
 
-    if (inviteRole !== 'staff') {
-      await supabase
-        .from('admin_profiles')
-        .update({ role: inviteRole })
-        .eq('email', inviteEmail.trim())
-    }
-
     setInviting(false)
     const parsed = typeof data === 'string' ? JSON.parse(data) : data
     if (parsed?.inviteLink) {
       setInviteLink(parsed.inviteLink)
       setInviteMsg({
         type: 'success',
-        text: `Access granted for ${inviteEmail.trim()} as ${inviteRole}. Send them the link below to set their password:`,
+        text: `Access granted for ${inviteEmail.trim()}. Send them the link below to set their password, then assign them an RBAC role.`,
       })
     } else {
       setInviteMsg({
         type: 'success',
-        text: `Access granted for ${inviteEmail.trim()} as ${inviteRole}. They already have an account and can sign in now.`,
+        text: `Access granted for ${inviteEmail.trim()}. They already have an account and can sign in. Remember to assign them an RBAC role.`,
       })
     }
     setInviteEmail('')
-    setInviteRole('staff')
   }
 
   async function handleCopyLink() {
@@ -728,7 +680,7 @@ function AddUserTab() {
     }
     setCreating(true)
     const { error: fnErr } = await supabase.functions.invoke('create-admin-user', {
-      body: { username: username.trim(), password, role: createRole },
+      body: { username: username.trim(), password, role: 'staff' },
     })
     setCreating(false)
     if (fnErr) {
@@ -745,12 +697,11 @@ function AddUserTab() {
     }
     setCreateMsg({
       type: 'success',
-      text: `Account created for "${username.trim()}" as ${createRole}. They can sign in immediately.`,
+      text: `Account created for "${username.trim()}". They can sign in immediately — remember to assign them an RBAC role.`,
     })
     setUsername('')
     setPassword('')
     setConfirmPw('')
-    setCreateRole('staff')
   }
 
   return (
@@ -759,7 +710,7 @@ function AddUserTab() {
       <div className="flex rounded-lg border border-gray-200 overflow-hidden mb-5 text-sm font-medium">
         <button
           type="button"
-          onClick={() => { setMode('invite'); setInviteMsg({ type: '', text: '' }); setInviteLink(null) }}
+          onClick={() => { setMode('invite'); setInviteMsg({ type: '', text: '' }); setInviteLink(null); setCopied(false) }}
           className={`flex-1 py-2 transition ${mode === 'invite' ? 'bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
         >
           Generate invite link
@@ -777,7 +728,7 @@ function AddUserTab() {
       {mode === 'invite' && (
         <form onSubmit={handleInvite} className="space-y-3">
           <p className="text-xs text-gray-400 mb-2">
-            Generates a one-time link you can send to the user to set their password.
+            Generates a one-time link you can send to the user to set their password. Assign their RBAC role after they accept.
           </p>
           <input
             type="email"
@@ -787,16 +738,6 @@ function AddUserTab() {
             onChange={e => setInviteEmail(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
-            <select
-              value={inviteRole}
-              onChange={e => setInviteRole(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {LEGACY_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
-          </div>
 
           {inviteMsg.text && (
             <p className={`text-sm px-3 py-2 rounded border ${
@@ -833,7 +774,7 @@ function AddUserTab() {
       {mode === 'create' && (
         <form onSubmit={handleCreate} className="space-y-3">
           <p className="text-xs text-gray-400 mb-2">
-            Creates a staff account immediately with a username and password. Works for Front Desk, Staff, Trainers, and any other role — no email address needed.
+            Creates an account immediately with a username and password — no email address needed. Assign their RBAC role after creating.
           </p>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Username</label>
@@ -869,17 +810,6 @@ function AddUserTab() {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
-            <select
-              value={createRole}
-              onChange={e => setCreateRole(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {LEGACY_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </select>
-          </div>
-
           {createMsg.text && (
             <p className={`text-sm px-3 py-2 rounded border ${
               createMsg.type === 'error'

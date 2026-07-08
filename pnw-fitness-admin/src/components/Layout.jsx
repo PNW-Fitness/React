@@ -27,12 +27,8 @@ export default function Layout({ children }) {
   }
 
   const visibleNav = [
-    ...ROLE_NAV.filter(item =>
-      can(item.permKey) || (!role || item.roles.includes(role))
-    ),
-    ...((can('pages.users_roles') || (can('roles.manage') && can('users.manage')))
-      ? [{ to: '/users-roles', label: 'Users & Roles' }]
-      : []),
+    ...ROLE_NAV.filter(item => can(item.permKey)),
+    ...(can('pages.users_roles') ? [{ to: '/users-roles', label: 'Users & Roles' }] : []),
   ]
 
   return (
