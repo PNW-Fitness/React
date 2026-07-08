@@ -15,6 +15,7 @@ export default function GuestNotesPage() {
   const [submitting,    setSubmitting]    = useState(null)
   const [myName,        setMyName]        = useState(null)
   const [submitMsg,     setSubmitMsg]     = useState({})
+  const [loggingVisit,  setLoggingVisit]  = useState(null)
 
   const debounceRef = useRef(null)
 
@@ -33,24 +34,23 @@ export default function GuestNotesPage() {
     resolveUser()
   }, [])
 
+  async function fetchToday() {
+    setTodayLoading(true)
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+
+    const { data } = await supabase
+      .from('lead_submissions')
+      .select('id, name, email, phone, source, created_at, last_seen, visit_count, details')
+      .gte('last_seen', todayStart.toISOString())
+      .order('last_seen', { ascending: false })
+
+    setTodayLeads(data ?? [])
+    setTodayLoading(false)
+  }
+
   // Load today's check-ins on mount
-  useEffect(() => {
-    async function fetchToday() {
-      setTodayLoading(true)
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
-
-      const { data } = await supabase
-        .from('lead_submissions')
-        .select('id, name, email, phone, source, created_at, last_seen, visit_count, details')
-        .gte('last_seen', todayStart.toISOString())
-        .order('last_seen', { ascending: false })
-
-      setTodayLeads(data ?? [])
-      setTodayLoading(false)
-    }
-    fetchToday()
-  }, [])
+  useEffect(() => { fetchToday() }, [])
 
   // Debounced search — only runs when search has content
   useEffect(() => {
@@ -69,6 +69,20 @@ export default function GuestNotesPage() {
       setSearching(false)
     }, 300)
   }, [search])
+
+  async function handleLogVisit(lead) {
+    setLoggingVisit(lead.id)
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('lead_submissions')
+      .update({ visit_count: (lead.visit_count ?? 1) + 1, last_seen: now })
+      .eq('id', lead.id)
+    setLoggingVisit(null)
+    if (!error) {
+      setExpanded(null)
+      fetchToday()
+    }
+  }
 
   async function handleExpand(leadId) {
     if (expanded === leadId) { setExpanded(null); return }
@@ -234,11 +248,20 @@ export default function GuestNotesPage() {
                   {/* Expanded notes panel */}
                   {isOpen && (
                     <div className="px-4 pb-5 pt-3 border-t border-gray-100">
-                      <div className="flex items-center gap-3 mb-3">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</p>
-                        {lead.details?.visit_reason && (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{lead.details.visit_reason}</span>
-                        )}
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-3">
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</p>
+                          {lead.details?.visit_reason && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{lead.details.visit_reason}</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleLogVisit(lead)}
+                          disabled={loggingVisit === lead.id}
+                          className="text-xs font-medium bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white px-3 py-1 rounded-lg transition flex-shrink-0"
+                        >
+                          {loggingVisit === lead.id ? '…' : '+ Log Visit'}
+                        </button>
                       </div>
 
                       {notesLoading === lead.id ? (

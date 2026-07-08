@@ -1027,10 +1027,20 @@ export default function LeadsPage() {
 
                         {/* ── Trainer notes ── */}
                         <div className="mt-4 pt-4 border-t border-gray-100">
-                          <div className="flex items-center gap-3 mb-3">
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Trainer Notes</p>
-                            {lead.source === 'checkin_app' && lead.details?.visit_reason && (
-                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{lead.details.visit_reason}</span>
+                          <div className="flex items-center justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-3">
+                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Guest Notes</p>
+                              {lead.source === 'checkin_app' && lead.details?.visit_reason && (
+                                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{lead.details.visit_reason}</span>
+                              )}
+                            </div>
+                            {canEditStatus && (
+                              <button
+                                onClick={() => handleLogVisit(lead)}
+                                className="text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-lg transition flex-shrink-0"
+                              >
+                                + Log Visit
+                              </button>
                             )}
                           </div>
 
