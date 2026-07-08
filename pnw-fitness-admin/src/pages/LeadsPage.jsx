@@ -301,6 +301,18 @@ export default function LeadsPage() {
     setUpdating(null)
   }
 
+  async function handleLogVisit(lead) {
+    const now = new Date().toISOString()
+    const { error: err } = await supabase
+      .from('lead_submissions')
+      .update({ visit_count: (lead.visit_count ?? 1) + 1, last_seen: now })
+      .eq('id', lead.id)
+    if (!err) setLeads(l => l.map(x => x.id === lead.id
+      ? { ...x, visit_count: (x.visit_count ?? 1) + 1, last_seen: now }
+      : x
+    ))
+  }
+
   async function handleAssign(leadId, userId) {
     const val = userId || null
     const { error: err } = await supabase
@@ -949,20 +961,26 @@ export default function LeadsPage() {
                                 hour: 'numeric', minute: '2-digit',
                               })}
                             </p>
-                            {lead.source === 'checkin_app' && (
-                              <div className="mt-2 space-y-0.5">
+                            <div className="mt-2 space-y-0.5">
+                              <p className="text-xs text-gray-500">
+                                <span className="font-medium">Visits:</span> {lead.visit_count ?? 1}
+                              </p>
+                              {lead.last_seen && (
                                 <p className="text-xs text-gray-500">
-                                  <span className="font-medium">Visits:</span> {lead.visit_count ?? 1}
+                                  <span className="font-medium">Last seen:</span>{' '}
+                                  {new Date(lead.last_seen).toLocaleDateString('en-US', {
+                                    month: 'short', day: 'numeric', year: 'numeric',
+                                  })}
                                 </p>
-                                {lead.last_seen && (
-                                  <p className="text-xs text-gray-500">
-                                    <span className="font-medium">Last seen:</span>{' '}
-                                    {new Date(lead.last_seen).toLocaleDateString('en-US', {
-                                      month: 'short', day: 'numeric', year: 'numeric',
-                                    })}
-                                  </p>
-                                )}
-                              </div>
+                              )}
+                            </div>
+                            {canEditStatus && (
+                              <button
+                                onClick={() => handleLogVisit(lead)}
+                                className="mt-3 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg transition"
+                              >
+                                + Log Visit
+                              </button>
                             )}
                           </div>
 
