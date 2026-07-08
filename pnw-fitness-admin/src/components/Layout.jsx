@@ -11,8 +11,9 @@ const ROLE_NAV = [
   { to: '/holidays',      label: 'Holiday Hours',  roles: ['admin', 'staff'],                       permKey: 'pages.holiday_hours'},
   { to: '/announcements', label: 'Announcements',  roles: ['admin', 'staff'],                       permKey: 'pages.announcements'},
   { to: '/leads',         label: 'Leads',          roles: ['admin', 'fitness_manager', 'trainer'],  permKey: 'pages.leads'        },
-  { to: '/guest-notes',   label: 'Guest Notes',    roles: ['admin', 'front_desk'],                  permKey: 'pages.guest_notes'  },
-  { to: '/activity',      label: 'Activity Log',   roles: ['admin'],                                permKey: 'pages.activity_log' },
+  { to: '/guest-notes',   label: 'Guest Notes',    roles: ['admin', 'front_desk'],                              permKey: 'pages.guest_notes'  },
+  { to: '/vendor-log',    label: 'Vendor Log',     roles: ['admin', 'front_desk', 'fitness_manager'],           permKey: 'pages.vendor_log'   },
+  { to: '/activity',      label: 'Activity Log',   roles: ['admin'],                                            permKey: 'pages.activity_log' },
 ]
 
 export default function Layout({ children }) {

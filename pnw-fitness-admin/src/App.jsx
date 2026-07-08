@@ -20,6 +20,7 @@ import AnnouncementsListPage from './pages/AnnouncementsListPage'
 import AnnouncementsEditPage from './pages/AnnouncementsEditPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import GuestNotesPage from './pages/GuestNotesPage'
+import VendorLogPage from './pages/VendorLogPage'
 import UsersRolesPage from './pages/UsersRolesPage'
 
 const INACTIVITY_MS = 30 * 60 * 1000
@@ -27,8 +28,9 @@ const INACTIVITY_MS = 30 * 60 * 1000
 // Role groups — used to control which routes each role can access.
 const CONTENT_ROLES     = ['admin', 'staff']
 const LEADS_ROLES       = ['admin', 'fitness_manager', 'trainer']
-const GUEST_NOTES_ROLES = ['admin', 'front_desk']
-const ADMIN_ROLES       = ['admin']
+const GUEST_NOTES_ROLES  = ['admin', 'front_desk']
+const VENDOR_LOG_ROLES   = ['admin', 'front_desk', 'fitness_manager']
+const ADMIN_ROLES        = ['admin']
 
 function Loading() {
   return (
@@ -137,6 +139,9 @@ export default function App() {
 
         {/* Guest notes: admin + front desk */}
         <Route path="/guest-notes"         element={protect(<GuestNotesPage />,        GUEST_NOTES_ROLES)} />
+
+        {/* Vendor log: admin + front desk + fitness manager */}
+        <Route path="/vendor-log"          element={protect(<VendorLogPage />,         VENDOR_LOG_ROLES)} />
 
         {/* Admin only */}
         <Route path="/activity"    element={protect(<ActivityLogPage />, ADMIN_ROLES)} />
