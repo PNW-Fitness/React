@@ -3,7 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getExportDir } from "../lib/fileExport/fileExport.js";
 import { getPendingSyncStats, resetStuckLeads, getPendingClassPassStats, resetStuckClassPass } from "../lib/db.js";
-import { retryPendingLeads, retryPendingClassPass } from "../lib/leadSync.js";
+import { retryPendingLeads, retryPendingClassPass, pushClassPassToSupabase } from "../lib/leadSync.js";
 import { exportDateRangeCsv } from "../lib/csvExport.js";
 import FrontDeskQrCode from "../components/FrontDeskQrCode.jsx";
 import { getSettingsPin, setSettingsPin } from "./SettingsPinGate.jsx";
@@ -72,6 +72,8 @@ export default function Settings({ onBack }) {
   const [cpSyncStats, setCpSyncStats] = useState({ total: 0, stuck: 0, lastError: null });
   const [cpSyncRetrying, setCpSyncRetrying] = useState(false);
   const [cpSyncResetting, setCpSyncResetting] = useState(false);
+  const [cpTestResult, setCpTestResult] = useState(null); // null | { ok, msg }
+  const [cpTesting, setCpTesting] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = (() => {
@@ -146,6 +148,24 @@ export default function Settings({ onBack }) {
       setCpSyncStats(await getPendingClassPassStats());
       setCpSyncRetrying(false);
     }
+  }
+
+  async function handleCpTestSync() {
+    setCpTesting(true);
+    setCpTestResult(null);
+    // Use a unique phone so dedup never matches an existing record.
+    const testPhone = `000${Date.now().toString().slice(-7)}`;
+    const signedAt = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const { success, error } = await pushClassPassToSupabase(
+      { guestName: 'SYNC TEST — DELETE ME', contact: testPhone, zipCode: '00000' },
+      signedAt
+    );
+    setCpTestResult(
+      success
+        ? { ok: true,  msg: `✓ Success — test entry created (phone ${testPhone}). Mark it as test in admin panel and delete.` }
+        : { ok: false, msg: `✗ Failed: ${error}` }
+    );
+    setCpTesting(false);
   }
 
   async function handleCpResetStuck() {
@@ -487,6 +507,17 @@ export default function Settings({ onBack }) {
             ClassPass check-ins are pushed to the admin panel leads.
             Records that fail to sync are retried automatically every 5 minutes.
           </p>
+
+          <div className="settings-save-row">
+            <button className="btn-outline" onClick={handleCpTestSync} disabled={cpTesting}>
+              {cpTesting ? "Testing…" : "Test connection"}
+            </button>
+          </div>
+          {cpTestResult && (
+            <div className={`settings-status ${cpTestResult.ok ? "settings-status-ready" : "settings-status-error"}`} style={{ wordBreak: "break-word" }}>
+              {cpTestResult.msg}
+            </div>
+          )}
 
           {cpSyncStats.total === 0 ? (
             <div className="settings-status settings-status-ready">✓ No pending records</div>

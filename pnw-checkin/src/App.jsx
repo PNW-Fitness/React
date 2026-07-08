@@ -430,6 +430,11 @@ export default function App() {
           checkinId: row.id,
           signedAt,
         });
+        const { success, error: syncError } = await pushClassPassToSupabase(cpFromRow, signedAt);
+        if (!success) {
+          console.warn("ClassPass queue sync failed:", syncError);
+          await queuePendingClassPass(row.id, { ...cpFromRow, signedAt });
+        }
       } else {
         const guestFromRow = guestSessionFromPendingRow(row);
         await exportGuestFiles({
