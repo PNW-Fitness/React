@@ -60,6 +60,9 @@ async function getDb() {
       time_in TEXT NOT NULL
     )
   `);
+  // Columns added after initial release — safe to ignore if already present.
+  try { await _db.execute(`ALTER TABLE vendor_log ADD COLUMN phone TEXT`) } catch { /* exists */ }
+  try { await _db.execute(`ALTER TABLE vendor_log ADD COLUMN id_photo TEXT`) } catch { /* exists */ }
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS classpass_checkins (
@@ -269,9 +272,9 @@ export async function updateClassPassPdfPath(checkinId, pdfPath) {
 export async function saveVendor(data) {
   const db = await getDb();
   const result = await db.execute(
-    `INSERT INTO vendor_log (name, company, reason, time_in)
-     VALUES (?, ?, ?, ?)`,
-    [data.name, data.company, data.reason, localNow()]
+    `INSERT INTO vendor_log (name, company, reason, phone, id_photo, time_in)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [data.name, data.company, data.reason, data.phone ?? null, data.id_photo ?? null, localNow()]
   );
   return result.lastInsertId;
 }
@@ -488,7 +491,7 @@ export async function updateTanningPdfPath(checkinId, pdfPath) {
 export async function getVendorsByDateRange(from, to) {
   const db = await getDb();
   return await db.select(
-    `SELECT name, company, reason, time_in
+    `SELECT name, company, phone, reason, time_in
      FROM vendor_log
      WHERE date(time_in) >= ? AND date(time_in) <= ?
      ORDER BY time_in ASC`,
@@ -503,7 +506,7 @@ export async function getTodayVendors() {
   const pad = (n) => String(n).padStart(2, "0");
   const datePrefix = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
   return await db.select(
-    `SELECT id, name, company, reason, time_in
+    `SELECT id, name, company, phone, reason, time_in
      FROM vendor_log
      WHERE time_in LIKE ?
      ORDER BY id DESC`,

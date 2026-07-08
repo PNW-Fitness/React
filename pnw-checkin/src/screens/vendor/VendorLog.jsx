@@ -48,7 +48,7 @@ export default function VendorLog({ onDone }) {
 
       const { data, error: fetchErr } = await supabase
         .from("vendor_submissions")
-        .select("id, name, company, reason, submitted_at")
+        .select("id, name, company, phone, reason, submitted_at")
         .gte("submitted_at", todayLocalMidnightIso())
         .order("submitted_at", { ascending: false });
       if (!cancelled) {
@@ -79,11 +79,12 @@ export default function VendorLog({ onDone }) {
   }, []);
 
   const vendors = [
-    ...localVendors.map((v) => ({ id: `local-${v.id}`, name: v.name, company: v.company, reason: v.reason, time_in: v.time_in })),
+    ...localVendors.map((v) => ({ id: `local-${v.id}`, name: v.name, company: v.company, phone: v.phone, reason: v.reason, time_in: v.time_in })),
     ...webVendors.map((v) => ({
       id: `web-${v.id}`,
       name: v.name,
       company: v.company,
+      phone: v.phone,
       reason: v.reason,
       time_in: isoToLocalTimeString(v.submitted_at),
     })),
@@ -113,6 +114,7 @@ export default function VendorLog({ onDone }) {
                 <th>Time In</th>
                 <th>Name</th>
                 <th>Company</th>
+                <th>Phone</th>
                 <th>Reason</th>
               </tr>
             </thead>
@@ -122,6 +124,7 @@ export default function VendorLog({ onDone }) {
                   <td className="vendor-time">{formatTime(v.time_in)}</td>
                   <td>{v.name}</td>
                   <td>{v.company}</td>
+                  <td>{v.phone || "—"}</td>
                   <td>{v.reason}</td>
                 </tr>
               ))}

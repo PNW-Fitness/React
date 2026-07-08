@@ -1,20 +1,24 @@
 import { useState } from "react";
 import { saveVendor } from "../../lib/db.js";
+import { supabase } from "../../lib/supabase.js";
+import IdCapture from "../../components/IdCapture/IdCapture.jsx";
 
-const EMPTY = { name: "", company: "", reason: "" };
+const EMPTY = { name: "", company: "", phone: "", reason: "" };
 
 function validate(form) {
   const errors = {};
-  if (!form.name.trim()) errors.name = "Required";
+  if (!form.name.trim())    errors.name    = "Required";
   if (!form.company.trim()) errors.company = "Required";
-  if (!form.reason.trim()) errors.reason = "Required";
+  if (!form.phone.trim())   errors.phone   = "Required";
+  if (!form.reason.trim())  errors.reason  = "Required";
   return errors;
 }
 
 export default function VendorForm({ onDone, onBack }) {
-  const [form, setForm] = useState(EMPTY);
-  const [errors, setErrors] = useState({});
-  const [saving, setSaving] = useState(false);
+  const [step,      setStep]      = useState("form"); // "form" | "id_capture"
+  const [form,      setForm]      = useState(EMPTY);
+  const [errors,    setErrors]    = useState({});
+  const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState("");
 
   function set(field, value) {
@@ -22,23 +26,71 @@ export default function VendorForm({ onDone, onBack }) {
     setErrors((e) => ({ ...e, [field]: undefined }));
   }
 
-  async function handleSubmit(e) {
+  function handleFormSubmit(e) {
     e.preventDefault();
     const errs = validate(form);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setStep("id_capture");
+  }
+
+  async function handleIdConfirm(idPhotoDataUrl) {
     setSaving(true);
     setSaveError("");
     try {
-      await saveVendor(form);
+      await saveVendor({ ...form, id_photo: idPhotoDataUrl });
+
+      // Push to Supabase so the admin panel can see it.
+      const { error } = await supabase.from("vendor_submissions").insert({
+        name:         form.name,
+        company:      form.company,
+        phone:        form.phone,
+        reason:       form.reason,
+        id_photo_url: idPhotoDataUrl,
+        submitted_at: new Date().toISOString(),
+      });
+      if (error) console.warn("Vendor Supabase push failed:", error.message);
+
       onDone();
     } catch (err) {
       console.error(err);
       setSaveError("Failed to save — please try again.");
       setSaving(false);
     }
+  }
+
+  async function handleSkipId() {
+    setSaving(true);
+    setSaveError("");
+    try {
+      await saveVendor({ ...form, id_photo: null });
+
+      const { error } = await supabase.from("vendor_submissions").insert({
+        name:         form.name,
+        company:      form.company,
+        phone:        form.phone,
+        reason:       form.reason,
+        id_photo_url: null,
+        submitted_at: new Date().toISOString(),
+      });
+      if (error) console.warn("Vendor Supabase push failed:", error.message);
+
+      onDone();
+    } catch (err) {
+      console.error(err);
+      setSaveError("Failed to save — please try again.");
+      setSaving(false);
+    }
+  }
+
+  if (step === "id_capture") {
+    return (
+      <IdCapture
+        guestSession={{ isMinor: false, dob: null, formData: { first_name: form.name, last_name: "" } }}
+        onConfirm={handleIdConfirm}
+        onBack={() => setStep("form")}
+        onDeclineId={handleSkipId}
+      />
+    );
   }
 
   return (
@@ -50,7 +102,7 @@ export default function VendorForm({ onDone, onBack }) {
 
       <div className="screen-body centered">
         <h2>Vendor Check-In</h2>
-        <form onSubmit={handleSubmit} noValidate autoComplete="off" className="vendor-form">
+        <form onSubmit={handleFormSubmit} noValidate autoComplete="off" className="vendor-form">
           <div className="field">
             <label htmlFor="v-name">Name *</label>
             <input id="v-name" type="text" autoComplete="off" value={form.name} onChange={(e) => set("name", e.target.value)} />
@@ -62,6 +114,11 @@ export default function VendorForm({ onDone, onBack }) {
             {errors.company && <p className="field-error">{errors.company}</p>}
           </div>
           <div className="field">
+            <label htmlFor="v-phone">Phone *</label>
+            <input id="v-phone" type="tel" autoComplete="off" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+            {errors.phone && <p className="field-error">{errors.phone}</p>}
+          </div>
+          <div className="field">
             <label htmlFor="v-reason">Reason for Visit *</label>
             <textarea id="v-reason" rows={3} autoComplete="off" value={form.reason} onChange={(e) => set("reason", e.target.value)} />
             {errors.reason && <p className="field-error">{errors.reason}</p>}
@@ -69,7 +126,7 @@ export default function VendorForm({ onDone, onBack }) {
           {saveError && <p className="field-error">{saveError}</p>}
           <div className="form-actions">
             <button type="submit" className="btn-primary btn-large" disabled={saving}>
-              {saving ? "Signing in…" : "Sign In"}
+              Next — ID Photo →
             </button>
           </div>
         </form>

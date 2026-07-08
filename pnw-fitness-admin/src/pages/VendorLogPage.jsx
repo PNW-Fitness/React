@@ -15,6 +15,7 @@ export default function VendorLogPage() {
   const [vendors,      setVendors]      = useState([])
   const [loading,      setLoading]      = useState(true)
   const [selectedDate, setSelectedDate] = useState(todayStr)
+  const [photoModal,   setPhotoModal]   = useState(null) // url string or null
 
   async function fetchVendors(dateStr) {
     setLoading(true)
@@ -23,7 +24,7 @@ export default function VendorLogPage() {
 
     const { data } = await supabase
       .from('vendor_submissions')
-      .select('id, name, company, reason, submitted_at')
+      .select('id, name, company, phone, reason, id_photo_url, submitted_at')
       .gte('submitted_at', start.toISOString())
       .lte('submitted_at', end.toISOString())
       .order('submitted_at', { ascending: false })
@@ -54,7 +55,7 @@ export default function VendorLogPage() {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-xl font-bold text-gray-800">Vendor Log</h2>
@@ -93,19 +94,34 @@ export default function VendorLogPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 text-left">
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Time In</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Name</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Company</th>
-                    <th className="px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Reason for Visit</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Time In</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Name</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Company</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Phone</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Reason for Visit</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">ID</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {vendors.map(v => (
                     <tr key={v.id} className="hover:bg-gray-50 transition">
-                      <td className="px-5 py-3 text-gray-500 whitespace-nowrap">{formatTime(v.submitted_at)}</td>
-                      <td className="px-5 py-3 font-medium text-gray-800">{v.name}</td>
-                      <td className="px-5 py-3 text-gray-600">{v.company}</td>
-                      <td className="px-5 py-3 text-gray-600">{v.reason}</td>
+                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatTime(v.submitted_at)}</td>
+                      <td className="px-4 py-3 font-medium text-gray-800">{v.name}</td>
+                      <td className="px-4 py-3 text-gray-600">{v.company}</td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{v.phone || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{v.reason}</td>
+                      <td className="px-4 py-3">
+                        {v.id_photo_url ? (
+                          <button
+                            onClick={() => setPhotoModal(v.id_photo_url)}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-800 underline whitespace-nowrap"
+                          >
+                            View ID
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -114,6 +130,36 @@ export default function VendorLogPage() {
           </div>
         )}
       </div>
+
+      {/* ID Photo Modal */}
+      {photoModal && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={() => setPhotoModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-lg w-full"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+              <p className="text-sm font-semibold text-gray-700">Vendor ID Photo</p>
+              <button
+                onClick={() => setPhotoModal(null)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <img
+                src={photoModal}
+                alt="Vendor ID"
+                className="w-full rounded-lg object-contain max-h-96"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }
