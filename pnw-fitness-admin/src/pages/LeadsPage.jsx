@@ -241,7 +241,11 @@ export default function LeadsPage() {
       .order('last_seen', { ascending: false, nullsFirst: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-    q = q.eq('is_test', !hideTest)
+    if (hideTest) {
+      q = q.or('is_test.eq.false,is_test.is.null')
+    } else {
+      q = q.eq('is_test', true)
+    }
 
     if (filterSource      !== 'all') q = q.eq('source', filterSource)
     if (filterStatus      !== 'all') q = q.eq('status', filterStatus)
