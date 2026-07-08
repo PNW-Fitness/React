@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getExportDir } from "../lib/fileExport/fileExport.js";
 import { getPendingSyncStats, resetStuckLeads, getPendingClassPassStats, resetStuckClassPass } from "../lib/db.js";
 import { retryPendingLeads, retryPendingClassPass, pushClassPassToSupabase } from "../lib/leadSync.js";
+import { supabase } from "../lib/supabase.js";
 import { exportDateRangeCsv } from "../lib/csvExport.js";
 import FrontDeskQrCode from "../components/FrontDeskQrCode.jsx";
 import { getSettingsPin, setSettingsPin } from "./SettingsPinGate.jsx";
@@ -72,8 +73,10 @@ export default function Settings({ onBack }) {
   const [cpSyncStats, setCpSyncStats] = useState({ total: 0, stuck: 0, lastError: null });
   const [cpSyncRetrying, setCpSyncRetrying] = useState(false);
   const [cpSyncResetting, setCpSyncResetting] = useState(false);
-  const [cpTestResult, setCpTestResult] = useState(null); // null | { ok, msg }
-  const [cpTesting, setCpTesting] = useState(false);
+  const [cpTestResult,     setCpTestResult]     = useState(null); // null | { ok, msg }
+  const [cpTesting,        setCpTesting]        = useState(false);
+  const [vendorTestResult, setVendorTestResult] = useState(null); // null | { ok, msg }
+  const [vendorTesting,    setVendorTesting]    = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = (() => {
@@ -166,6 +169,24 @@ export default function Settings({ onBack }) {
         : { ok: false, msg: `✗ Failed: ${error}` }
     );
     setCpTesting(false);
+  }
+
+  async function handleVendorTestSync() {
+    setVendorTesting(true);
+    setVendorTestResult(null);
+    const { error } = await supabase.rpc("insert_vendor_submission", {
+      p_name:         "TEST VENDOR — DELETE ME",
+      p_company:      "Test Company",
+      p_phone:        "0000000000",
+      p_reason:       "Connection test",
+      p_id_photo_url: null,
+    });
+    setVendorTestResult(
+      error
+        ? { ok: false, msg: `✗ Failed: ${error.message} (code: ${error.code})` }
+        : { ok: true,  msg: "✓ Success — test entry created. Delete it from the admin panel Vendor Log." }
+    );
+    setVendorTesting(false);
   }
 
   async function handleCpResetStuck() {
@@ -457,6 +478,26 @@ export default function Settings({ onBack }) {
               </button>
             </div>
           </form>
+        </div>
+
+        <div className="settings-divider" />
+
+        <div className="settings-section">
+          <h2 className="settings-section-title">Vendor Sync</h2>
+          <p className="settings-section-desc">
+            Vendor sign-ins are pushed to the admin panel Vendor Log via Supabase.
+            Use this to verify the connection is working.
+          </p>
+          <div className="settings-save-row">
+            <button className="btn-outline" onClick={handleVendorTestSync} disabled={vendorTesting}>
+              {vendorTesting ? "Testing…" : "Test vendor sync"}
+            </button>
+          </div>
+          {vendorTestResult && (
+            <div className={`settings-status ${vendorTestResult.ok ? "settings-status-ready" : "settings-status-error"}`} style={{ wordBreak: "break-word" }}>
+              {vendorTestResult.msg}
+            </div>
+          )}
         </div>
 
         <div className="settings-divider" />
