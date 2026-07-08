@@ -39,13 +39,12 @@ export default function VendorForm({ onDone, onBack }) {
     try {
       await saveVendor({ ...form, id_photo: idPhotoDataUrl });
 
-      // Push to Supabase via RPC (SECURITY DEFINER bypasses RLS).
+      // Push to Supabase via RPC — photo stays local only (too large for DB row).
       const { error } = await supabase.rpc("insert_vendor_submission", {
-        p_name:         form.name,
-        p_company:      form.company,
-        p_phone:        form.phone,
-        p_reason:       form.reason,
-        p_id_photo_url: idPhotoDataUrl,
+        p_name:    form.name,
+        p_company: form.company,
+        p_phone:   form.phone,
+        p_reason:  form.reason,
       });
       if (error) console.warn("Vendor Supabase push failed:", error.message);
 
@@ -64,11 +63,10 @@ export default function VendorForm({ onDone, onBack }) {
       await saveVendor({ ...form, id_photo: null });
 
       const { error } = await supabase.rpc("insert_vendor_submission", {
-        p_name:         form.name,
-        p_company:      form.company,
-        p_phone:        form.phone,
-        p_reason:       form.reason,
-        p_id_photo_url: null,
+        p_name:    form.name,
+        p_company: form.company,
+        p_phone:   form.phone,
+        p_reason:  form.reason,
       });
       if (error) console.warn("Vendor Supabase push failed:", error.message);
 
