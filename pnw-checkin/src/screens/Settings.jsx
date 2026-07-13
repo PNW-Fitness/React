@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getExportDir } from "../lib/fileExport/fileExport.js";
-import { getPendingSyncStats, resetStuckLeads, getPendingClassPassStats, resetStuckClassPass } from "../lib/db.js";
+import { getPendingSyncStats, resetStuckLeads, getPendingClassPassStats, resetStuckClassPass, deleteTestVendors } from "../lib/db.js";
 import { retryPendingLeads, retryPendingClassPass, pushClassPassToSupabase } from "../lib/leadSync.js";
 import { supabase } from "../lib/supabase.js";
 import { exportDateRangeCsv } from "../lib/csvExport.js";
@@ -76,6 +76,8 @@ export default function Settings({ onBack }) {
   const [cpTestResult, setCpTestResult] = useState(null); // null | { ok, msg }
   const [cpTesting,    setCpTesting]    = useState(false);
   const [vendorTesting, setVendorTesting] = useState(false);
+  const [vendorCleanupWorking, setVendorCleanupWorking] = useState(false);
+  const [vendorCleanupMsg,     setVendorCleanupMsg]     = useState(null);
 
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = (() => {
@@ -189,6 +191,19 @@ export default function Settings({ onBack }) {
       alert(`Vendor sync EXCEPTION:\n${err?.message ?? String(err)}`);
     } finally {
       setVendorTesting(false);
+    }
+  }
+
+  async function handleVendorCleanup() {
+    setVendorCleanupWorking(true);
+    setVendorCleanupMsg(null);
+    try {
+      const count = await deleteTestVendors();
+      setVendorCleanupMsg({ ok: true, text: count > 0 ? `Deleted ${count} test ${count === 1 ? 'entry' : 'entries'}.` : 'No test entries found.' });
+    } catch (err) {
+      setVendorCleanupMsg({ ok: false, text: `Failed: ${err?.message ?? String(err)}` });
+    } finally {
+      setVendorCleanupWorking(false);
     }
   }
 
@@ -495,7 +510,15 @@ export default function Settings({ onBack }) {
             <button className="btn-outline" onClick={handleVendorTestSync} disabled={vendorTesting}>
               {vendorTesting ? "Testing…" : "Test vendor sync"}
             </button>
+            <button className="btn-outline" onClick={handleVendorCleanup} disabled={vendorCleanupWorking}>
+              {vendorCleanupWorking ? "Cleaning up…" : "Delete test entries"}
+            </button>
           </div>
+          {vendorCleanupMsg && (
+            <div className={`settings-status ${vendorCleanupMsg.ok ? "settings-status-ready" : "settings-status-error"}`}>
+              {vendorCleanupMsg.ok ? "✓ " : "✗ "}{vendorCleanupMsg.text}
+            </div>
+          )}
         </div>
 
         <div className="settings-divider" />

@@ -43,6 +43,7 @@ export default function GuestNotesPage() {
       .from('lead_submissions')
       .select('id, name, email, phone, source, created_at, last_seen, visit_count, details')
       .gte('last_seen', todayStart.toISOString())
+      .or('is_test.eq.false,is_test.is.null')
       .order('last_seen', { ascending: false })
 
     setTodayLeads(data ?? [])
@@ -63,6 +64,7 @@ export default function GuestNotesPage() {
         .from('lead_submissions')
         .select('id, name, email, phone, source, created_at, last_seen, visit_count, details')
         .or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
+        .or('is_test.eq.false,is_test.is.null')
         .order('last_seen', { ascending: false, nullsFirst: false })
         .limit(15)
       setSearchResults(data ?? [])

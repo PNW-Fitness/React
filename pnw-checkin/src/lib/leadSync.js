@@ -39,7 +39,7 @@ export function buildLeadPayload(guestSession, signedAt) {
     p_how_heard:    howHeard,
     p_interests:    interests.join(', '),
     p_signed_at:    new Date(signedAt.replace(' ', 'T')).toISOString(),
-    p_status:       formData.visit_reason === 'Day/week pass workout' ? 'closed' : 'new',
+    p_status:       (formData.visit_reason === 'Day/week pass workout' || formData.visit_reason === 'Staff Guest') ? 'closed' : 'new',
   }
 }
 
@@ -65,6 +65,7 @@ export async function pushClassPassToSupabase(cpSession, signedAt) {
       p_phone:     isEmail ? '' : contact.replace(/\D/g, '').slice(-10),
       p_zip_code:  zipCode,
       p_signed_at: new Date(signedAt.replace(' ', 'T')).toISOString(),
+      p_status:    'closed',
     })
     if (error) return { success: false, error: error.message }
     return { success: true }

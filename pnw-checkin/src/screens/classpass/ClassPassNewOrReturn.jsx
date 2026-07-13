@@ -8,14 +8,14 @@ export default function ClassPassNewOrReturn({ onNew, onBack }) {
       <div className="screen-body centered">
         <div className="cp-verify-card">
           <div className="cp-verify-icon">👤</div>
-          <h2 className="cp-verify-heading">First visit?</h2>
+          <h2 className="cp-verify-heading">Have you signed our waiver?</h2>
           <p className="cp-verify-instruction">
-            New guests complete a quick waiver below.
+            First-time guests need to sign a quick waiver before checking in.
             Returning guests — please see front desk to be checked in.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
             <button className="btn-primary btn-large" onClick={onNew}>
-              First visit — new guest
+              No — sign waiver now
             </button>
           </div>
         </div>

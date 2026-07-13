@@ -499,6 +499,16 @@ export async function getVendorsByDateRange(from, to) {
   );
 }
 
+// Deletes vendor_log entries where the name matches the test pattern.
+// Returns the number of rows deleted.
+export async function deleteTestVendors() {
+  const db = await getDb();
+  const result = await db.execute(
+    `DELETE FROM vendor_log WHERE lower(name) LIKE '%test%'`
+  );
+  return result.rowsAffected ?? 0;
+}
+
 // Returns all vendor_log rows where time_in is today (local time).
 export async function getTodayVendors() {
   const db = await getDb();
