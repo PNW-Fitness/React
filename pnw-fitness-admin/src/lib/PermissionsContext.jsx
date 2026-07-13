@@ -2,6 +2,19 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import { useAuth } from './AuthContext'
 
+// Full permission list — Super Admin always receives these regardless of Supabase state.
+const ALL_PERMS = [
+  'leads.view', 'leads.edit_status', 'leads.notes.view', 'leads.notes.add',
+  'checkin.queue.view', 'checkin.queue.manage',
+  'schedule.view', 'schedule.manage',
+  'users.view', 'users.manage', 'roles.manage',
+  'reports.view',
+  'pages.staff', 'pages.pricing', 'pages.testimonials', 'pages.faq',
+  'pages.holiday_hours', 'pages.announcements',
+  'pages.leads', 'pages.guest_notes', 'pages.vendor_log',
+  'pages.activity_log', 'pages.users_roles',
+]
+
 const PermissionsContext = createContext({
   permissions:      [],
   rbacRoleName:     null,
@@ -38,7 +51,8 @@ export function PermissionsProvider({ children }) {
             .map(rp => rp.permissions?.key)
             .filter(Boolean)
           setRbacRoleName(data.roles.name)
-          setPermissions(keys)
+          // Super Admin always gets everything — consistent with the non-editable UI treatment.
+          setPermissions(data.roles.name === 'Super Admin' ? ALL_PERMS : keys)
         } else {
           setRbacRoleName(null)
           setPermissions([])

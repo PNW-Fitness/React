@@ -34,17 +34,41 @@ function Loading() {
 }
 
 function NoAccess() {
+  const { session } = useAuth()
+  const { can, permissionsReady } = usePermissions()
+
+  if (!session) return <Navigate to="/login" replace />
+
+  // Permissions still loading — hold here rather than showing the error screen.
+  if (!permissionsReady) return <Loading />
+
+  // Landed here due to a race condition: permissions are now ready and the user
+  // has access somewhere, so route them there.
+  if (can('pages.staff'))       return <Navigate to="/" replace />
+  if (can('pages.leads'))       return <Navigate to="/leads" replace />
+  if (can('pages.guest_notes')) return <Navigate to="/guest-notes" replace />
+  if (can('pages.vendor_log'))  return <Navigate to="/vendor-log" replace />
+
+  // Genuinely no pages assigned yet.
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="text-center">
         <p className="font-medium text-gray-700">No pages are assigned to your account.</p>
         <p className="text-sm text-gray-400 mt-1">Contact an admin to assign you an RBAC role.</p>
-        <button
-          onClick={() => supabase.auth.signOut()}
-          className="mt-4 text-sm text-blue-600 hover:underline"
-        >
-          Sign out
-        </button>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <button
+            onClick={() => window.location.reload()}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Retry
+          </button>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="text-sm text-gray-400 hover:underline"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   )
