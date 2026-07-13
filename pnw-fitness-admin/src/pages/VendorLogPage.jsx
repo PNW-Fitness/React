@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../lib/AuthContext'
+import { usePermissions } from '../lib/PermissionsContext'
 import Layout from '../components/Layout'
 
 function todayStr() {
@@ -14,15 +15,37 @@ function formatTime(iso) {
 
 export default function VendorLogPage() {
   const { role } = useAuth()
+  const { can } = usePermissions()
   const [vendors,      setVendors]      = useState([])
   const [loading,      setLoading]      = useState(true)
   const [fetchError,   setFetchError]   = useState(null)
   const [selectedDate, setSelectedDate] = useState(todayStr)
-  const [deleting,     setDeleting]     = useState(null)  // id being deleted
-  const [confirmId,    setConfirmId]    = useState(null)  // id awaiting confirm
-  const [deleteError,  setDeleteError]  = useState(null)  // error message
+  const [deleting,     setDeleting]     = useState(null)
+  const [confirmId,    setConfirmId]    = useState(null)
+  const [deleteError,  setDeleteError]  = useState(null)
+  const [editingNote,  setEditingNote]  = useState(null)
+  const [noteText,     setNoteText]     = useState('')
+  const [noteSaving,   setNoteSaving]   = useState(false)
+  const [noteError,    setNoteError]    = useState(null)
 
-  const isAdmin = role === 'admin'
+  const isAdmin     = role === 'admin'
+  const canAddNotes = can('vendor_log.notes.add')
+
+  async function handleSaveNote(vendorId) {
+    setNoteSaving(true)
+    setNoteError(null)
+    const { error } = await supabase
+      .from('vendor_submissions')
+      .update({ notes: noteText.trim() || null })
+      .eq('id', vendorId)
+    if (error) {
+      setNoteError(error.message)
+    } else {
+      setVendors(prev => prev.map(v => v.id === vendorId ? { ...v, notes: noteText.trim() || null } : v))
+      setEditingNote(null)
+    }
+    setNoteSaving(false)
+  }
 
   async function handleDelete(id) {
     setDeleting(id)
@@ -135,10 +158,18 @@ export default function VendorLogPage() {
                     <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Company</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Phone</th>
                     <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Reason for Visit</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</th>
                     {isAdmin && <th className="px-4 py-3"></th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
+                  {noteError && (
+                    <tr>
+                      <td colSpan={isAdmin ? 7 : 6} className="px-4 py-2 text-xs text-red-600 bg-red-50">
+                        Failed to save note: {noteError}
+                      </td>
+                    </tr>
+                  )}
                   {vendors.map(v => (
                     <tr key={v.id} className="hover:bg-gray-50 transition">
                       <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatTime(v.submitted_at)}</td>
@@ -146,6 +177,48 @@ export default function VendorLogPage() {
                       <td className="px-4 py-3 text-gray-600">{v.company}</td>
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{v.phone || '—'}</td>
                       <td className="px-4 py-3 text-gray-600">{v.reason}</td>
+                      <td className="px-4 py-3 min-w-[180px]">
+                        {editingNote === v.id ? (
+                          <div className="flex flex-col gap-1.5">
+                            <textarea
+                              rows={2}
+                              autoFocus
+                              value={noteText}
+                              onChange={e => setNoteText(e.target.value)}
+                              className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => handleSaveNote(v.id)}
+                                disabled={noteSaving}
+                                className="text-xs font-medium text-blue-700 hover:text-blue-900 disabled:opacity-50"
+                              >
+                                {noteSaving ? 'Saving…' : 'Save'}
+                              </button>
+                              <button
+                                onClick={() => setEditingNote(null)}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2 group">
+                            <span className={v.notes ? 'text-gray-700 text-sm' : 'text-gray-300 text-sm'}>
+                              {v.notes || '—'}
+                            </span>
+                            {canAddNotes && (
+                              <button
+                                onClick={() => { setEditingNote(v.id); setNoteText(v.notes || ''); setNoteError(null) }}
+                                className="text-xs text-gray-300 group-hover:text-blue-500 transition flex-shrink-0 mt-0.5"
+                              >
+                                {v.notes ? 'Edit' : '+ Add'}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
                       {isAdmin && (
                         <td className="px-4 py-3 text-right whitespace-nowrap">
                           {confirmId === v.id ? (

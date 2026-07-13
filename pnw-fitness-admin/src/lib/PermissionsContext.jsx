@@ -13,6 +13,7 @@ const ALL_PERMS = [
   'pages.holiday_hours', 'pages.announcements',
   'pages.leads', 'pages.guest_notes', 'pages.vendor_log',
   'pages.activity_log', 'pages.users_roles',
+  'vendor_log.notes.add',
 ]
 
 const PermissionsContext = createContext({
