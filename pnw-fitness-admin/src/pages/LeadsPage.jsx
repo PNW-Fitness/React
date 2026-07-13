@@ -180,7 +180,7 @@ export default function LeadsPage() {
 
   const { role } = useAuth()
   const { can } = usePermissions()
-  const canAssign       = role === 'admin' || role === 'fitness_manager'
+  const canAssign       = can('leads.edit_status')
   const canEditStatus   = can('leads.edit_status')
   const canAddNotes     = can('leads.notes.add')
   const canDelete       = role === 'admin'
@@ -204,14 +204,23 @@ export default function LeadsPage() {
     resolveUser()
   }, [])
 
-  // Load all trainer-role users for the assign dropdown + filter
+  // Load all users with the RBAC "Trainer" role for the assign dropdown + filter
   useEffect(() => {
-    supabase
-      .from('admin_profiles')
-      .select('user_id, display_name, email')
-      .eq('role', 'trainer')
-      .order('display_name')
-      .then(({ data }) => setTrainers(data ?? []))
+    async function loadTrainers() {
+      const { data: trainerRoles } = await supabase
+        .from('user_roles')
+        .select('user_id, roles!inner(name)')
+        .eq('roles.name', 'Trainer')
+      const ids = (trainerRoles ?? []).map(r => r.user_id)
+      if (ids.length === 0) { setTrainers([]); return }
+      const { data: profiles } = await supabase
+        .from('admin_profiles')
+        .select('user_id, display_name, email')
+        .in('user_id', ids)
+        .order('display_name')
+      setTrainers(profiles ?? [])
+    }
+    loadTrainers()
   }, [])
 
   // Debounce search: also resets page so filter change is clean
