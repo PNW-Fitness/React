@@ -75,6 +75,8 @@ export default function App() {
 
   // ── ClassPass flow state ──────────────────────────────────────────────────
   const [cpSession, setCpSession] = useState(EMPTY_CP_SESSION);
+  const [cpSignature, setCpSignature] = useState(null);
+  const capturedCpIdPhotoRef = useRef(null);
   const [cpReturning, setCpReturning] = useState(false);
   const [cpSubmitError, setCpSubmitError] = useState("");
   const [cpSubmitting, setCpSubmitting] = useState(false);
@@ -224,6 +226,8 @@ export default function App() {
 
   function resetCpToLanding() {
     setCpSession(EMPTY_CP_SESSION);
+    setCpSignature(null);
+    capturedCpIdPhotoRef.current = null;
     setCpReturning(false);
     setCpSubmitError("");
     setCpSubmitting(false);
@@ -260,7 +264,7 @@ export default function App() {
     }
   }
 
-  async function handleSubmitClassPass(signatureDataUrl) {
+  async function handleSubmitClassPass(signatureDataUrl, capturedIdPhoto) {
     setCpSubmitError("");
     setCpSyncError("");
     setCpSubmitting(true);
@@ -275,7 +279,7 @@ export default function App() {
       });
 
       const { pdfPath, exportDir: dir } = await exportClassPassFile({
-        cpSession,
+        cpSession: { ...cpSession, idPhoto: capturedIdPhoto ?? null },
         signatureDataUrl,
         checkinId,
         signedAt,
@@ -763,16 +767,55 @@ export default function App() {
     case "classpass_form":
       return (
         <ClassPassForm
-          onSubmit={(data) => navigateCp("classpass_id_type_check", data)}
+          onSubmit={(data) => navigateCp("classpass_waiver", data)}
           onBack={() => setScreen("classpass_verify")}
         />
+      );
+
+    case "classpass_waiver":
+      return (
+        <ClassPassWaiver
+          cpSession={cpSession}
+          onSubmit={(sig) => { setCpSignature(sig); setScreen("classpass_hand_back"); }}
+          onBack={() => setScreen("classpass_form")}
+          submitError=""
+          submitting={false}
+        />
+      );
+
+    case "classpass_hand_back":
+      return (
+        <div className="screen">
+          <div className="screen-body centered">
+            <div style={{ textAlign: "center", maxWidth: 480, padding: "2rem" }}>
+              <div style={{ fontSize: "4rem", marginBottom: "1.25rem" }}>🪪</div>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "#111827" }}>
+                Please hand the tablet back to our staff member
+              </h2>
+              <p style={{ color: "#6b7280", marginBottom: "2rem" }}>
+                Our staff will verify your ID before completing check-in.
+              </p>
+              <button className="btn-primary btn-large" onClick={() => setScreen("classpass_id_type_check")}>
+                Continue →
+              </button>
+            </div>
+          </div>
+        </div>
       );
 
     case "classpass_id_type_check":
       return (
         <IdTypeCheck
           onConfirm={() => setScreen("classpass_id_capture")}
-          onBack={() => setScreen("classpass_form")}
+          onBack={() => setScreen("classpass_hand_back")}
+          onDeclineId={() => requireManagerOverride(
+            () => {
+              capturedCpIdPhotoRef.current = null;
+              setScreen("classpass_finalizing");
+              handleSubmitClassPass(cpSignature, null);
+            },
+            "classpass_id_type_check"
+          )}
         />
       );
 
@@ -784,19 +827,30 @@ export default function App() {
             isMinor: false,
             dob: null,
           }}
-          onConfirm={(idPhoto) => navigateCp("classpass_waiver", { idPhoto })}
+          onConfirm={(idPhoto) => {
+            capturedCpIdPhotoRef.current = idPhoto;
+            setScreen("classpass_finalizing");
+            handleSubmitClassPass(cpSignature, idPhoto);
+          }}
           onBack={() => setScreen("classpass_id_type_check")}
+          onDeclineId={() => requireManagerOverride(
+            () => {
+              capturedCpIdPhotoRef.current = null;
+              setScreen("classpass_finalizing");
+              handleSubmitClassPass(cpSignature, null);
+            },
+            "classpass_id_capture"
+          )}
         />
       );
 
-    case "classpass_waiver":
+    case "classpass_finalizing":
       return (
-        <ClassPassWaiver
-          cpSession={cpSession}
-          onSubmit={handleSubmitClassPass}
-          onBack={() => setScreen("classpass_id_capture")}
-          submitError={cpSubmitError}
+        <QueueFinalizing
           submitting={cpSubmitting}
+          submitError={cpSubmitError}
+          onRetry={() => handleSubmitClassPass(cpSignature, capturedCpIdPhotoRef.current)}
+          onBack={() => { setCpSubmitError(""); setScreen("classpass_id_capture"); }}
         />
       );
 

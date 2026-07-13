@@ -2,6 +2,7 @@ import { useState } from "react";
 import { saveVendor } from "../../lib/db.js";
 import { supabase } from "../../lib/supabase.js";
 import IdCapture from "../../components/IdCapture/IdCapture.jsx";
+import IdTypeCheck from "../../components/IdCapture/IdTypeCheck.jsx";
 
 const EMPTY = { name: "", company: "", phone: "", reason: "" };
 
@@ -15,7 +16,7 @@ function validate(form) {
 }
 
 export default function VendorForm({ onDone, onBack }) {
-  const [step,      setStep]      = useState("form"); // "form" | "id_capture"
+  const [step,      setStep]      = useState("form"); // "form" | "hand_back" | "id_type" | "id_capture"
   const [form,      setForm]      = useState(EMPTY);
   const [errors,    setErrors]    = useState({});
   const [saving,    setSaving]    = useState(false);
@@ -30,7 +31,7 @@ export default function VendorForm({ onDone, onBack }) {
     e.preventDefault();
     const errs = validate(form);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    setStep("id_capture");
+    setStep("hand_back");
   }
 
   async function pushToSupabase() {
@@ -81,12 +82,43 @@ export default function VendorForm({ onDone, onBack }) {
     onDone();
   }
 
+  if (step === "hand_back") {
+    return (
+      <div className="screen">
+        <div className="screen-body centered">
+          <div style={{ textAlign: "center", maxWidth: 480, padding: "2rem" }}>
+            <div style={{ fontSize: "4rem", marginBottom: "1.25rem" }}>🪪</div>
+            <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "#111827" }}>
+              Please hand the tablet back to our staff member
+            </h2>
+            <p style={{ color: "#6b7280", marginBottom: "2rem" }}>
+              Our staff will verify your ID before completing sign-in.
+            </p>
+            <button className="btn-primary btn-large" onClick={() => setStep("id_type")}>
+              Continue →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "id_type") {
+    return (
+      <IdTypeCheck
+        onConfirm={() => setStep("id_capture")}
+        onBack={() => setStep("hand_back")}
+        onDeclineId={handleSkipId}
+      />
+    );
+  }
+
   if (step === "id_capture") {
     return (
       <IdCapture
         guestSession={{ isMinor: false, dob: null, formData: { first_name: form.name, last_name: "" } }}
         onConfirm={handleIdConfirm}
-        onBack={() => setStep("form")}
+        onBack={() => setStep("id_type")}
         onDeclineId={handleSkipId}
       />
     );
