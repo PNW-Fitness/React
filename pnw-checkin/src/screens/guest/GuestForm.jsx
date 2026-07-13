@@ -103,7 +103,7 @@ export default function GuestForm({ guestSession, navigate, onBack }) {
       setErrors(errs);
       return;
     }
-    navigate("guest_id_type_check", { formData: form });
+    navigate("guest_waiver", { formData: form });
   }
 
   const howHeardEntry = HOW_HEARD_OPTIONS.find((o) => o.value === form.how_heard);

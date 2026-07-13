@@ -65,7 +65,6 @@ export async function pushClassPassToSupabase(cpSession, signedAt) {
       p_phone:     isEmail ? '' : contact.replace(/\D/g, '').slice(-10),
       p_zip_code:  zipCode,
       p_signed_at: new Date(signedAt.replace(' ', 'T')).toISOString(),
-      p_status:    'closed',
     })
     if (error) return { success: false, error: error.message }
     return { success: true }

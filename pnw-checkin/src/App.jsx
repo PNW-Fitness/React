@@ -67,6 +67,8 @@ export default function App() {
 
   // ── Guest flow state ──────────────────────────────────────────────────────
   const [guestSession, setGuestSession] = useState(EMPTY_GUEST_SESSION);
+  const [guestSignature, setGuestSignature] = useState(null);
+  const capturedIdPhotoRef = useRef(null);
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [exportDir, setExportDir] = useState(null);
@@ -125,13 +127,15 @@ export default function App() {
 
   function resetToLanding() {
     setGuestSession(EMPTY_GUEST_SESSION);
+    setGuestSignature(null);
+    capturedIdPhotoRef.current = null;
     setSubmitError("");
     setSubmitting(false);
     setExportDir(null);
     setScreen("landing");
   }
 
-  async function handleSubmitWaiver(signatureDataUrl) {
+  async function handleSubmitWaiver(signatureDataUrl, capturedIdPhoto) {
     setSubmitError("");
     setSubmitting(true);
     try {
@@ -149,7 +153,7 @@ export default function App() {
       const { id: waiverId } = await saveWaiver(guestId, guestSession.isMinor, signedAt);
 
       const { pdfPath, exportDir: dir } = await exportGuestFiles({
-        guestSession,
+        guestSession: { ...guestSession, idPhoto: capturedIdPhoto ?? null },
         signatureDataUrl,
         guestId,
         waiverId,
@@ -639,13 +643,49 @@ export default function App() {
         />
       );
 
+    // New flow: waiver → hand_back → id_type → id_capture → guest_finalizing → confirm
+    case "guest_waiver":
+      return (
+        <WaiverView
+          guestSession={guestSession}
+          onSubmit={(sig) => { setGuestSignature(sig); setScreen("guest_hand_back"); }}
+          onBack={() => setScreen("guest_form")}
+          submitError=""
+          submitting={false}
+        />
+      );
+
+    case "guest_hand_back":
+      return (
+        <div className="screen">
+          <div className="screen-body centered">
+            <div style={{ textAlign: "center", maxWidth: 480, padding: "2rem" }}>
+              <div style={{ fontSize: "4rem", marginBottom: "1.25rem" }}>🪪</div>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "1rem", color: "#111827" }}>
+                Please hand the tablet back to our staff member
+              </h2>
+              <p style={{ color: "#6b7280", marginBottom: "2rem" }}>
+                Our staff will verify your ID before completing check-in.
+              </p>
+              <button className="btn-primary btn-large" onClick={() => setScreen("guest_id_type_check")}>
+                Continue →
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+
     case "guest_id_type_check":
       return (
         <IdTypeCheck
           onConfirm={() => setScreen("guest_id_capture")}
-          onBack={() => setScreen("guest_form")}
+          onBack={() => setScreen("guest_hand_back")}
           onDeclineId={() => requireManagerOverride(
-            () => navigate("guest_waiver", { idPhoto: null }),
+            () => {
+              capturedIdPhotoRef.current = null;
+              setScreen("guest_finalizing");
+              handleSubmitWaiver(guestSignature, null);
+            },
             "guest_id_type_check"
           )}
         />
@@ -655,23 +695,30 @@ export default function App() {
       return (
         <IdCapture
           guestSession={guestSession}
-          onConfirm={(idPhoto) => navigate("guest_waiver", { idPhoto })}
+          onConfirm={(idPhoto) => {
+            capturedIdPhotoRef.current = idPhoto;
+            setScreen("guest_finalizing");
+            handleSubmitWaiver(guestSignature, idPhoto);
+          }}
           onBack={() => setScreen("guest_id_type_check")}
           onDeclineId={() => requireManagerOverride(
-            () => navigate("guest_waiver", { idPhoto: null }),
+            () => {
+              capturedIdPhotoRef.current = null;
+              setScreen("guest_finalizing");
+              handleSubmitWaiver(guestSignature, null);
+            },
             "guest_id_capture"
           )}
         />
       );
 
-    case "guest_waiver":
+    case "guest_finalizing":
       return (
-        <WaiverView
-          guestSession={guestSession}
-          onSubmit={handleSubmitWaiver}
-          onBack={() => setScreen("guest_id_capture")}
-          submitError={submitError}
+        <QueueFinalizing
           submitting={submitting}
+          submitError={submitError}
+          onRetry={() => handleSubmitWaiver(guestSignature, capturedIdPhotoRef.current)}
+          onBack={() => { setSubmitError(""); setScreen("guest_id_capture"); }}
         />
       );
 
