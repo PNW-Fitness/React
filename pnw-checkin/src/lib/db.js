@@ -509,6 +509,22 @@ export async function deleteTestVendors() {
   return result.rowsAffected ?? 0;
 }
 
+// Searches vendor_log for past visitors matching name, company, or phone.
+// Returns one row per unique name+phone, most recent visit first.
+export async function searchVendors(term) {
+  const db = await getDb();
+  const like = `%${term.trim()}%`;
+  return await db.select(
+    `SELECT name, company, phone, reason, MAX(time_in) as last_visit
+     FROM vendor_log
+     WHERE lower(name) LIKE lower(?) OR phone LIKE ? OR lower(company) LIKE lower(?)
+     GROUP BY lower(name), lower(phone)
+     ORDER BY last_visit DESC
+     LIMIT 10`,
+    [like, like, like]
+  );
+}
+
 // Returns all vendor_log rows where time_in is today (local time).
 export async function getTodayVendors() {
   const db = await getDb();

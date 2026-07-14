@@ -87,7 +87,7 @@ export default function VendorLogPage() {
     const channel = supabase
       .channel(`vendor_log_admin_${selectedDate}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vendor_submissions' }, payload => {
-        setVendors(prev => [payload.new, ...prev])
+        setVendors(prev => prev.some(v => v.id === payload.new.id) ? prev : [payload.new, ...prev])
       })
       .subscribe()
 
