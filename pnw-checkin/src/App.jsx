@@ -688,7 +688,6 @@ export default function App() {
             () => {
               capturedIdPhotoRef.current = null;
               setScreen("guest_finalizing");
-              handleSubmitWaiver(guestSignature, null);
             },
             "guest_id_type_check"
           )}
@@ -702,14 +701,12 @@ export default function App() {
           onConfirm={(idPhoto) => {
             capturedIdPhotoRef.current = idPhoto;
             setScreen("guest_finalizing");
-            handleSubmitWaiver(guestSignature, idPhoto);
           }}
           onBack={() => setScreen("guest_id_type_check")}
           onDeclineId={() => requireManagerOverride(
             () => {
               capturedIdPhotoRef.current = null;
               setScreen("guest_finalizing");
-              handleSubmitWaiver(guestSignature, null);
             },
             "guest_id_capture"
           )}
@@ -812,7 +809,6 @@ export default function App() {
             () => {
               capturedCpIdPhotoRef.current = null;
               setScreen("classpass_finalizing");
-              handleSubmitClassPass(cpSignature, null);
             },
             "classpass_id_type_check"
           )}
@@ -830,14 +826,12 @@ export default function App() {
           onConfirm={(idPhoto) => {
             capturedCpIdPhotoRef.current = idPhoto;
             setScreen("classpass_finalizing");
-            handleSubmitClassPass(cpSignature, idPhoto);
           }}
           onBack={() => setScreen("classpass_id_type_check")}
           onDeclineId={() => requireManagerOverride(
             () => {
               capturedCpIdPhotoRef.current = null;
               setScreen("classpass_finalizing");
-              handleSubmitClassPass(cpSignature, null);
             },
             "classpass_id_capture"
           )}
