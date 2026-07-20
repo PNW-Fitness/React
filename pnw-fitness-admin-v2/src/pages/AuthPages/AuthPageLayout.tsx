@@ -17,9 +17,8 @@ export default function AuthLayout({
             {/* <!-- ===== Common Grid Shape Start ===== --> */}
             <GridShape />
             <div className="flex flex-col items-center max-w-xs">
-              <Link to="/" className="flex items-center gap-3 mb-4">
-                <img width={96} height={32} src="/images/logo/pnw-logo.png" alt="PNW" />
-                <span className="text-2xl font-semibold text-white">Fitness</span>
+              <Link to="/" className="block mb-4">
+                <img width={144} height={48} src="/images/logo/pnw-logo.png" alt="PNW" />
               </Link>
               <p className="text-center text-gray-400 dark:text-white/60">
                 Staff Admin Portal

@@ -20,7 +20,7 @@ export default function SignInForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (session) navigate("/", { replace: true });
+    if (session) navigate("/leads", { replace: true });
   }, [session, navigate]);
 
   async function handleSubmit(e: FormEvent) {
@@ -35,7 +35,7 @@ export default function SignInForm() {
     if (err) {
       setError(err.message);
     } else {
-      navigate("/", { replace: true });
+      navigate("/leads", { replace: true });
     }
   }
 

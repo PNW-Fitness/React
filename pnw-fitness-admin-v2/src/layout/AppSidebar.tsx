@@ -322,14 +322,13 @@ const AppSidebar: React.FC = () => {
         }`}
       >
         <Link to="/" className="flex items-center gap-2">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <>
-              <img src="/images/logo/pnw-logo.png" alt="PNW" width={72} height={24} />
-              <span className="text-lg font-semibold text-gray-800 dark:text-white/90">Fitness</span>
-            </>
-          ) : (
-            <img src="/images/logo/pnw-logo.png" alt="PNW" width={32} height={32} className="object-contain" />
-          )}
+          <img
+            src="/images/logo/pnw-logo.png"
+            alt="PNW"
+            width={isExpanded || isHovered || isMobileOpen ? 72 : 32}
+            height={isExpanded || isHovered || isMobileOpen ? 24 : 32}
+            className="object-contain"
+          />
         </Link>
       </div>
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
