@@ -66,6 +66,19 @@ export function statusCls(status: string) {
   return "bg-gray-100 text-gray-500 border-gray-200 dark:bg-white/5 dark:text-gray-400 dark:border-gray-700";
 }
 
+// Same color-coding as statusCls, but with a solid dark background instead
+// of a translucent one — required for the <select> variant of this control,
+// since native dropdown popups can render translucent backgrounds as an
+// unreadable white in some browsers. statusCls (translucent) stays as-is
+// for the read-only badge, where that's a deliberate, safe visual style.
+export function statusSelectCls(status: string) {
+  if (status === "new") return "bg-blue-light-50 text-blue-light-700 border-blue-light-200 dark:bg-gray-900 dark:text-blue-light-400 dark:border-blue-light-500/30";
+  if (status === "contacted") return "bg-warning-50 text-warning-700 border-warning-200 dark:bg-gray-900 dark:text-orange-400 dark:border-warning-500/30";
+  if (status === "converted") return "bg-success-50 text-success-700 border-success-200 dark:bg-gray-900 dark:text-success-400 dark:border-success-500/30";
+  if (status === "not_interested") return "bg-error-50 text-error-700 border-error-200 dark:bg-gray-900 dark:text-error-400 dark:border-error-500/30";
+  return "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700";
+}
+
 // details.interests is stored as a comma-separated string from the kiosk app.
 export function getPriorityColor(lead: Lead): string | null {
   const vr = lead.details?.visit_reason || "";
@@ -145,5 +158,8 @@ export function detailRows(source: string, details: LeadDetails | null): [string
 
 export const PAGE_SIZE = 25;
 
+// Solid (not transparent) backgrounds are required here — native <select>
+// popups fall back to a white listbox in some browsers when the element's
+// own background is transparent, regardless of color-scheme.
 export const SELECT_CLS =
-  "text-sm border border-gray-300 dark:border-gray-700 bg-transparent dark:text-white/90 rounded-lg px-2 py-1.5 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:focus:border-brand-800";
+  "text-sm border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-white/90 rounded-lg px-2 py-1.5 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 focus:border-brand-300 dark:focus:border-brand-800";

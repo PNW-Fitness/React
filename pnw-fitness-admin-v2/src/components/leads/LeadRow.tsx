@@ -5,6 +5,7 @@ import {
   STATUS_OPTIONS,
   STATUS_LABELS,
   statusCls,
+  statusSelectCls,
   getPriorityColor,
   summaryLine,
   detailRows,
@@ -172,7 +173,7 @@ export default function LeadRow({
             value={lead.status}
             disabled={updating}
             onChange={(e) => onUpdateStatus(e.target.value)}
-            className={`text-xs font-medium border rounded-lg px-2 py-1 focus:outline-hidden focus:ring-2 focus:ring-brand-500 flex-shrink-0 cursor-pointer disabled:opacity-50 ${statusCls(lead.status)}`}
+            className={`text-xs font-medium border rounded-lg px-2 py-1 focus:outline-hidden focus:ring-2 focus:ring-brand-500 flex-shrink-0 cursor-pointer disabled:opacity-50 ${statusSelectCls(lead.status)}`}
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
