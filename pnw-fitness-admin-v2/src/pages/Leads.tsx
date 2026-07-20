@@ -240,7 +240,18 @@ export default function Leads() {
   async function handleAssign(leadId: string, userId: string) {
     const val = userId || null;
     const { error: err } = await supabase.from("lead_submissions").update({ assigned_to: val }).eq("id", leadId);
-    if (!err) setLeads((l) => l.map((x) => (x.id === leadId ? { ...x, assigned_to: val } : x)));
+    if (!err) {
+      setLeads((l) => l.map((x) => (x.id === leadId ? { ...x, assigned_to: val } : x)));
+      if (val) {
+        const lead = leads.find((x) => x.id === leadId);
+        const { error: notifyErr } = await supabase.from("notifications").insert({
+          user_id: val,
+          lead_id: leadId,
+          message: `You were assigned a new lead: ${lead?.name ?? "a guest"}`,
+        });
+        if (notifyErr) console.error("Failed to create assignment notification:", notifyErr.message);
+      }
+    }
   }
 
   function trainerName(userId: string | null) {
