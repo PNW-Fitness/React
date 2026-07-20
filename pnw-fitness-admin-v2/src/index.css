@@ -5,6 +5,16 @@ layer(base);
 
 @custom-variant dark (&:is(.dark *));
 
+/* Native form controls (select popups, date pickers, scrollbars) follow
+   color-scheme, not Tailwind's .dark class — without this, dropdown text
+   renders unreadable (light text on the browser's default light popup). */
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
 @theme {
   --font-*: initial;
   --font-outfit: Outfit, sans-serif;
