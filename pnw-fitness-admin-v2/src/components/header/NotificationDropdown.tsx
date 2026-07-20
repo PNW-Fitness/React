@@ -75,9 +75,9 @@ export default function NotificationDropdown() {
     await supabase.from("notifications").update({ is_read: true }).eq("user_id", userId).eq("is_read", false);
   }
 
-  function handleNotificationClick() {
+  function handleNotificationClick(n: Notification) {
     closeDropdown();
-    navigate("/leads");
+    navigate(n.lead_id ? `/leads?lead=${n.lead_id}` : "/leads");
   }
 
   return (
@@ -144,7 +144,7 @@ export default function NotificationDropdown() {
           {notifications.map((n) => (
             <li key={n.id}>
               <DropdownItem
-                onItemClick={handleNotificationClick}
+                onItemClick={() => handleNotificationClick(n)}
                 className={`flex flex-col gap-1 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${
                   n.is_read ? "" : "bg-brand-50/50 dark:bg-brand-500/5"
                 }`}

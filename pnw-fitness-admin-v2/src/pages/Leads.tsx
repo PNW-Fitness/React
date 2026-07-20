@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams, useNavigate } from "react-router";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PageMeta from "../components/common/PageMeta";
 import Button from "../components/ui/button/Button";
@@ -24,6 +25,14 @@ const EMPTY_NEW: NewLeadFormState = {
 };
 
 export default function Leads() {
+  // Set when arriving from a notification (?lead=<id>) — shows just that one
+  // lead instead of the normal filtered/paginated list.
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const focusedLeadId = searchParams.get("lead");
+  const [focusedLead, setFocusedLead] = useState<Lead | null>(null);
+  const [focusedLoading, setFocusedLoading] = useState(false);
+
   // Filters
   const [filterSource, setFilterSource] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -204,23 +213,62 @@ export default function Leads() {
   );
 
   useEffect(() => {
+    if (focusedLeadId) return;
     fetchLeads();
-  }, [fetchLeads]);
+  }, [fetchLeads, focusedLeadId]);
 
   // Auto-refresh every 30 seconds without showing the loading spinner
   useEffect(() => {
+    if (focusedLeadId) return;
     const interval = setInterval(() => {
       fetchLeads({ silent: true });
     }, 30_000);
     return () => clearInterval(interval);
-  }, [fetchLeads]);
+  }, [fetchLeads, focusedLeadId]);
+
+  // Arrived from a notification — fetch just that one lead and auto-expand it.
+  useEffect(() => {
+    if (!focusedLeadId) {
+      setFocusedLead(null);
+      return;
+    }
+    setFocusedLoading(true);
+    supabase
+      .from("lead_submissions")
+      .select("*, lead_notes!left(id)")
+      .eq("id", focusedLeadId)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        setFocusedLead(data ?? null);
+        setFocusedLoading(false);
+        if (data) {
+          setExpanded(data.id);
+          setNotesLoading(data.id);
+          const { data: notesData } = await supabase
+            .from("lead_notes")
+            .select("id, note_text, created_at, author_name, staff(name, color)")
+            .eq("lead_id", data.id)
+            .order("created_at", { ascending: false });
+          setNotes((n) => ({ ...n, [data.id]: (notesData ?? []) as unknown as LeadNote[] }));
+          setNotesLoading(null);
+        }
+      });
+  }, [focusedLeadId]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
+
+  // Keeps the normal list and the notification-focused single-lead view
+  // (which reads from separate state) consistent after any write.
+  function patchLead(id: string, patch: Partial<Lead> | ((l: Lead) => Lead)) {
+    const apply = (l: Lead) => (typeof patch === "function" ? patch(l) : { ...l, ...patch });
+    setLeads((l) => l.map((x) => (x.id === id ? apply(x) : x)));
+    setFocusedLead((f) => (f && f.id === id ? apply(f) : f));
+  }
 
   async function updateStatus(leadId: string, newStatus: string) {
     setUpdating(leadId);
     const { error: err } = await supabase.from("lead_submissions").update({ status: newStatus }).eq("id", leadId);
-    if (!err) setLeads((l) => l.map((x) => (x.id === leadId ? { ...x, status: newStatus } : x)));
+    if (!err) patchLead(leadId, { status: newStatus });
     setUpdating(null);
   }
 
@@ -231,9 +279,15 @@ export default function Leads() {
       .update({ visit_count: (lead.visit_count ?? 1) + 1, last_seen: now })
       .eq("id", lead.id);
     if (!err) {
-      // Re-fetch so the updated lead bubbles to the top of the list (sorted by last_seen DESC)
-      setExpanded(null);
-      fetchLeads({ silent: true });
+      if (focusedLeadId) {
+        // Focused on a single lead from a notification — update in place,
+        // don't collapse it or pull in the normal filtered list.
+        patchLead(lead.id, { visit_count: (lead.visit_count ?? 1) + 1, last_seen: now });
+      } else {
+        // Re-fetch so the updated lead bubbles to the top of the list (sorted by last_seen DESC)
+        setExpanded(null);
+        fetchLeads({ silent: true });
+      }
     }
   }
 
@@ -241,9 +295,9 @@ export default function Leads() {
     const val = userId || null;
     const { error: err } = await supabase.from("lead_submissions").update({ assigned_to: val }).eq("id", leadId);
     if (!err) {
-      setLeads((l) => l.map((x) => (x.id === leadId ? { ...x, assigned_to: val } : x)));
+      patchLead(leadId, { assigned_to: val });
       if (val) {
-        const lead = leads.find((x) => x.id === leadId);
+        const lead = leads.find((x) => x.id === leadId) ?? (focusedLead?.id === leadId ? focusedLead : undefined);
         const { error: notifyErr } = await supabase.from("notifications").insert({
           user_id: val,
           lead_id: leadId,
@@ -320,7 +374,7 @@ export default function Leads() {
     if (err) {
       setEditError(err.message);
     } else {
-      setLeads((l) => l.map((x) => (x.id === lead.id ? { ...x, ...updates } : x)));
+      patchLead(lead.id, updates);
       setEditingLead(null);
     }
     setEditSaving(false);
@@ -382,9 +436,7 @@ export default function Leads() {
       const newNote = data as unknown as LeadNote;
       setNotes((n) => ({ ...n, [leadId]: [newNote, ...(n[leadId] ?? [])] }));
       setNoteText((t) => ({ ...t, [leadId]: "" }));
-      setLeads((l) =>
-        l.map((x) => (x.id === leadId ? { ...x, lead_notes: [...(x.lead_notes ?? []), { id: data.id }] } : x))
-      );
+      patchLead(leadId, (x) => ({ ...x, lead_notes: [...(x.lead_notes ?? []), { id: data.id }] }));
     }
     setNoteSubmitting(null);
   }
@@ -393,12 +445,12 @@ export default function Leads() {
     const next = !lead.is_test;
     const { error: err } = await supabase.from("lead_submissions").update({ is_test: next }).eq("id", lead.id);
     if (!err) {
-      if (hideTest && next) {
+      if (hideTest && next && !focusedLeadId) {
         setLeads((l) => l.filter((x) => x.id !== lead.id));
         setTotalCount((c) => c - 1);
         setExpanded(null);
       } else {
-        setLeads((l) => l.map((x) => (x.id === lead.id ? { ...x, is_test: next } : x)));
+        patchLead(lead.id, { is_test: next });
       }
     }
   }
@@ -410,6 +462,7 @@ export default function Leads() {
       setExpanded(null);
       setConfirmDelete(null);
       setTotalCount((c) => c - 1);
+      setFocusedLead((f) => (f && f.id === leadId ? null : f));
     }
   }
 
@@ -434,90 +487,143 @@ export default function Leads() {
   const rangeStart = totalCount === 0 ? 0 : page * PAGE_SIZE + 1;
   const rangeEnd = Math.min((page + 1) * PAGE_SIZE, totalCount);
 
+  function leadRowProps(lead: Lead) {
+    return {
+      lead,
+      isExpanded: expanded === lead.id,
+      onToggleExpand: () => handleExpand(lead.id),
+      trainerName,
+      trainers,
+      canAssign,
+      canEditStatus,
+      canAddNotes,
+      canDelete,
+      canMarkTest,
+      canEditDetails,
+      myName,
+      updating: updating === lead.id,
+      onUpdateStatus: (status: string) => updateStatus(lead.id, status),
+      onLogVisit: () => handleLogVisit(lead),
+      onAssign: (userId: string) => handleAssign(lead.id, userId),
+      isEditing: editingLead === lead.id,
+      editForm,
+      onEditFormChange: setEditForm,
+      onStartEdit: () => handleStartEdit(lead),
+      onEditSave: () => handleEditSave(lead),
+      onEditCancel: () => setEditingLead(null),
+      editSaving,
+      editError,
+      notes: notes[lead.id] ?? [],
+      notesLoading: notesLoading === lead.id,
+      noteText: noteText[lead.id] || "",
+      onNoteTextChange: (text: string) => setNoteText((t) => ({ ...t, [lead.id]: text })),
+      onAddNote: () => handleAddNote(lead.id),
+      noteSubmitting: noteSubmitting === lead.id,
+      onToggleTest: () => handleToggleTest(lead),
+      confirmDelete: confirmDelete === lead.id,
+      onConfirmDeleteToggle: (confirm: boolean) => setConfirmDelete(confirm ? lead.id : null),
+      onDelete: () => handleDelete(lead.id),
+    };
+  }
+
   return (
     <div>
       <PageMeta title="Leads | PNW Fitness Admin" description="" />
       <PageBreadcrumb pageTitle="Leads" />
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span className="text-xs text-gray-400" title={lastUpdated.toLocaleTimeString()}>
-              Updated {lastUpdated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-            </span>
-          )}
-          {!loading && totalCount > 0 && (
-            <span className="text-sm text-gray-400">
-              Showing {rangeStart}–{rangeEnd} of {totalCount}
-            </span>
-          )}
-        </div>
-        {canCreateLead && (
-          <Button
-            size="sm"
-            onClick={() => {
-              setShowNewLead((v) => !v);
-              setNewLeadError(null);
-            }}
+      {focusedLeadId ? (
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <span className="text-sm text-gray-500 dark:text-gray-400">Showing 1 result from a notification</span>
+          <button
+            onClick={() => navigate("/leads")}
+            className="text-sm text-brand-600 dark:text-brand-400 hover:underline"
           >
-            {showNewLead ? "Cancel" : "+ Add Lead"}
-          </Button>
-        )}
-      </div>
+            ← View all leads
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              {lastUpdated && (
+                <span className="text-xs text-gray-400" title={lastUpdated.toLocaleTimeString()}>
+                  Updated {lastUpdated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                </span>
+              )}
+              {!loading && totalCount > 0 && (
+                <span className="text-sm text-gray-400">
+                  Showing {rangeStart}–{rangeEnd} of {totalCount}
+                </span>
+              )}
+            </div>
+            {canCreateLead && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setShowNewLead((v) => !v);
+                  setNewLeadError(null);
+                }}
+              >
+                {showNewLead ? "Cancel" : "+ Add Lead"}
+              </Button>
+            )}
+          </div>
 
-      {showNewLead && canCreateLead && (
-        <NewLeadForm
-          form={newLeadForm}
-          onChange={setNewLeadForm}
-          onSave={handleNewLeadSave}
-          onCancel={() => {
-            setShowNewLead(false);
-            setNewLeadError(null);
-          }}
-          saving={newLeadSaving}
-          error={newLeadError}
-        />
+          {showNewLead && canCreateLead && (
+            <NewLeadForm
+              form={newLeadForm}
+              onChange={setNewLeadForm}
+              onSave={handleNewLeadSave}
+              onCancel={() => {
+                setShowNewLead(false);
+                setNewLeadError(null);
+              }}
+              saving={newLeadSaving}
+              error={newLeadError}
+            />
+          )}
+
+          {/* Priority legend */}
+          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-4 bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-800">
+            <span className="font-semibold text-gray-600 dark:text-gray-300">Priority:</span>
+            {PRIORITY_LEGEND.map(({ color, label }) => (
+              <span key={color} className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 rounded-sm flex-shrink-0" style={{ background: color }} />
+                {label}
+              </span>
+            ))}
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm flex-shrink-0 bg-transparent border border-gray-300 dark:border-gray-700" />
+              Standard
+            </span>
+          </div>
+
+          <LeadsFilterBar
+            search={search}
+            onSearchChange={(v) => setSearch(v)}
+            filterSource={filterSource}
+            onFilterSourceChange={(v) => { setFilterSource(v); setPage(0); }}
+            filterStatus={filterStatus}
+            onFilterStatusChange={(v) => { setFilterStatus(v); setPage(0); }}
+            filterVisitReason={filterVisitReason}
+            onFilterVisitReasonChange={(v) => { setFilterVisitReason(v); setPage(0); }}
+            dateFrom={dateFrom}
+            onDateFromChange={(v) => { setDateFrom(v); setPage(0); }}
+            dateTo={dateTo}
+            onDateToChange={(v) => { setDateTo(v); setPage(0); }}
+            canAssign={canAssign}
+            filterAssigned={filterAssigned}
+            onFilterAssignedChange={(v) => { setFilterAssigned(v); setPage(0); }}
+            trainers={trainers}
+            canMarkTest={canMarkTest}
+            hideTest={hideTest}
+            onHideTestChange={(v) => { setHideTest(v); setPage(0); }}
+            anyFilter={anyFilter}
+            onClearFilters={clearFilters}
+          />
+        </>
       )}
-
-      {/* Priority legend */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-4 bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-800">
-        <span className="font-semibold text-gray-600 dark:text-gray-300">Priority:</span>
-        {PRIORITY_LEGEND.map(({ color, label }) => (
-          <span key={color} className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm flex-shrink-0" style={{ background: color }} />
-            {label}
-          </span>
-        ))}
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-sm flex-shrink-0 bg-transparent border border-gray-300 dark:border-gray-700" />
-          Standard
-        </span>
-      </div>
-
-      <LeadsFilterBar
-        search={search}
-        onSearchChange={(v) => setSearch(v)}
-        filterSource={filterSource}
-        onFilterSourceChange={(v) => { setFilterSource(v); setPage(0); }}
-        filterStatus={filterStatus}
-        onFilterStatusChange={(v) => { setFilterStatus(v); setPage(0); }}
-        filterVisitReason={filterVisitReason}
-        onFilterVisitReasonChange={(v) => { setFilterVisitReason(v); setPage(0); }}
-        dateFrom={dateFrom}
-        onDateFromChange={(v) => { setDateFrom(v); setPage(0); }}
-        dateTo={dateTo}
-        onDateToChange={(v) => { setDateTo(v); setPage(0); }}
-        canAssign={canAssign}
-        filterAssigned={filterAssigned}
-        onFilterAssignedChange={(v) => { setFilterAssigned(v); setPage(0); }}
-        trainers={trainers}
-        canMarkTest={canMarkTest}
-        hideTest={hideTest}
-        onHideTestChange={(v) => { setHideTest(v); setPage(0); }}
-        anyFilter={anyFilter}
-        onClearFilters={clearFilters}
-      />
 
       {error && (
         <p className="text-error-600 dark:text-error-400 text-sm bg-error-50 dark:bg-error-500/10 border border-error-200 dark:border-error-500/30 px-4 py-3 rounded-lg mb-4">
@@ -525,7 +631,19 @@ export default function Leads() {
         </p>
       )}
 
-      {loading ? (
+      {focusedLeadId ? (
+        focusedLoading ? (
+          <p className="text-gray-400 text-sm">Loading…</p>
+        ) : !focusedLead ? (
+          <p className="text-gray-400 text-sm">This lead couldn't be found — it may have been deleted.</p>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+            <div className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+              <LeadRow {...leadRowProps(focusedLead)} />
+            </div>
+          </div>
+        )
+      ) : loading ? (
         <p className="text-gray-400 text-sm">Loading leads…</p>
       ) : leads.length === 0 ? (
         <p className="text-gray-400 text-sm">No leads match the current filters.</p>
@@ -534,43 +652,7 @@ export default function Leads() {
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
             <div className="divide-y divide-gray-100 dark:divide-white/[0.05]">
               {leads.map((lead) => (
-                <LeadRow
-                  key={lead.id}
-                  lead={lead}
-                  isExpanded={expanded === lead.id}
-                  onToggleExpand={() => handleExpand(lead.id)}
-                  trainerName={trainerName}
-                  trainers={trainers}
-                  canAssign={canAssign}
-                  canEditStatus={canEditStatus}
-                  canAddNotes={canAddNotes}
-                  canDelete={canDelete}
-                  canMarkTest={canMarkTest}
-                  canEditDetails={canEditDetails}
-                  myName={myName}
-                  updating={updating === lead.id}
-                  onUpdateStatus={(status) => updateStatus(lead.id, status)}
-                  onLogVisit={() => handleLogVisit(lead)}
-                  onAssign={(userId) => handleAssign(lead.id, userId)}
-                  isEditing={editingLead === lead.id}
-                  editForm={editForm}
-                  onEditFormChange={setEditForm}
-                  onStartEdit={() => handleStartEdit(lead)}
-                  onEditSave={() => handleEditSave(lead)}
-                  onEditCancel={() => setEditingLead(null)}
-                  editSaving={editSaving}
-                  editError={editError}
-                  notes={notes[lead.id] ?? []}
-                  notesLoading={notesLoading === lead.id}
-                  noteText={noteText[lead.id] || ""}
-                  onNoteTextChange={(text) => setNoteText((t) => ({ ...t, [lead.id]: text }))}
-                  onAddNote={() => handleAddNote(lead.id)}
-                  noteSubmitting={noteSubmitting === lead.id}
-                  onToggleTest={() => handleToggleTest(lead)}
-                  confirmDelete={confirmDelete === lead.id}
-                  onConfirmDeleteToggle={(confirm) => setConfirmDelete(confirm ? lead.id : null)}
-                  onDelete={() => handleDelete(lead.id)}
-                />
+                <LeadRow key={lead.id} {...leadRowProps(lead)} />
               ))}
             </div>
           </div>
