@@ -320,7 +320,7 @@ const AppSidebar: React.FC = () => {
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/leads" className="flex items-center gap-2">
           <img
             src="/images/logo/pnw-logo.png"
             alt="PNW"

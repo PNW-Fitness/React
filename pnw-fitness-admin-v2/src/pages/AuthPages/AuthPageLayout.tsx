@@ -1,6 +1,5 @@
 import React from "react";
 import GridShape from "../../components/common/GridShape";
-import { Link } from "react-router";
 import ThemeTogglerTwo from "../../components/common/ThemeTogglerTwo";
 
 export default function AuthLayout({
@@ -17,9 +16,12 @@ export default function AuthLayout({
             {/* <!-- ===== Common Grid Shape Start ===== --> */}
             <GridShape />
             <div className="flex flex-col items-center max-w-xs">
-              <Link to="/" className="block mb-4">
+              {/* Plain anchor, not a router Link — clicking this while
+                  already on /login should just refresh the page, not
+                  navigate to the ungated dashboard route. */}
+              <a href="/login" className="block mb-4">
                 <img width={144} height={48} src="/images/logo/pnw-logo.png" alt="PNW" />
-              </Link>
+              </a>
               <p className="text-center text-gray-400 dark:text-white/60">
                 Staff Admin Portal
               </p>
