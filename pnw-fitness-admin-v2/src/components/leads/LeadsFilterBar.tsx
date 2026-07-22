@@ -29,6 +29,10 @@ interface LeadsFilterBarProps {
   canMarkTest: boolean;
   hideTest: boolean;
   onHideTestChange: (value: boolean) => void;
+  filterTrialPass: string;
+  onFilterTrialPassChange: (value: string) => void;
+  sortBy: string;
+  onSortByChange: (value: string) => void;
   anyFilter: boolean;
   onClearFilters: () => void;
 }
@@ -53,6 +57,10 @@ export default function LeadsFilterBar({
   canMarkTest,
   hideTest,
   onHideTestChange,
+  filterTrialPass,
+  onFilterTrialPassChange,
+  sortBy,
+  onSortByChange,
   anyFilter,
   onClearFilters,
 }: LeadsFilterBarProps) {
@@ -154,6 +162,27 @@ export default function LeadsFilterBar({
             </select>
           </div>
         )}
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Trial pass</label>
+          <select
+            value={filterTrialPass}
+            onChange={(e) => onFilterTrialPassChange(e.target.value)}
+            className={SELECT_CLS}
+          >
+            <option value="all">All</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Sort by</label>
+          <select value={sortBy} onChange={(e) => onSortByChange(e.target.value)} className={SELECT_CLS}>
+            <option value="recent">Recent activity</option>
+            <option value="trial_end_date">Trial end date</option>
+          </select>
+        </div>
 
         {canMarkTest && (
           <Checkbox

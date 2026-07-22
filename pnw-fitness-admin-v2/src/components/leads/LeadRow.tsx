@@ -12,6 +12,7 @@ import {
   SELECT_CLS,
 } from "../../lib/leadsHelpers";
 import LeadEditForm, { EditFormState } from "./LeadEditForm";
+import TrialPassControl from "../common/TrialPassControl";
 
 export interface LeadNote {
   id: string;
@@ -40,6 +41,8 @@ interface LeadRowProps {
   canDelete: boolean;
   canMarkTest: boolean;
   canEditDetails: boolean;
+  canManageTrialPass: boolean;
+  onTrialPassChange: (trialPass: boolean, trialEndDate: string | null) => void;
   myName: string | null;
 
   updating: boolean;
@@ -82,6 +85,8 @@ export default function LeadRow({
   canDelete,
   canMarkTest,
   canEditDetails,
+  canManageTrialPass,
+  onTrialPassChange,
   myName,
   updating,
   onUpdateStatus,
@@ -299,6 +304,17 @@ export default function LeadRow({
             ) : (
               <p className="text-sm text-gray-700 dark:text-gray-300">{trainerName(lead.assigned_to)}</p>
             )}
+          </div>
+
+          {/* Trial pass */}
+          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Trial Pass</p>
+            <TrialPassControl
+              trialPass={lead.trial_pass}
+              trialEndDate={lead.trial_end_date}
+              canManage={canManageTrialPass}
+              onChange={onTrialPassChange}
+            />
           </div>
 
           {/* Trainer notes */}

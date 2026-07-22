@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import { usePermissions } from "../../lib/PermissionsContext";
 import Input from "../form/input/InputField";
+import TrialPassControl from "../common/TrialPassControl";
 
 interface Lead {
   id: string;
@@ -12,6 +14,8 @@ interface Lead {
   last_seen: string | null;
   visit_count: number;
   details: { visit_reason?: string } | null;
+  trial_pass: boolean;
+  trial_end_date: string | null;
 }
 
 interface LeadNote {
@@ -46,7 +50,25 @@ export default function GuestNotesPanel() {
   const [submitMsg, setSubmitMsg] = useState<Record<string, "saved" | "error" | null>>({});
   const [loggingVisit, setLoggingVisit] = useState<string | null>(null);
 
+  const { can } = usePermissions();
+  const canManageTrialPass = can("leads.trial_pass.manage");
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Keeps today's list and search results consistent after a write, since
+  // a guest can appear in either (or both) depending on what's active.
+  function patchLead(id: string, patch: Partial<Lead>) {
+    setTodayLeads((l) => l.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    setSearchResults((l) => l.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  }
+
+  async function handleTrialPassChange(leadId: string, trialPass: boolean, trialEndDate: string | null) {
+    const { error } = await supabase
+      .from("lead_submissions")
+      .update({ trial_pass: trialPass, trial_end_date: trialEndDate })
+      .eq("id", leadId);
+    if (!error) patchLead(leadId, { trial_pass: trialPass, trial_end_date: trialEndDate });
+  }
 
   // Resolve the current user's display name for note authorship
   useEffect(() => {
@@ -72,7 +94,7 @@ export default function GuestNotesPanel() {
 
     const { data } = await supabase
       .from("lead_submissions")
-      .select("id, name, email, phone, source, created_at, last_seen, visit_count, details")
+      .select("id, name, email, phone, source, created_at, last_seen, visit_count, details, trial_pass, trial_end_date")
       .gte("last_seen", todayStart.toISOString())
       .or("is_test.eq.false,is_test.is.null")
       .order("last_seen", { ascending: false });
@@ -98,7 +120,7 @@ export default function GuestNotesPanel() {
       const term = search.trim().replace(/,/g, "");
       const { data } = await supabase
         .from("lead_submissions")
-        .select("id, name, email, phone, source, created_at, last_seen, visit_count, details")
+        .select("id, name, email, phone, source, created_at, last_seen, visit_count, details, trial_pass, trial_end_date")
         .or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
         .or("is_test.eq.false,is_test.is.null")
         .order("last_seen", { ascending: false, nullsFirst: false })
@@ -292,6 +314,16 @@ export default function GuestNotesPanel() {
                 {/* Expanded notes panel */}
                 {isOpen && (
                   <div className="px-4 pb-5 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <div className="mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Trial Pass</p>
+                      <TrialPassControl
+                        trialPass={lead.trial_pass}
+                        trialEndDate={lead.trial_end_date}
+                        canManage={canManageTrialPass}
+                        onChange={(trialPass, trialEndDate) => handleTrialPassChange(lead.id, trialPass, trialEndDate)}
+                      />
+                    </div>
+
                     <div className="flex items-center justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3">
                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</p>

@@ -35,6 +35,8 @@ export interface Lead {
   last_seen: string | null;
   is_test: boolean;
   created_at: string;
+  trial_pass: boolean;
+  trial_end_date: string | null;
   lead_notes?: { id: string }[];
 }
 

@@ -6,6 +6,7 @@ import Button from "../components/ui/button/Button";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
 import { usePermissions } from "../lib/PermissionsContext";
+import { toProperCase } from "../lib/textFormat";
 import { Lead, PAGE_SIZE, PRIORITY_LEGEND } from "../lib/leadsHelpers";
 import LeadsFilterBar from "../components/leads/LeadsFilterBar";
 import NewLeadForm, { NewLeadFormState } from "../components/leads/NewLeadForm";
@@ -93,6 +94,10 @@ export default function Leads() {
   // Hide test entries by default
   const [hideTest, setHideTest] = useState(true);
 
+  // Trial pass filter + sort
+  const [filterTrialPass, setFilterTrialPass] = useState("all");
+  const [sortBy, setSortBy] = useState("recent");
+
   const { role } = useAuth();
   const { can } = usePermissions();
   const canAssign = can("leads.edit_status");
@@ -102,6 +107,7 @@ export default function Leads() {
   const canMarkTest = role === "admin";
   const canEditDetails = can("leads.edit_details");
   const canCreateLead = can("leads.create");
+  const canManageTrialPass = can("leads.trial_pass.manage");
 
   // Resolve current user's name + id
   useEffect(() => {
@@ -169,8 +175,13 @@ export default function Leads() {
       let q = supabase
         .from("lead_submissions")
         .select("*, lead_notes!left(id)", { count: "exact" })
-        .order("last_seen", { ascending: false, nullsFirst: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+      if (sortBy === "trial_end_date") {
+        q = q.order("trial_end_date", { ascending: true, nullsFirst: false });
+      } else {
+        q = q.order("last_seen", { ascending: false, nullsFirst: false });
+      }
 
       if (hideTest) {
         q = q.or("is_test.eq.false,is_test.is.null");
@@ -181,6 +192,7 @@ export default function Leads() {
       if (filterSource !== "all") q = q.eq("source", filterSource);
       if (filterStatus !== "all") q = q.eq("status", filterStatus);
       if (filterVisitReason !== "all") q = q.eq("details->>visit_reason", filterVisitReason);
+      if (filterTrialPass !== "all") q = q.eq("trial_pass", filterTrialPass === "yes");
 
       if (term) {
         q = q.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`);
@@ -209,7 +221,7 @@ export default function Leads() {
       }
       setLoading(false);
     },
-    [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterAssigned, hideTest, role, currentUserId]
+    [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterTrialPass, sortBy, filterAssigned, hideTest, role, currentUserId]
   );
 
   useEffect(() => {
@@ -308,6 +320,14 @@ export default function Leads() {
     }
   }
 
+  async function handleTrialPassChange(leadId: string, trialPass: boolean, trialEndDate: string | null) {
+    const { error: err } = await supabase
+      .from("lead_submissions")
+      .update({ trial_pass: trialPass, trial_end_date: trialEndDate })
+      .eq("id", leadId);
+    if (!err) patchLead(leadId, { trial_pass: trialPass, trial_end_date: trialEndDate });
+  }
+
   function trainerName(userId: string | null) {
     if (!userId) return "Unassigned";
     const t = trainers.find((t) => t.user_id === userId);
@@ -361,7 +381,7 @@ export default function Leads() {
       zip_code: editForm.zip_code,
     };
     const updates = {
-      name: editForm.name.trim(),
+      name: toProperCase(editForm.name.trim()),
       email: editForm.email.trim() || null,
       phone: editForm.phone.trim() || null,
       source: editForm.source,
@@ -401,7 +421,7 @@ export default function Leads() {
           }
         : {};
     const { error: err } = await supabase.from("lead_submissions").insert({
-      name: newLeadForm.name.trim(),
+      name: toProperCase(newLeadForm.name.trim()),
       email: newLeadForm.email.trim() || null,
       phone: newLeadForm.phone.trim() || null,
       source: newLeadForm.source,
@@ -476,11 +496,13 @@ export default function Leads() {
     setFilterVisitReason("all");
     setFilterAssigned("all");
     setHideTest(true);
+    setFilterTrialPass("all");
+    setSortBy("recent");
     setPage(0);
   }
 
   const anyFilter = Boolean(
-    search || filterSource !== "all" || filterStatus !== "all" || filterVisitReason !== "all" || dateFrom || dateTo || filterAssigned !== "all" || !hideTest
+    search || filterSource !== "all" || filterStatus !== "all" || filterVisitReason !== "all" || dateFrom || dateTo || filterAssigned !== "all" || !hideTest || filterTrialPass !== "all"
   );
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
@@ -500,6 +522,9 @@ export default function Leads() {
       canDelete,
       canMarkTest,
       canEditDetails,
+      canManageTrialPass,
+      onTrialPassChange: (trialPass: boolean, trialEndDate: string | null) =>
+        handleTrialPassChange(lead.id, trialPass, trialEndDate),
       myName,
       updating: updating === lead.id,
       onUpdateStatus: (status: string) => updateStatus(lead.id, status),
@@ -619,6 +644,10 @@ export default function Leads() {
             canMarkTest={canMarkTest}
             hideTest={hideTest}
             onHideTestChange={(v) => { setHideTest(v); setPage(0); }}
+            filterTrialPass={filterTrialPass}
+            onFilterTrialPassChange={(v) => { setFilterTrialPass(v); setPage(0); }}
+            sortBy={sortBy}
+            onSortByChange={(v) => { setSortBy(v); setPage(0); }}
             anyFilter={anyFilter}
             onClearFilters={clearFilters}
           />
