@@ -15,6 +15,9 @@ const ALL_PERMS = [
   'pages.leads', 'pages.guest_notes', 'pages.vendor_log',
   'pages.activity_log', 'pages.users_roles',
   'vendor_log.notes.add',
+  // Phase 2
+  'leads.assign', 'pages.banned_guests', 'bans.view', 'bans.manage',
+  'leads.trial_pass.manage',
 ]
 
 const PermissionsContext = createContext({
