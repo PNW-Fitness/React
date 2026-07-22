@@ -8,10 +8,13 @@ import { useAuth } from "../lib/AuthContext";
 import { usePermissions } from "../lib/PermissionsContext";
 import { toProperCase } from "../lib/textFormat";
 import { Lead, PAGE_SIZE, PRIORITY_LEGEND } from "../lib/leadsHelpers";
+import { findActiveBan, approveBanRequest, denyBanRequest, applyBanDirectly } from "../lib/bans";
 import LeadsFilterBar from "../components/leads/LeadsFilterBar";
 import NewLeadForm, { NewLeadFormState } from "../components/leads/NewLeadForm";
 import LeadRow, { LeadNote, Trainer } from "../components/leads/LeadRow";
 import { EditFormState } from "../components/leads/LeadEditForm";
+import BanReasonModal from "../components/common/BanReasonModal";
+import BannedGuestCard, { BannedGuest } from "../components/common/BannedGuestCard";
 
 const EMPTY_NEW: NewLeadFormState = {
   name: "",
@@ -98,6 +101,11 @@ export default function Leads() {
   const [filterTrialPass, setFilterTrialPass] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
 
+  // Guest bans
+  const [bannedResults, setBannedResults] = useState<BannedGuest[]>([]);
+  const [applyBanGuest, setApplyBanGuest] = useState<Lead | null>(null);
+  const [banActionError, setBanActionError] = useState<string | null>(null);
+
   const { role } = useAuth();
   const { can } = usePermissions();
   const canAssign = can("leads.edit_status");
@@ -108,6 +116,7 @@ export default function Leads() {
   const canEditDetails = can("leads.edit_details");
   const canCreateLead = can("leads.create");
   const canManageTrialPass = can("leads.trial_pass.manage");
+  const canManageBans = can("bans.manage");
 
   // Resolve current user's name + id
   useEffect(() => {
@@ -189,6 +198,10 @@ export default function Leads() {
         q = q.eq("is_test", true);
       }
 
+      // Banned guests are excluded from the normal list entirely — they show
+      // as a simple card (matched against the search term) instead, below.
+      q = q.neq("ban_status", "banned");
+
       if (filterSource !== "all") q = q.eq("source", filterSource);
       if (filterStatus !== "all") q = q.eq("status", filterStatus);
       if (filterVisitReason !== "all") q = q.eq("details->>visit_reason", filterVisitReason);
@@ -215,14 +228,39 @@ export default function Leads() {
       if (err) {
         setError(err.message);
       } else {
-        setLeads(data ?? []);
+        let rows = data ?? [];
+        // Pin ban requests to the top, above the normal sort order — reviewers
+        // only, per Design Addendum §3.4. A stable partition (not a full
+        // re-sort) keeps everything else in its existing order.
+        if (canManageBans) {
+          rows = [...rows].sort((a, b) => Number(b.ban_status === "requested") - Number(a.ban_status === "requested"));
+        }
+        setLeads(rows);
         setTotalCount(count ?? 0);
         setLastUpdated(new Date());
       }
       setLoading(false);
     },
-    [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterTrialPass, sortBy, filterAssigned, hideTest, role, currentUserId]
+    [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterTrialPass, sortBy, filterAssigned, hideTest, role, currentUserId, canManageBans]
   );
+
+  // Banned guests are excluded from the list above — show them as a simple
+  // card instead, matched by the same search term, so they don't clutter
+  // day-to-day workflows but still surface if someone searches for them.
+  useEffect(() => {
+    const term = debouncedSearch.trim().replace(/,/g, "");
+    if (!term) {
+      setBannedResults([]);
+      return;
+    }
+    supabase
+      .from("lead_submissions")
+      .select("id, name, email, phone")
+      .or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
+      .eq("ban_status", "banned")
+      .limit(5)
+      .then(({ data }) => setBannedResults(data ?? []));
+  }, [debouncedSearch]);
 
   useEffect(() => {
     if (focusedLeadId) return;
@@ -326,6 +364,37 @@ export default function Leads() {
       .update({ trial_pass: trialPass, trial_end_date: trialEndDate })
       .eq("id", leadId);
     if (!err) patchLead(leadId, { trial_pass: trialPass, trial_end_date: trialEndDate });
+  }
+
+  async function handleApproveBan(lead: Lead) {
+    setBanActionError(null);
+    const ban = await findActiveBan(lead);
+    if (!ban) {
+      setBanActionError("Couldn't find the ban request to approve — try refreshing.");
+      return;
+    }
+    const { error: err } = await approveBanRequest(ban, lead, myName || "Staff");
+    if (err) setBanActionError(err.message);
+    else fetchLeads({ silent: true });
+  }
+
+  async function handleDenyBan(lead: Lead) {
+    setBanActionError(null);
+    const ban = await findActiveBan(lead);
+    if (!ban) {
+      setBanActionError("Couldn't find the ban request to deny — try refreshing.");
+      return;
+    }
+    const { error: err } = await denyBanRequest(ban, lead, myName || "Staff");
+    if (err) setBanActionError(err.message);
+    else fetchLeads({ silent: true });
+  }
+
+  async function handleApplyBanDirect(reason: string) {
+    if (!applyBanGuest) return;
+    const { error: err } = await applyBanDirectly(applyBanGuest, reason, myName || "Staff");
+    if (err) throw err;
+    fetchLeads({ silent: true });
   }
 
   function trainerName(userId: string | null) {
@@ -525,6 +594,10 @@ export default function Leads() {
       canManageTrialPass,
       onTrialPassChange: (trialPass: boolean, trialEndDate: string | null) =>
         handleTrialPassChange(lead.id, trialPass, trialEndDate),
+      canManageBans,
+      onApproveBan: () => handleApproveBan(lead),
+      onDenyBan: () => handleDenyBan(lead),
+      onApplyBanDirect: () => setApplyBanGuest(lead),
       myName,
       updating: updating === lead.id,
       onUpdateStatus: (status: string) => updateStatus(lead.id, status),
@@ -660,6 +733,12 @@ export default function Leads() {
         </p>
       )}
 
+      {banActionError && (
+        <p className="text-error-600 dark:text-error-400 text-sm bg-error-50 dark:bg-error-500/10 border border-error-200 dark:border-error-500/30 px-4 py-3 rounded-lg mb-4">
+          {banActionError}
+        </p>
+      )}
+
       {focusedLeadId ? (
         focusedLoading ? (
           <p className="text-gray-400 text-sm">Loading…</p>
@@ -709,6 +788,23 @@ export default function Leads() {
           )}
         </>
       )}
+
+      {bannedResults.length > 0 && (
+        <div className="space-y-2 mt-4">
+          {bannedResults.map((guest) => (
+            <BannedGuestCard key={guest.id} guest={guest} />
+          ))}
+        </div>
+      )}
+
+      <BanReasonModal
+        isOpen={!!applyBanGuest}
+        onClose={() => setApplyBanGuest(null)}
+        title="Apply Ban"
+        guestName={applyBanGuest?.name ?? ""}
+        submitLabel="Apply Ban"
+        onSubmit={handleApplyBanDirect}
+      />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   GroupIcon,
   HorizontaLDots,
   ListIcon,
+  LockIcon,
   PageIcon,
   PieChartIcon,
   PlugInIcon,
@@ -37,6 +38,7 @@ const pnwNavItems: NavItem[] = [
   { icon: <BoxCubeIcon />, name: "Vendor Log", path: "/vendor-log", permKey: "pages.vendor_log" },
   { icon: <TaskIcon />, name: "Activity Log", path: "/activity", permKey: "pages.activity_log" },
   { icon: <GroupIcon />, name: "Users & Roles", path: "/users-roles", permKey: "pages.users_roles" },
+  { icon: <LockIcon />, name: "Banned Guests", path: "/banned-guests", permKey: "pages.banned_guests" },
 ];
 
 // TailAdmin's own sample pages — left in place per scope (out-of-scope to

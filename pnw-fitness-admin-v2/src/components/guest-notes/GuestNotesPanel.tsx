@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { usePermissions } from "../../lib/PermissionsContext";
+import { requestBan } from "../../lib/bans";
 import Input from "../form/input/InputField";
 import TrialPassControl from "../common/TrialPassControl";
+import BanReasonModal from "../common/BanReasonModal";
+import BannedGuestCard, { BannedGuest } from "../common/BannedGuestCard";
 
 interface Lead {
   id: string;
@@ -16,7 +19,11 @@ interface Lead {
   details: { visit_reason?: string } | null;
   trial_pass: boolean;
   trial_end_date: string | null;
+  ban_status: "none" | "requested" | "banned";
 }
+
+const LEAD_COLUMNS =
+  "id, name, email, phone, source, created_at, last_seen, visit_count, details, trial_pass, trial_end_date, ban_status";
 
 interface LeadNote {
   id: string;
@@ -49,6 +56,8 @@ export default function GuestNotesPanel() {
   const [myName, setMyName] = useState<string | null>(null);
   const [submitMsg, setSubmitMsg] = useState<Record<string, "saved" | "error" | null>>({});
   const [loggingVisit, setLoggingVisit] = useState<string | null>(null);
+  const [bannedResults, setBannedResults] = useState<BannedGuest[]>([]);
+  const [banModalGuest, setBanModalGuest] = useState<Lead | null>(null);
 
   const { can } = usePermissions();
   const canManageTrialPass = can("leads.trial_pass.manage");
@@ -94,9 +103,10 @@ export default function GuestNotesPanel() {
 
     const { data } = await supabase
       .from("lead_submissions")
-      .select("id, name, email, phone, source, created_at, last_seen, visit_count, details, trial_pass, trial_end_date")
+      .select(LEAD_COLUMNS)
       .gte("last_seen", todayStart.toISOString())
       .or("is_test.eq.false,is_test.is.null")
+      .neq("ban_status", "banned")
       .order("last_seen", { ascending: false });
 
     setTodayLeads(data ?? []);
@@ -113,6 +123,7 @@ export default function GuestNotesPanel() {
     clearTimeout(debounceRef.current);
     if (!search.trim()) {
       setSearchResults([]);
+      setBannedResults([]);
       return;
     }
     debounceRef.current = setTimeout(async () => {
@@ -120,12 +131,24 @@ export default function GuestNotesPanel() {
       const term = search.trim().replace(/,/g, "");
       const { data } = await supabase
         .from("lead_submissions")
-        .select("id, name, email, phone, source, created_at, last_seen, visit_count, details, trial_pass, trial_end_date")
+        .select(LEAD_COLUMNS)
         .or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
         .or("is_test.eq.false,is_test.is.null")
+        .neq("ban_status", "banned")
         .order("last_seen", { ascending: false, nullsFirst: false })
         .limit(15);
       setSearchResults(data ?? []);
+
+      // Banned guests are excluded from the normal results above — show them
+      // as a simple card instead, matched by the same search term.
+      const { data: banned } = await supabase
+        .from("lead_submissions")
+        .select("id, name, email, phone")
+        .or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`)
+        .eq("ban_status", "banned")
+        .limit(5);
+      setBannedResults(banned ?? []);
+
       setSearching(false);
     }, 300);
   }, [search]);
@@ -159,6 +182,13 @@ export default function GuestNotesPanel() {
       .order("created_at", { ascending: false });
     setNotes((n) => ({ ...n, [leadId]: data ?? [] }));
     setNotesLoading(null);
+  }
+
+  async function handleRequestBan(reason: string) {
+    if (!banModalGuest) return;
+    const { error } = await requestBan(banModalGuest, reason, myName || "Front Desk");
+    if (!error) patchLead(banModalGuest.id, { ban_status: "requested" });
+    else throw error;
   }
 
   async function handleAddNote(leadId: string) {
@@ -399,6 +429,21 @@ export default function GuestNotesPanel() {
                         )}
                       </div>
                     </div>
+
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center gap-3">
+                      {lead.ban_status === "requested" ? (
+                        <span className="text-xs text-warning-700 bg-warning-50 border border-warning-300 dark:text-warning-400 dark:bg-warning-500/10 dark:border-warning-500/30 rounded-lg px-3 py-1.5">
+                          Ban requested — pending review
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setBanModalGuest(lead)}
+                          className="text-xs text-error-500 hover:text-error-600 border border-error-200 dark:border-error-500/30 hover:border-error-400 rounded-lg px-3 py-1.5 transition"
+                        >
+                          Request Ban
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -406,6 +451,23 @@ export default function GuestNotesPanel() {
           })}
         </div>
       )}
+
+      {bannedResults.length > 0 && (
+        <div className="space-y-2 mt-2">
+          {bannedResults.map((guest) => (
+            <BannedGuestCard key={guest.id} guest={guest} />
+          ))}
+        </div>
+      )}
+
+      <BanReasonModal
+        isOpen={!!banModalGuest}
+        onClose={() => setBanModalGuest(null)}
+        title="Request Ban"
+        guestName={banModalGuest?.name ?? ""}
+        submitLabel="Submit Request"
+        onSubmit={handleRequestBan}
+      />
     </div>
   );
 }

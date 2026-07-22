@@ -23,6 +23,7 @@ import GuestNotes from "./pages/GuestNotes";
 import VendorLog from "./pages/VendorLog";
 import ActivityLog from "./pages/ActivityLog";
 import UsersRoles from "./pages/UsersRoles";
+import BannedGuests from "./pages/BannedGuests";
 import { supabase } from "./lib/supabaseClient";
 import { useAuth } from "./lib/AuthContext";
 import { usePermissions } from "./lib/PermissionsContext";
@@ -45,6 +46,7 @@ const REDIRECT_PRIORITY = [
   { permKey: "pages.vendor_log", path: "/vendor-log" },
   { permKey: "pages.activity_log", path: "/activity" },
   { permKey: "pages.users_roles", path: "/users-roles" },
+  { permKey: "pages.banned_guests", path: "/banned-guests" },
 ];
 
 function firstAccessiblePath(can: (key: string) => boolean): string | null {
@@ -221,6 +223,14 @@ export default function App() {
               element={
                 <PermissionRoute requiredPerms={["pages.users_roles"]}>
                   <UsersRoles />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/banned-guests"
+              element={
+                <PermissionRoute requiredPerms={["pages.banned_guests"]}>
+                  <BannedGuests />
                 </PermissionRoute>
               }
             />

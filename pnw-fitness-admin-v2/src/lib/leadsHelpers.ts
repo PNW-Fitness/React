@@ -37,6 +37,7 @@ export interface Lead {
   created_at: string;
   trial_pass: boolean;
   trial_end_date: string | null;
+  ban_status: "none" | "requested" | "banned";
   lead_notes?: { id: string }[];
 }
 

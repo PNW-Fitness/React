@@ -43,6 +43,10 @@ interface LeadRowProps {
   canEditDetails: boolean;
   canManageTrialPass: boolean;
   onTrialPassChange: (trialPass: boolean, trialEndDate: string | null) => void;
+  canManageBans: boolean;
+  onApproveBan: () => void;
+  onDenyBan: () => void;
+  onApplyBanDirect: () => void;
   myName: string | null;
 
   updating: boolean;
@@ -87,6 +91,10 @@ export default function LeadRow({
   canEditDetails,
   canManageTrialPass,
   onTrialPassChange,
+  canManageBans,
+  onApproveBan,
+  onDenyBan,
+  onApplyBanDirect,
   myName,
   updating,
   onUpdateStatus,
@@ -118,14 +126,26 @@ export default function LeadRow({
   const srcColor = SOURCE_COLORS[lead.source] ?? "bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400";
   const priColor = getPriorityColor(lead);
   const noteCount = lead.lead_notes?.length ?? 0;
+  const isPinnedBanRequest = canManageBans && lead.ban_status === "requested";
 
   return (
     <div style={{ borderLeft: priColor ? `4px solid ${priColor}` : "4px solid transparent" }}>
       {/* Collapsed row */}
       <div
-        className={`flex items-center gap-3 px-4 py-3 min-w-0 ${isNew ? "bg-blue-light-50/40 dark:bg-blue-light-500/5" : ""}`}
+        className={`flex items-center gap-3 px-4 py-3 min-w-0 ${
+          isPinnedBanRequest
+            ? "bg-warning-50/60 dark:bg-warning-500/10"
+            : isNew
+            ? "bg-blue-light-50/40 dark:bg-blue-light-500/5"
+            : ""
+        }`}
       >
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${srcColor}`}>{srcLabel}</span>
+        {isPinnedBanRequest && (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 bg-warning-100 text-warning-700 dark:bg-warning-500/15 dark:text-warning-400">
+            ⚠ Ban Requested
+          </span>
+        )}
 
         <div className="flex-1 min-w-0">
           <p
@@ -317,6 +337,39 @@ export default function LeadRow({
               onChange={onTrialPassChange}
             />
           </div>
+
+          {/* Guest bans — reviewers only */}
+          {canManageBans && (
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Bans</p>
+              {lead.ban_status === "requested" ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-warning-700 bg-warning-50 border border-warning-300 dark:text-warning-400 dark:bg-warning-500/10 dark:border-warning-500/30 rounded-lg px-3 py-1.5">
+                    Ban requested — pending review
+                  </span>
+                  <button
+                    onClick={onApproveBan}
+                    className="text-xs font-medium text-white bg-error-600 hover:bg-error-700 px-3 py-1.5 rounded-lg transition"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={onDenyBan}
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 border border-gray-300 dark:border-gray-700 px-3 py-1.5 rounded-lg transition"
+                  >
+                    Deny
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={onApplyBanDirect}
+                  className="text-xs text-error-500 hover:text-error-600 border border-error-200 dark:border-error-500/30 hover:border-error-400 rounded-lg px-3 py-1.5 transition"
+                >
+                  Apply Ban
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Trainer notes */}
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
