@@ -45,14 +45,21 @@ export default function TrialPassControl({ leadId, trialPass, trialEndDate, canM
         onChange={(checked) => onChange(checked, checked ? trialEndDate : null)}
       />
       {trialPass && (
-        <div className="w-44">
-          <DatePicker
-            id={`trial-end-date-${leadId}`}
-            defaultDate={trialEndDate ?? undefined}
-            placeholder="Select end date"
-            onChange={(_dates, dateStr) => onChange(true, dateStr || null)}
-          />
-        </div>
+        <>
+          <div className="w-44">
+            <DatePicker
+              id={`trial-end-date-${leadId}`}
+              defaultDate={trialEndDate ?? undefined}
+              placeholder="Select end date"
+              onChange={(_dates, dateStr) => onChange(true, dateStr || null)}
+            />
+          </div>
+          {trialEndDate && (
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Expires {formatDate(trialEndDate)}
+            </span>
+          )}
+        </>
       )}
     </div>
   );
