@@ -37,9 +37,16 @@ export default function TrialPassControl({ trialPass, trialEndDate, canManage, o
       />
       {trialPass && (
         <input
+          // Uncontrolled on purpose: a native date input only reports a
+          // value once month/day/year are ALL complete, so a controlled
+          // value fed back on every keystroke resets the field mid-edit
+          // (e.g. after typing 2 of 4 year digits). Committing on blur
+          // instead lets the browser's own segment editing work normally;
+          // the key remounts it if the stored date changes externally.
+          key={trialEndDate ?? "empty"}
           type="date"
-          value={trialEndDate ?? ""}
-          onChange={(e) => onChange(true, e.target.value || null)}
+          defaultValue={trialEndDate ?? ""}
+          onBlur={(e) => onChange(true, e.target.value || null)}
           className={SELECT_CLS}
         />
       )}
