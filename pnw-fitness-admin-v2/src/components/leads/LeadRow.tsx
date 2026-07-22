@@ -311,7 +311,7 @@ export default function LeadRow({
 
           {/* Trainer assignment */}
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Assigned Trainer</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Assigned To</p>
             {canAssign ? (
               <select value={lead.assigned_to || ""} onChange={(e) => onAssign(e.target.value)} className={SELECT_CLS}>
                 <option value="">Unassigned</option>

@@ -107,8 +107,10 @@ export default function Leads() {
   const [banActionError, setBanActionError] = useState<string | null>(null);
 
   const { role } = useAuth();
-  const { can } = usePermissions();
-  const canAssign = can("leads.edit_status");
+  const { can, rbacRoleName } = usePermissions();
+  // leads.assign lets Lead Manager use the assignment control even though
+  // (per Trainer's baseline permissions) it doesn't have leads.edit_status.
+  const canAssign = can("leads.edit_status") || can("leads.assign");
   const canEditStatus = can("leads.edit_status");
   const canAddNotes = can("leads.notes.add");
   const canDelete = role === "admin";
@@ -136,13 +138,15 @@ export default function Leads() {
     resolveUser();
   }, []);
 
-  // Load all users with the RBAC "Trainer" role for the assign dropdown + filter
+  // Load all users assignable to a lead — Trainer or Lead Manager — for the
+  // assign dropdown + filter. Manager/Super Admin never appear as targets,
+  // even though they can still view/change any lead's assignment via leads.assign.
   useEffect(() => {
     async function loadTrainers() {
       const { data: trainerRoles } = await supabase
         .from("user_roles")
         .select("user_id, roles!inner(name)")
-        .eq("roles.name", "Trainer");
+        .in("roles.name", ["Trainer", "Lead Manager"]);
       const ids = (trainerRoles ?? []).map((r) => r.user_id);
       if (ids.length === 0) {
         setTrainers([]);
@@ -170,10 +174,10 @@ export default function Leads() {
   // Main data fetch — re-runs whenever any filter or page changes
   const fetchLeads = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
-      // Wait until role is resolved. For trainers, also wait for their user ID
-      // so we never accidentally show them the full unfiltered list.
+      // Wait until role is resolved. For trainers and Lead Managers, also wait
+      // for their user ID so we never accidentally show the full unfiltered list.
       if (role === undefined) return;
-      if (role === "trainer" && !currentUserId) return;
+      if ((role === "trainer" || rbacRoleName === "Lead Manager") && !currentUserId) return;
 
       if (!silent) setLoading(true);
       setError(null);
@@ -215,8 +219,13 @@ export default function Leads() {
       if (dateTo) q = q.lte("created_at", `${dateTo}T23:59:59.999Z`);
 
       // Trainers are locked to their own assigned leads — not a UI option.
+      // Lead Manager gets a wider (but still fixed) view — assigned to them
+      // OR unassigned — so they can find and claim unassigned leads without
+      // opening up to every trainer's leads like Manager/Super Admin see.
       // Admins and fitness managers use the optional filterAssigned dropdown.
-      if (role === "trainer") {
+      if (rbacRoleName === "Lead Manager") {
+        q = q.or(`assigned_to.eq.${currentUserId},assigned_to.is.null`);
+      } else if (role === "trainer") {
         q = q.eq("assigned_to", currentUserId);
       } else {
         if (filterAssigned === "unassigned") q = q.is("assigned_to", null);
@@ -241,7 +250,7 @@ export default function Leads() {
       }
       setLoading(false);
     },
-    [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterTrialPass, sortBy, filterAssigned, hideTest, role, currentUserId, canManageBans]
+    [page, debouncedSearch, dateFrom, dateTo, filterSource, filterStatus, filterVisitReason, filterTrialPass, sortBy, filterAssigned, hideTest, role, rbacRoleName, currentUserId, canManageBans]
   );
 
   // Banned guests are excluded from the list above — show them as a simple
