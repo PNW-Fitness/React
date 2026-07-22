@@ -310,6 +310,7 @@ export default function LeadRow({
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Trial Pass</p>
             <TrialPassControl
+              leadId={lead.id}
               trialPass={lead.trial_pass}
               trialEndDate={lead.trial_end_date}
               canManage={canManageTrialPass}

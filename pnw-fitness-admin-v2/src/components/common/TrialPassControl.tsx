@@ -1,7 +1,8 @@
 import Checkbox from "../form/input/Checkbox";
-import { SELECT_CLS } from "../../lib/leadsHelpers";
+import DatePicker from "../form/date-picker";
 
 interface TrialPassControlProps {
+  leadId: string;
   trialPass: boolean;
   trialEndDate: string | null;
   canManage: boolean;
@@ -19,7 +20,15 @@ function formatDate(dateStr: string) {
 // Shared between Leads and Guest Notes — gated on leads.trial_pass.manage,
 // degrades to plain read-only text for roles without it (e.g. Trainer),
 // same pattern as the Assigned Trainer control degrades elsewhere.
-export default function TrialPassControl({ trialPass, trialEndDate, canManage, onChange }: TrialPassControlProps) {
+//
+// Uses TailAdmin's flatpickr-based DatePicker instead of a native
+// <input type="date">: the native control proved unreliable in testing —
+// a controlled value reset it mid-keystroke, and separately, clicking near
+// its built-in calendar icon opened the browser's own popup and produced
+// garbled values when combined with typing. flatpickr renders its own
+// consistent calendar UI instead of deferring to the browser, avoiding
+// both failure modes.
+export default function TrialPassControl({ leadId, trialPass, trialEndDate, canManage, onChange }: TrialPassControlProps) {
   if (!canManage) {
     return (
       <p className="text-sm text-gray-700 dark:text-gray-300">
@@ -36,19 +45,14 @@ export default function TrialPassControl({ trialPass, trialEndDate, canManage, o
         onChange={(checked) => onChange(checked, checked ? trialEndDate : null)}
       />
       {trialPass && (
-        <input
-          // Uncontrolled on purpose: a native date input only reports a
-          // value once month/day/year are ALL complete, so a controlled
-          // value fed back on every keystroke resets the field mid-edit
-          // (e.g. after typing 2 of 4 year digits). Committing on blur
-          // instead lets the browser's own segment editing work normally;
-          // the key remounts it if the stored date changes externally.
-          key={trialEndDate ?? "empty"}
-          type="date"
-          defaultValue={trialEndDate ?? ""}
-          onBlur={(e) => onChange(true, e.target.value || null)}
-          className={SELECT_CLS}
-        />
+        <div className="w-44">
+          <DatePicker
+            id={`trial-end-date-${leadId}`}
+            defaultDate={trialEndDate ?? undefined}
+            placeholder="Select end date"
+            onChange={(_dates, dateStr) => onChange(true, dateStr || null)}
+          />
+        </div>
       )}
     </div>
   );
