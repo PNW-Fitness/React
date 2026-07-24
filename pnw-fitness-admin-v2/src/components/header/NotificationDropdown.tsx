@@ -8,6 +8,7 @@ import { useAuth } from "../../lib/AuthContext";
 interface Notification {
   id: string;
   lead_id: string | null;
+  link: string | null;
   message: string;
   is_read: boolean;
   created_at: string;
@@ -38,7 +39,7 @@ export default function NotificationDropdown() {
 
     supabase
       .from("notifications")
-      .select("id, lead_id, message, is_read, created_at")
+      .select("id, lead_id, link, message, is_read, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(20)
@@ -77,7 +78,7 @@ export default function NotificationDropdown() {
 
   function handleNotificationClick(n: Notification) {
     closeDropdown();
-    navigate(n.lead_id ? `/leads?lead=${n.lead_id}` : "/leads");
+    navigate(n.link ?? (n.lead_id ? `/leads?lead=${n.lead_id}` : "/leads"));
   }
 
   return (

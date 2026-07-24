@@ -18,6 +18,9 @@ const ALL_PERMS = [
   // Phase 2
   'leads.assign', 'pages.banned_guests', 'bans.view', 'bans.manage',
   'leads.trial_pass.manage',
+  // Phase 3
+  'pages.schedule', 'shift_trade.request', 'shift_trade.manage',
+  'pages.team_board', 'team_board.post',
 ]
 
 const PermissionsContext = createContext({
