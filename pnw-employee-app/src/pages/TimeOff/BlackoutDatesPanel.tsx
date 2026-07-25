@@ -48,18 +48,18 @@ export default function BlackoutDatesPanel({ blackoutDates, currentUserId, onCha
       <p className="text-sm font-bold text-navy mb-1">Blackout Dates</p>
       <p className="text-xs text-navy/50 mb-3">Staff can't request time off during these dates.</p>
 
-      <div className="grid grid-cols-2 gap-2 mb-2">
+      <div className="space-y-2 mb-2">
         <input
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="min-w-0 rounded-xl border border-navy/15 px-3 py-2 text-sm text-navy"
+          className="w-full rounded-xl border border-navy/15 px-3 py-2 text-sm text-navy"
         />
         <input
           type="date"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
-          className="min-w-0 rounded-xl border border-navy/15 px-3 py-2 text-sm text-navy"
+          className="w-full rounded-xl border border-navy/15 px-3 py-2 text-sm text-navy"
         />
       </div>
       <input
