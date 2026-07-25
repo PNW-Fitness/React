@@ -18,11 +18,6 @@ export default function UserProfiles() {
   const [phoneSaving, setPhoneSaving] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
-  const [newEmail, setNewEmail] = useState("");
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailMessage, setEmailMessage] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
-
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -48,21 +43,6 @@ export default function UserProfiles() {
     setPhoneSaving(false);
     if (error) setPhoneError(error.message);
     else setPhoneSaved(true);
-  }
-
-  async function handleChangeEmail() {
-    if (!newEmail.trim()) return;
-    setEmailSaving(true);
-    setEmailError(null);
-    setEmailMessage(null);
-    const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
-    setEmailSaving(false);
-    if (error) {
-      setEmailError(error.message);
-      return;
-    }
-    setEmailMessage("Check your new email address for a confirmation link — it won't take effect until you confirm.");
-    setNewEmail("");
   }
 
   async function handleChangePassword() {
@@ -94,27 +74,11 @@ export default function UserProfiles() {
       <PageBreadcrumb pageTitle="Profile" />
 
       <div className="space-y-6">
-        <ComponentCard title="Email">
+        <ComponentCard title="Username">
           <p className="text-sm text-gray-600 dark:text-gray-300">{currentEmail}</p>
-          <div>
-            <Label>New email address</Label>
-            <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@pnwfitness.app" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={handleChangeEmail} disabled={emailSaving || !newEmail.trim()}>
-              {emailSaving ? "Sending…" : "Change Email"}
-            </Button>
-          </div>
-          {emailMessage && (
-            <p className="text-sm text-success-600 bg-success-50 border border-success-200 rounded px-3 py-2 dark:bg-success-500/10 dark:border-success-500/30 dark:text-success-400">
-              {emailMessage}
-            </p>
-          )}
-          {emailError && (
-            <p className="text-sm text-error-600 bg-error-50 border border-error-200 rounded px-3 py-2 dark:bg-error-500/10 dark:border-error-500/30 dark:text-error-400">
-              {emailError}
-            </p>
-          )}
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Employees' usernames are assigned by an admin and can't be changed from here.
+          </p>
         </ComponentCard>
 
         <ComponentCard title="Phone">

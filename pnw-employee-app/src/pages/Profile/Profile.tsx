@@ -15,11 +15,6 @@ export default function Profile() {
   const [phoneSaving, setPhoneSaving] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
-  const [newEmail, setNewEmail] = useState("");
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailMessage, setEmailMessage] = useState<string | null>(null);
-  const [emailError, setEmailError] = useState<string | null>(null);
-
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -55,21 +50,6 @@ export default function Profile() {
     setPhoneSaving(false);
     if (error) setPhoneError(error.message);
     else setPhoneSaved(true);
-  }
-
-  async function handleChangeEmail() {
-    if (!newEmail.trim()) return;
-    setEmailSaving(true);
-    setEmailError(null);
-    setEmailMessage(null);
-    const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
-    setEmailSaving(false);
-    if (error) {
-      setEmailError(error.message);
-      return;
-    }
-    setEmailMessage("Check your new email address for a confirmation link — it won't take effect until you confirm.");
-    setNewEmail("");
   }
 
   async function handleChangePassword() {
@@ -114,24 +94,9 @@ export default function Profile() {
   return (
     <div className="p-4 space-y-4">
       <div className="bg-white rounded-xl border border-navy/10 p-4">
-        <p className="text-sm font-bold text-navy mb-3">Email</p>
-        <p className="text-sm text-navy/60 mb-3">{currentEmail}</p>
-        <input
-          type="email"
-          value={newEmail}
-          onChange={(e) => setNewEmail(e.target.value)}
-          placeholder="New email address"
-          className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy mb-2"
-        />
-        <button
-          onClick={handleChangeEmail}
-          disabled={emailSaving || !newEmail.trim()}
-          className="text-sm font-bold text-navy bg-gold px-4 py-2 rounded-xl disabled:opacity-50"
-        >
-          {emailSaving ? "Sending…" : "Change Email"}
-        </button>
-        {emailMessage && <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mt-2">{emailMessage}</p>}
-        {emailError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2">{emailError}</p>}
+        <p className="text-sm font-bold text-navy mb-1">Username</p>
+        <p className="text-sm text-navy/60">{currentEmail}</p>
+        <p className="text-xs text-navy/40 mt-1">Set by your manager — contact them to change it.</p>
       </div>
 
       <div className="bg-white rounded-xl border border-navy/10 p-4">
