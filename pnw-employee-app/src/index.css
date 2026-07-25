@@ -15,6 +15,15 @@ body,
   height: 100%;
 }
 
+html,
+body {
+  /* iOS Safari's native date/time input can ignore `width` entirely and
+     render at its own intrinsic size, bleeding off the right edge of the
+     screen. This is a backstop so that can never turn into a scrollable
+     page — the real fix is the appearance/max-width rule below. */
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: var(--color-paper);
@@ -24,4 +33,14 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: contain;
+}
+
+/* Neutralize native chrome so width/max-width are actually respected —
+   without this, iOS Safari's shadow-DOM layout for these controls can
+   render wider than the box regardless of any CSS width set on them. */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  max-width: 100%;
 }
