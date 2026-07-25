@@ -44,6 +44,7 @@ const pnwNavItems: NavItem[] = [
   { icon: <PageIcon />, name: "Team Board", path: "/team-board", permKey: "pages.team_board" },
   { icon: <UserCircleIcon />, name: "Time Off", path: "/time-off", permKey: "pages.time_off" },
   { icon: <PlugInIcon />, name: "Marketplace", path: "/marketplace", permKey: "pages.schedule" },
+  { icon: <UserCircleIcon />, name: "Profile", path: "/profile" },
 ];
 
 // TailAdmin's own sample pages — left in place per scope (out-of-scope to
@@ -58,11 +59,6 @@ const othersItems: NavItem[] = [
     icon: <CalenderIcon />,
     name: "Calendar",
     path: "/calendar",
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
   },
   {
     name: "Forms",
