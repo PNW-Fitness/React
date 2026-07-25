@@ -53,13 +53,13 @@ export default function BlackoutDatesPanel({ blackoutDates, currentUserId, onCha
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="rounded-xl border border-navy/15 px-3 py-2 text-sm text-navy"
+          className="min-w-0 rounded-xl border border-navy/15 px-3 py-2 text-sm text-navy"
         />
         <input
           type="date"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
-          className="rounded-xl border border-navy/15 px-3 py-2 text-sm text-navy"
+          className="min-w-0 rounded-xl border border-navy/15 px-3 py-2 text-sm text-navy"
         />
       </div>
       <input

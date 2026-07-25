@@ -122,22 +122,22 @@ export default function AvailabilityRuleSheet({
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium text-navy/50 mb-1.5">Start Date</p>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
+              className="w-full min-w-0 rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium text-navy/50 mb-1.5">End Date</p>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
+              className="w-full min-w-0 rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
             />
           </div>
         </div>
@@ -150,22 +150,22 @@ export default function AvailabilityRuleSheet({
 
       {!allDay && (
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium text-navy/50 mb-1.5">From</p>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
+              className="w-full min-w-0 rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium text-navy/50 mb-1.5">To</p>
             <input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
+              className="w-full min-w-0 rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
             />
           </div>
         </div>

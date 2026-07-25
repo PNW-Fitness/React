@@ -60,22 +60,22 @@ export default function RequestTimeOffSheet({ isOpen, onClose, userId, onSubmitt
       <h3 className="font-bold text-navy mb-4">Request Time Off</h3>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-medium text-navy/50 mb-1.5">Start Date</p>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
+            className="w-full min-w-0 rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-medium text-navy/50 mb-1.5">End Date</p>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
+            className="w-full min-w-0 rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy"
           />
         </div>
       </div>
