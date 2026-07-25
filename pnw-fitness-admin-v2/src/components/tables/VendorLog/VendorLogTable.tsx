@@ -16,8 +16,16 @@ interface VendorSubmission {
   submitted_at: string;
 }
 
+// LOCAL date components, not .toISOString() — that converts to UTC, which
+// rolls the date forward a day once local time passes into the evening for
+// any UTC-behind timezone (e.g. new Date() at 5pm Pacific is already
+// "tomorrow" in UTC).
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function formatTime(iso: string | null) {

@@ -26,7 +26,11 @@ export default function DatePicker({
   useEffect(() => {
     const flatPickr = flatpickr(`#${id}`, {
       mode: mode || "single",
-      static: true,
+      // appendTo document.body (not static: true) so the popup isn't a DOM
+      // descendant of whatever overflow-hidden/clipped container the input
+      // happens to live in (e.g. Leads' expanded-row list) — static mode
+      // renders the calendar inline and clips against ancestor overflow.
+      appendTo: document.body,
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
       defaultDate,

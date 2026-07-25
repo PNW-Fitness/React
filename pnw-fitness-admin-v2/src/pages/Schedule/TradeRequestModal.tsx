@@ -3,7 +3,6 @@ import { Modal } from "../../components/ui/modal";
 import Label from "../../components/form/Label";
 import TextArea from "../../components/form/input/TextArea";
 import Button from "../../components/ui/button/Button";
-import { SELECT_CLS } from "../../lib/leadsHelpers";
 import { Shift, StaffMember, requestTrade, roleMatchesLabel } from "../../lib/scheduling";
 
 interface TradeRequestModalProps {
@@ -24,7 +23,7 @@ export default function TradeRequestModal({
   onSubmitted,
 }: TradeRequestModalProps) {
   const [mode, setMode] = useState<"open" | "offer">("open");
-  const [offerTo, setOfferTo] = useState("");
+  const [offerTo, setOfferTo] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +31,7 @@ export default function TradeRequestModal({
   useEffect(() => {
     if (!isOpen) return;
     setMode("open");
-    setOfferTo("");
+    setOfferTo([]);
     setReason("");
     setError(null);
   }, [isOpen]);
@@ -43,10 +42,14 @@ export default function TradeRequestModal({
     (s) => s.user_id !== currentUserId && roleMatchesLabel(s.role_name, shift.role_label)
   );
 
+  function toggleCoworker(userId: string) {
+    setOfferTo((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
+  }
+
   async function handleSubmit() {
     if (!shift) return;
-    if (mode === "offer" && !offerTo) {
-      setError("Choose which coworker to offer this shift to.");
+    if (mode === "offer" && offerTo.length === 0) {
+      setError("Choose at least one coworker to offer this shift to.");
       return;
     }
     setSubmitting(true);
@@ -54,7 +57,7 @@ export default function TradeRequestModal({
     const { error: err } = await requestTrade(
       shift.id,
       currentUserId,
-      mode === "offer" ? offerTo : null,
+      mode === "offer" ? offerTo : [],
       reason.trim() || null
     );
     setSubmitting(false);
@@ -87,7 +90,7 @@ export default function TradeRequestModal({
             onClick={() => setMode("offer")}
             className={`flex-1 py-2 transition ${mode === "offer" ? "bg-brand-600 text-white" : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.03]"}`}
           >
-            Offer to a coworker
+            Offer to coworkers
           </button>
         </div>
 
@@ -98,18 +101,23 @@ export default function TradeRequestModal({
           </p>
         ) : (
           <div>
-            <Label>Coworker</Label>
-            <select value={offerTo} onChange={(e) => setOfferTo(e.target.value)} className={`${SELECT_CLS} w-full`}>
-              <option value="">— Select —</option>
+            <Label>Coworkers (any one of them can accept)</Label>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2">
               {coworkers.map((c) => (
-                <option key={c.user_id} value={c.user_id}>
+                <label key={c.user_id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={offerTo.includes(c.user_id)}
+                    onChange={() => toggleCoworker(c.user_id)}
+                    className="w-4 h-4"
+                  />
                   {c.display_name || c.email}
-                </option>
+                </label>
               ))}
-            </select>
-            {coworkers.length === 0 && (
-              <p className="text-xs text-gray-400 mt-1">No other {shift.role_label} staff found to offer this to.</p>
-            )}
+              {coworkers.length === 0 && (
+                <p className="text-xs text-gray-400">No other {shift.role_label} staff found to offer this to.</p>
+              )}
+            </div>
           </div>
         )}
 

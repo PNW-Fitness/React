@@ -26,6 +26,9 @@ import UsersRoles from "./pages/UsersRoles";
 import BannedGuests from "./pages/BannedGuests";
 import Schedule from "./pages/Schedule/Schedule";
 import TeamBoard from "./pages/TeamBoard/TeamBoard";
+import TimeOff from "./pages/TimeOff/TimeOff";
+import Marketplace from "./pages/Marketplace/Marketplace";
+import MyDashboard from "./pages/MyDashboard/MyDashboard";
 import { supabase } from "./lib/supabaseClient";
 import { useAuth } from "./lib/AuthContext";
 import { usePermissions } from "./lib/PermissionsContext";
@@ -51,11 +54,22 @@ const REDIRECT_PRIORITY = [
   { permKey: "pages.banned_guests", path: "/banned-guests" },
   { permKey: "pages.schedule", path: "/schedule" },
   { permKey: "pages.team_board", path: "/team-board" },
+  { permKey: "pages.time_off", path: "/time-off" },
 ];
 
 function firstAccessiblePath(can: (key: string) => boolean): string | null {
   const match = REDIRECT_PRIORITY.find((r) => can(r.permKey));
   return match ? match.path : null;
+}
+
+// Front Desk specifically lands on My Dashboard instead of the usual
+// priority list; everyone else's landing page is unchanged. Shared by
+// DefaultRedirect (unmatched URLs) and PermissionRoute (denied access) —
+// SignInForm.tsx itself just navigates to /leads on login and lets
+// PermissionRoute's fallback here take over when that's not accessible.
+function landingPath(can: (key: string) => boolean, rbacRoleName: string | null | undefined): string {
+  if (rbacRoleName === "Front Desk" && can("pages.dashboard")) return "/my-dashboard";
+  return firstAccessiblePath(can) ?? "/no-access";
 }
 
 // Ported from pnw-fitness-admin/src/App.jsx.
@@ -104,14 +118,16 @@ export function NoAccess() {
 // Sends signed-in users to their first accessible page.
 export function DefaultRedirect() {
   const { session, role } = useAuth();
-  const { can, permissionsReady } = usePermissions();
+  const { can, permissionsReady, rbacRoleName } = usePermissions();
   if (session === undefined || (session && (role === undefined || !permissionsReady)))
     return <Loading />;
   if (!session) return <Navigate to="/login" replace />;
-  return <Navigate to={firstAccessiblePath(can) ?? "/no-access"} replace />;
+  return <Navigate to={landingPath(can, rbacRoleName)} replace />;
 }
 
 // Gate for permission-based pages. Redirects to first accessible page if denied.
+// This is what actually fires for most users on login — SignInForm always
+// navigates to /leads, and whoever can't access it lands here instead.
 export function PermissionRoute({
   requiredPerms,
   children,
@@ -120,12 +136,12 @@ export function PermissionRoute({
   children: React.ReactNode;
 }) {
   const { session, role } = useAuth();
-  const { can, permissionsReady } = usePermissions();
+  const { can, permissionsReady, rbacRoleName } = usePermissions();
   if (session === undefined || (session && (role === undefined || !permissionsReady)))
     return <Loading />;
   if (!session) return <Navigate to="/login" replace />;
   if (!requiredPerms.every((p) => can(p))) {
-    return <Navigate to={firstAccessiblePath(can) ?? "/no-access"} replace />;
+    return <Navigate to={landingPath(can, rbacRoleName)} replace />;
   }
   return children;
 }
@@ -251,6 +267,30 @@ export default function App() {
               element={
                 <PermissionRoute requiredPerms={["pages.team_board"]}>
                   <TeamBoard />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/time-off"
+              element={
+                <PermissionRoute requiredPerms={["pages.time_off"]}>
+                  <TimeOff />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/marketplace"
+              element={
+                <PermissionRoute requiredPerms={["pages.schedule"]}>
+                  <Marketplace />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/my-dashboard"
+              element={
+                <PermissionRoute requiredPerms={["pages.dashboard"]}>
+                  <MyDashboard />
                 </PermissionRoute>
               }
             />

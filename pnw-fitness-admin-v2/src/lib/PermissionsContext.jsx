@@ -21,6 +21,9 @@ const ALL_PERMS = [
   // Phase 3
   'pages.schedule', 'shift_trade.request', 'shift_trade.manage',
   'pages.team_board', 'team_board.post',
+  // Phase 4 (Homebase-parity build)
+  'pages.time_off', 'time_off.request', 'time_off.manage',
+  'pages.dashboard',
 ]
 
 const PermissionsContext = createContext({

@@ -33,6 +33,7 @@ type NavItem = {
 // The real PNW Fitness pages — filtered live against usePermissions().can(),
 // same pattern as ROLE_NAV in pnw-fitness-admin/src/components/Layout.jsx.
 const pnwNavItems: NavItem[] = [
+  { icon: <GridIcon />, name: "My Dashboard", path: "/my-dashboard", permKey: "pages.dashboard" },
   { icon: <ListIcon />, name: "Leads", path: "/leads", permKey: "pages.leads" },
   { icon: <DocsIcon />, name: "Guest Notes", path: "/guest-notes", permKey: "pages.guest_notes" },
   { icon: <BoxCubeIcon />, name: "Vendor Log", path: "/vendor-log", permKey: "pages.vendor_log" },
@@ -41,6 +42,8 @@ const pnwNavItems: NavItem[] = [
   { icon: <LockIcon />, name: "Banned Guests", path: "/banned-guests", permKey: "pages.banned_guests" },
   { icon: <CalenderIcon />, name: "Schedule", path: "/schedule", permKey: "pages.schedule" },
   { icon: <PageIcon />, name: "Team Board", path: "/team-board", permKey: "pages.team_board" },
+  { icon: <UserCircleIcon />, name: "Time Off", path: "/time-off", permKey: "pages.time_off" },
+  { icon: <PlugInIcon />, name: "Marketplace", path: "/marketplace", permKey: "pages.schedule" },
 ];
 
 // TailAdmin's own sample pages — left in place per scope (out-of-scope to

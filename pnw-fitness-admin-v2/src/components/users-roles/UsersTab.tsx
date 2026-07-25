@@ -8,6 +8,7 @@ import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal";
 import { supabase } from "../../lib/supabaseClient";
 import { edgeFunctionErrorMessage } from "../../lib/edgeFunctionError";
+import { STAFF_COLOR_PALETTE, updateStaffColor } from "../../lib/scheduling";
 
 interface RbacRole {
   id: string;
@@ -21,6 +22,7 @@ interface AdminUser {
   role: string | null;
   is_active: boolean;
   created_at: string;
+  schedule_color: string | null;
   userRole: { user_id: string; role_id: string; roles: RbacRole | null } | null;
 }
 
@@ -58,7 +60,7 @@ export default function UsersTab() {
     ] = await Promise.all([
       supabase
         .from("admin_profiles")
-        .select("user_id, email, display_name, role, is_active, created_at")
+        .select("user_id, email, display_name, role, is_active, created_at, schedule_color")
         .order("created_at"),
       supabase.from("user_roles").select("user_id, role_id, roles(id, name)"),
       supabase.from("roles").select("id, name").order("name"),
@@ -130,6 +132,14 @@ export default function UsersTab() {
       .eq("user_id", user.user_id);
     if (err) setError(err.message);
     else await load();
+    setSaving(null);
+  }
+
+  async function handleColorChange(user: AdminUser, color: string) {
+    setSaving(user.user_id);
+    const { error: err } = await updateStaffColor(user.user_id, color);
+    if (err) setError(err.message);
+    else setUsers((u) => u.map((x) => (x.user_id === user.user_id ? { ...x, schedule_color: color } : x)));
     setSaving(null);
   }
 
@@ -229,7 +239,7 @@ export default function UsersTab() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto">
-          <Table className="min-w-[750px]">
+          <Table className="min-w-[900px]">
             <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
               <TableRow>
                 <TableCell isHeader className="px-4 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
@@ -240,6 +250,9 @@ export default function UsersTab() {
                 </TableCell>
                 <TableCell isHeader className="px-4 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                   Status
+                </TableCell>
+                <TableCell isHeader className="px-4 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  Schedule Color
                 </TableCell>
                 <TableCell isHeader className="px-4 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400">
                   Actions
@@ -283,6 +296,26 @@ export default function UsersTab() {
                       </Badge>
                     </TableCell>
 
+                    <TableCell className="px-4 py-3 text-start">
+                      <div className="flex items-center gap-1.5 flex-wrap max-w-[150px]">
+                        {STAFF_COLOR_PALETTE.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => handleColorChange(user, c)}
+                            disabled={isBusy}
+                            title={c}
+                            className={`w-5 h-5 rounded-full transition ${
+                              user.schedule_color === c
+                                ? "ring-2 ring-offset-1 ring-gray-800 dark:ring-white dark:ring-offset-gray-900"
+                                : "hover:scale-110"
+                            }`}
+                            style={{ backgroundColor: c }}
+                          />
+                        ))}
+                      </div>
+                    </TableCell>
+
                     <TableCell className="px-4 py-3 text-end">
                       <div className="flex items-center justify-end gap-3 flex-wrap text-xs">
                         <button
@@ -324,7 +357,7 @@ export default function UsersTab() {
               })}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-gray-400">
+                  <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
                     No users yet.
                   </td>
                 </tr>

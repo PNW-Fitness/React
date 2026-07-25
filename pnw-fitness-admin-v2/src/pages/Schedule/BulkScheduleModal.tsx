@@ -9,6 +9,10 @@ import {
   SLOT_ROW_COUNT,
   slotForRow,
   createShiftsBulk,
+  addDaysToDate,
+  mondayOfWeek,
+  shiftHours,
+  WEEKLY_OT_THRESHOLD_HOURS,
 } from "../../lib/scheduling";
 
 interface BulkScheduleModalProps {
@@ -22,20 +26,6 @@ interface BulkScheduleModalProps {
 
 const ROW_LABELS = ["Early / Morning", "Mid / Afternoon", "Late", "Manager"];
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-function addDays(dateStr: string, days: number): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function mondayOfWeek(base: Date): string {
-  const day = base.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(base);
-  monday.setDate(base.getDate() + diff);
-  return monday.toISOString().slice(0, 10);
-}
 
 function fmtTime(t: string) {
   const [h, m] = t.split(":").map(Number);
@@ -63,6 +53,7 @@ export default function BulkScheduleModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [conflicts, setConflicts] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -70,11 +61,12 @@ export default function BulkScheduleModal({
     setAssignments({});
     setError(null);
     setResult(null);
+    setConflicts(null);
   }, [isOpen]);
 
   const weekDates = useMemo(() => {
     if (!weekStart) return [];
-    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    return Array.from({ length: 7 }, (_, i) => addDaysToDate(weekStart, i));
   }, [weekStart]);
 
   const existingByKey = useMemo(() => {
@@ -93,23 +85,10 @@ export default function BulkScheduleModal({
 
   function setCell(date: string, rowIndex: number, userId: string) {
     setAssignments((a) => ({ ...a, [cellKey(date, rowIndex)]: userId }));
+    setConflicts(null); // re-arm — the last warning check no longer reflects the grid
   }
 
-  let plannedCount = 0;
-  for (const date of weekDates) {
-    for (let row = 0; row < SLOT_ROW_COUNT; row++) {
-      const slot = slotForRow(date, row);
-      if (!slot) continue;
-      if (existingByKey.has(`${date}|${slot.start_time}|${slot.end_time}`)) continue;
-      plannedCount++;
-    }
-  }
-
-  async function handleCreateWeek() {
-    setSaving(true);
-    setError(null);
-    setResult(null);
-
+  function buildPlannedRows() {
     const rows: {
       role_label: string;
       assigned_to: string | null;
@@ -119,7 +98,6 @@ export default function BulkScheduleModal({
       created_by: string | null;
     }[] = [];
     let skipped = 0;
-
     for (const date of weekDates) {
       for (let row = 0; row < SLOT_ROW_COUNT; row++) {
         const slot = slotForRow(date, row);
@@ -138,6 +116,58 @@ export default function BulkScheduleModal({
         });
       }
     }
+    return { rows, skipped };
+  }
+
+  // Weekly-only check: the fixed slot pattern never overlaps within a day by
+  // construction, so double-booking/daily-overtime can't happen from this
+  // grid alone — the risk here is a person's hours adding up across the
+  // whole week once the batch is combined with what's already scheduled.
+  function checkBulkOvertime(rows: ReturnType<typeof buildPlannedRows>["rows"]) {
+    const weekDateSet = new Set(weekDates);
+    const hoursByPerson = new Map<string, number>();
+
+    existingShifts
+      .filter((s) => s.assigned_to && weekDateSet.has(s.shift_date))
+      .forEach((s) => {
+        hoursByPerson.set(s.assigned_to!, (hoursByPerson.get(s.assigned_to!) ?? 0) + shiftHours(s));
+      });
+
+    rows
+      .filter((r) => r.assigned_to)
+      .forEach((r) => {
+        hoursByPerson.set(r.assigned_to!, (hoursByPerson.get(r.assigned_to!) ?? 0) + shiftHours(r));
+      });
+
+    const warnings: string[] = [];
+    hoursByPerson.forEach((hours, userId) => {
+      if (hours > WEEKLY_OT_THRESHOLD_HOURS) {
+        const person = staff.find((s) => s.user_id === userId);
+        const name = person ? person.display_name || person.email : "This person";
+        warnings.push(`${name} would have ${hours.toFixed(1)} hours this week (over the ${WEEKLY_OT_THRESHOLD_HOURS}-hour weekly threshold).`);
+      }
+    });
+    return warnings;
+  }
+
+  const plannedCount = buildPlannedRows().rows.length;
+
+  async function handleCreateWeek() {
+    const { rows, skipped } = buildPlannedRows();
+
+    // First click checks weekly-overtime and stops to show it; a second
+    // click (conflicts already shown) proceeds anyway.
+    if (conflicts === null) {
+      const warnings = checkBulkOvertime(rows);
+      if (warnings.length > 0) {
+        setConflicts(warnings);
+        return;
+      }
+    }
+
+    setSaving(true);
+    setError(null);
+    setResult(null);
 
     const { error: err, count } = await createShiftsBulk(rows);
     setSaving(false);
@@ -238,6 +268,15 @@ export default function BulkScheduleModal({
         </table>
       </div>
 
+      {conflicts && conflicts.length > 0 && (
+        <div className="mt-4 text-sm text-warning-700 bg-warning-50 border border-warning-200 rounded px-3 py-2 dark:bg-warning-500/10 dark:border-warning-500/30 dark:text-warning-400 space-y-1">
+          {conflicts.map((c, i) => (
+            <p key={i}>⚠ {c}</p>
+          ))}
+          <p className="text-xs opacity-80">Click Create Week again to create anyway.</p>
+        </div>
+      )}
+
       {error && (
         <p className="mt-4 text-sm text-error-600 bg-error-50 border border-error-200 rounded px-3 py-2 dark:bg-error-500/10 dark:border-error-500/30 dark:text-error-400">
           {error}
@@ -251,7 +290,11 @@ export default function BulkScheduleModal({
 
       <div className="flex items-center gap-2 mt-5">
         <Button size="sm" onClick={handleCreateWeek} disabled={saving || plannedCount === 0}>
-          {saving ? "Creating…" : `Create Week (${plannedCount} shift${plannedCount === 1 ? "" : "s"})`}
+          {saving
+            ? "Creating…"
+            : conflicts && conflicts.length > 0
+              ? "Create Anyway"
+              : `Create Week (${plannedCount} shift${plannedCount === 1 ? "" : "s"})`}
         </Button>
         <button
           type="button"

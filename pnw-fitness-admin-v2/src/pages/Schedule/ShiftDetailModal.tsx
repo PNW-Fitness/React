@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Modal } from "../../components/ui/modal";
 import Badge from "../../components/ui/badge/Badge";
-import { Shift, StaffMember, claimShift, roleMatchesLabel } from "../../lib/scheduling";
+import { Shift, StaffMember, claimShift, roleMatchesLabel, staffColor } from "../../lib/scheduling";
 
 interface ShiftDetailModalProps {
   isOpen: boolean;
@@ -74,9 +74,17 @@ export default function ShiftDetailModal({
       </div>
 
       <dl className="space-y-2 text-sm">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <dt className="font-medium text-gray-500 dark:text-gray-400">Assigned to:</dt>
-          <dd className="text-gray-800 dark:text-gray-200">{assignee ? assignee.display_name || assignee.email : "Unassigned (open)"}</dd>
+          <dd className="flex items-center gap-1.5 text-gray-800 dark:text-gray-200">
+            {assignee && (
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: staffColor(assignee) }}
+              ></span>
+            )}
+            {assignee ? assignee.display_name || assignee.email : "Unassigned (open)"}
+          </dd>
         </div>
         <div className="flex gap-2">
           <dt className="font-medium text-gray-500 dark:text-gray-400">Date:</dt>

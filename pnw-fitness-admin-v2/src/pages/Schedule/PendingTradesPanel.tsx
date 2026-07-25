@@ -3,6 +3,7 @@ import { Shift, TradeRequest, StaffMember, approveTrade, denyTrade } from "../..
 
 interface PendingTradesPanelProps {
   trades: TradeRequest[];
+  targets: { trade_id: string; user_id: string }[];
   shiftsById: Record<string, Shift>;
   staff: StaffMember[];
   currentUserId: string | null;
@@ -15,11 +16,20 @@ function staffName(staff: StaffMember[], userId: string | null) {
   return s ? s.display_name || s.email : "Unknown";
 }
 
-export default function PendingTradesPanel({ trades, shiftsById, staff, currentUserId, onDecided }: PendingTradesPanelProps) {
+export default function PendingTradesPanel({ trades, targets, shiftsById, staff, currentUserId, onDecided }: PendingTradesPanelProps) {
   const [actingOn, setActingOn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (trades.length === 0) return null;
+  // Only ready-for-a-decision trades belong here: a plain drop with no
+  // targets needs no peer acceptance step, but an offer to specific
+  // coworkers has to be accepted by one of them first.
+  const actionable = trades.filter((t) => {
+    if (t.status === "accepted") return true;
+    if (t.status === "pending") return !targets.some((tg) => tg.trade_id === t.id);
+    return false;
+  });
+
+  if (actionable.length === 0) return null;
 
   async function handleApprove(trade: TradeRequest) {
     setActingOn(trade.id);
@@ -42,12 +52,13 @@ export default function PendingTradesPanel({ trades, shiftsById, staff, currentU
   return (
     <div className="mb-4 rounded-xl border border-warning-200 dark:border-warning-500/30 bg-warning-50 dark:bg-warning-500/10 p-4">
       <p className="text-xs font-semibold text-warning-700 dark:text-warning-400 uppercase tracking-wide mb-3">
-        Pending Trade Requests ({trades.length})
+        Pending Trade Requests ({actionable.length})
       </p>
       {error && <p className="text-sm text-error-600 dark:text-error-400 mb-2">{error}</p>}
       <div className="space-y-2">
-        {trades.map((trade) => {
+        {actionable.map((trade) => {
           const shift = shiftsById[trade.shift_id];
+          const offeredShift = trade.offered_shift_id ? shiftsById[trade.offered_shift_id] : null;
           return (
             <div
               key={trade.id}
@@ -55,8 +66,17 @@ export default function PendingTradesPanel({ trades, shiftsById, staff, currentU
             >
               <div className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="font-medium">{staffName(staff, trade.requested_by)}</span>{" "}
-                {trade.requested_to ? (
-                  <>wants to offer their shift to <span className="font-medium">{staffName(staff, trade.requested_to)}</span></>
+                {trade.accepted_by ? (
+                  offeredShift ? (
+                    <>
+                      and <span className="font-medium">{staffName(staff, trade.accepted_by)}</span> agreed to swap shifts (
+                      {offeredShift.role_label}, {offeredShift.shift_date} in exchange)
+                    </>
+                  ) : (
+                    <>
+                      wants to give up their shift — <span className="font-medium">{staffName(staff, trade.accepted_by)}</span> accepted it
+                    </>
+                  )
                 ) : (
                   <>wants to drop their shift to open</>
                 )}

@@ -15,6 +15,30 @@ layer(base);
   color-scheme: dark;
 }
 
+/* Print-only element pattern: hide everything on the page except
+   .print-area (the sidebar/header/calendar chrome), then pull it to the
+   top so it's the only thing that ends up on paper. .print-area itself
+   stays hidden on screen via Tailwind's `hidden print:block`. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  @page {
+    size: landscape;
+    margin: 0.4in;
+  }
+}
+
 @theme {
   --font-*: initial;
   --font-outfit: Outfit, sans-serif;
@@ -558,6 +582,14 @@ span.flatpickr-weekday,
 
 .flatpickr-calendar.static {
   @apply right-0;
+}
+
+/* Popups are appended to document.body (not static: true) so they can't be
+   clipped by an overflow-hidden ancestor — but flatpickr's own default
+   z-index (99999) ties with this app's sticky header/modals, which also
+   use z-99999. Force it clearly above both. */
+.flatpickr-calendar.open {
+  z-index: 100000 !important;
 }
 
 @media (max-width: 639px) {
