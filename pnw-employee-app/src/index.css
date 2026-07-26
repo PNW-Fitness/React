@@ -15,12 +15,14 @@ body,
   height: 100%;
 }
 
-html,
-body {
+#root {
   /* iOS Safari's native date/time input can ignore `width` entirely and
      render at its own intrinsic size, bleeding off the right edge of the
      screen. This is a backstop so that can never turn into a scrollable
-     page — the real fix is the appearance/max-width rule below. */
+     page — the real fix is the appearance/max-width rule below. Kept off
+     html/body themselves: overflow-x there changes how iOS computes the
+     viewport for `position: fixed` elements and floats the bottom nav bar
+     above the true bottom edge in standalone PWA mode. */
   overflow-x: hidden;
 }
 
