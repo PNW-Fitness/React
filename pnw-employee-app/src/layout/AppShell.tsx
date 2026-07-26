@@ -21,7 +21,7 @@ export default function AppShell() {
         <NotificationBell />
       </header>
 
-      <main className="flex-1 pb-20 overflow-y-auto">
+      <main className="flex-1 pb-20 overflow-y-auto overflow-x-hidden">
         <EnablePushBanner />
         <Outlet />
       </main>
