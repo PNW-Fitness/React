@@ -10,6 +10,11 @@ export default function Profile() {
   const userId = session?.user?.id;
   const currentEmail = session?.user?.email ?? "";
 
+  const [fullName, setFullName] = useState("");
+  const [fullNameSaved, setFullNameSaved] = useState(false);
+  const [fullNameSaving, setFullNameSaving] = useState(false);
+  const [fullNameError, setFullNameError] = useState<string | null>(null);
+
   const [phone, setPhone] = useState("");
   const [phoneSaved, setPhoneSaved] = useState(false);
   const [phoneSaving, setPhoneSaving] = useState(false);
@@ -27,10 +32,13 @@ export default function Profile() {
     if (!userId) return;
     supabase
       .from("admin_profiles")
-      .select("phone_number")
+      .select("display_name, phone_number")
       .eq("user_id", userId)
       .maybeSingle()
-      .then(({ data }) => setPhone(data?.phone_number ?? ""));
+      .then(({ data }) => {
+        setFullName(data?.display_name ?? "");
+        setPhone(data?.phone_number ?? "");
+      });
   }, [userId]);
 
   useEffect(() => {
@@ -40,6 +48,17 @@ export default function Profile() {
     }
     isPushSubscribed().then((subscribed) => setNotifState(subscribed ? "on" : "off"));
   }, []);
+
+  async function handleSaveFullName() {
+    if (!userId) return;
+    setFullNameSaving(true);
+    setFullNameError(null);
+    setFullNameSaved(false);
+    const { error } = await supabase.from("admin_profiles").update({ display_name: fullName.trim() || null }).eq("user_id", userId);
+    setFullNameSaving(false);
+    if (error) setFullNameError(error.message);
+    else setFullNameSaved(true);
+  }
 
   async function handleSavePhone() {
     if (!userId) return;
@@ -93,6 +112,30 @@ export default function Profile() {
 
   return (
     <div className="p-4 space-y-4">
+      <div className="bg-white rounded-xl border border-navy/10 p-4">
+        <p className="text-sm font-bold text-navy mb-3">Full Name</p>
+        <input
+          type="text"
+          value={fullName}
+          onChange={(e) => {
+            setFullName(e.target.value);
+            setFullNameSaved(false);
+          }}
+          placeholder="e.g. Jane Smith"
+          className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy mb-2"
+        />
+        <button
+          onClick={handleSaveFullName}
+          disabled={fullNameSaving}
+          className="text-sm font-bold text-navy bg-gold px-4 py-2 rounded-xl disabled:opacity-50"
+        >
+          {fullNameSaving ? "Saving…" : "Save"}
+        </button>
+        {fullNameSaved && <p className="text-sm text-emerald-700 mt-2">Saved.</p>}
+        {fullNameError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2">{fullNameError}</p>}
+        <p className="text-xs text-navy/40 mt-2">Shown to coworkers and managers instead of your username.</p>
+      </div>
+
       <div className="bg-white rounded-xl border border-navy/10 p-4">
         <p className="text-sm font-bold text-navy mb-1">Username</p>
         <p className="text-sm text-navy/60">{currentEmail}</p>

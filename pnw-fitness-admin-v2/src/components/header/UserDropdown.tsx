@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useNavigate } from "react-router";
@@ -10,6 +10,20 @@ export default function UserDropdown() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const email = session?.user?.email ?? "";
+  const userId = session?.user?.id;
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("admin_profiles")
+      .select("display_name")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data }) => setDisplayName(data?.display_name ?? null));
+  }, [userId]);
+
+  const label = displayName || email || "Account";
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -31,7 +45,7 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
-        <span className="block mr-1 font-medium text-theme-sm">{email || "Account"}</span>
+        <span className="block mr-1 font-medium text-theme-sm">{label}</span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -58,9 +72,7 @@ export default function UserDropdown() {
         className="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
         <div>
-          <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {email || "Signed in"}
-          </span>
+          <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">{label}</span>
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">

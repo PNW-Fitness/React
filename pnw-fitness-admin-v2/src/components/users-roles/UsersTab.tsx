@@ -46,6 +46,12 @@ export default function UsersTab() {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState("");
 
+  // Edit-name modal
+  const [nameTarget, setNameTarget] = useState<AdminUser | null>(null);
+  const [nameValue, setNameValue] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState("");
+
   const load = useCallback(async () => {
     setLoading(true);
     const {
@@ -155,6 +161,30 @@ export default function UsersTab() {
     } else {
       setResetMessage({ type: "success", text: `Password reset email sent to ${user.email}.` });
     }
+  }
+
+  function openEditName(user: AdminUser) {
+    setNameTarget(user);
+    setNameValue(user.display_name ?? "");
+    setNameError("");
+  }
+
+  async function handleSaveName(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nameTarget) return;
+    setNameSaving(true);
+    setNameError("");
+    const { error: err } = await supabase
+      .from("admin_profiles")
+      .update({ display_name: nameValue.trim() || null })
+      .eq("user_id", nameTarget.user_id);
+    setNameSaving(false);
+    if (err) {
+      setNameError(err.message);
+      return;
+    }
+    setNameTarget(null);
+    await load();
   }
 
   function openSetPw(user: AdminUser) {
@@ -319,6 +349,12 @@ export default function UsersTab() {
                     <TableCell className="px-4 py-3 text-end">
                       <div className="flex items-center justify-end gap-3 flex-wrap text-xs">
                         <button
+                          onClick={() => openEditName(user)}
+                          className="text-brand-500 hover:text-brand-700 hover:underline"
+                        >
+                          Edit name
+                        </button>
+                        <button
                           onClick={() => openSetPw(user)}
                           className="text-success-600 hover:text-success-800 hover:underline"
                         >
@@ -366,6 +402,42 @@ export default function UsersTab() {
           </Table>
         </div>
       </div>
+
+      {/* Edit name modal */}
+      <Modal isOpen={!!nameTarget} onClose={() => setNameTarget(null)} className="max-w-sm p-6">
+        {nameTarget && (
+          <>
+            <h3 className="font-bold text-gray-800 dark:text-white/90 mb-1">Edit name</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Shown to coworkers and managers instead of{" "}
+              <span className="font-medium text-gray-700 dark:text-gray-300">{nameTarget.email}</span>.
+            </p>
+            <form onSubmit={handleSaveName} className="space-y-3">
+              <div>
+                <Label>Full name</Label>
+                <Input type="text" value={nameValue} onChange={(e) => setNameValue(e.target.value)} placeholder="e.g. Jane Smith" />
+              </div>
+              {nameError && (
+                <p className="text-sm text-error-600 bg-error-50 border border-error-200 rounded px-3 py-2 dark:bg-error-500/10 dark:border-error-500/30 dark:text-error-400">
+                  {nameError}
+                </p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" className="flex-1 justify-center" disabled={nameSaving}>
+                  {nameSaving ? "Saving…" : "Save"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setNameTarget(null)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-sm font-medium py-3 rounded-lg transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </Modal>
 
       {/* Set password modal */}
       <Modal isOpen={!!pwTarget} onClose={() => setPwTarget(null)} className="max-w-sm p-6">
