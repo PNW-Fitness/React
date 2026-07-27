@@ -22,10 +22,12 @@ interface ScheduleEvent extends EventInput {
   extendedProps: { status: Shift["status"] };
 }
 
-function shiftToEvent(shift: Shift): ScheduleEvent {
+function shiftToEvent(shift: Shift, staff: StaffMember[], showAssignee: boolean): ScheduleEvent {
+  const assignee = staff.find((s) => s.user_id === shift.assigned_to);
+  const assigneeLabel = assignee ? assignee.display_name || assignee.email : "Open";
   return {
     id: shift.id,
-    title: shift.role_label,
+    title: showAssignee ? `${shift.role_label} — ${assigneeLabel}` : shift.role_label,
     start: `${shift.shift_date}T${shift.start_time}`,
     end: `${shift.shift_date}T${shift.end_time}`,
     extendedProps: { status: shift.status },
@@ -53,7 +55,13 @@ export default function Schedule() {
   const { can, rbacRoleName } = usePermissions();
   const canRequestTrade = can("shift_trade.request");
   const canManageTrades = can("shift_trade.manage");
+  const canManageSchedule = can("schedule.manage");
   const currentUserId = session?.user?.id ?? null;
+
+  // Managers land on the whole team's schedule first (that's what they need
+  // to actually manage); everyone else lands on their own shifts first, per
+  // the manager's own request — both can still flip the toggle either way.
+  const [scopeMode, setScopeMode] = useState<"mine" | "team">(canManageSchedule ? "team" : "mine");
 
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [trades, setTrades] = useState<TradeRequest[]>([]);
@@ -112,7 +120,9 @@ export default function Schedule() {
       s.shift_date >= today &&
       (s.assigned_to === currentUserId || (s.status === "open" && roleMatchesLabel(rbacRoleName, s.role_label))),
   );
-  const events = myAndOpenShifts.map(shiftToEvent);
+  const teamShifts = shifts.filter((s) => s.shift_date >= today);
+  const displayedShifts = scopeMode === "mine" ? myAndOpenShifts : teamShifts;
+  const events = displayedShifts.map((s) => shiftToEvent(s, staff, scopeMode === "team"));
 
   return (
     <div>
@@ -128,10 +138,27 @@ export default function Schedule() {
       )}
 
       <div className="p-4">
+        <div className="flex rounded-xl border border-navy/15 overflow-hidden text-sm font-medium mb-4">
+          <button
+            onClick={() => setScopeMode("mine")}
+            className={`flex-1 py-2.5 transition ${scopeMode === "mine" ? "bg-navy text-white" : "text-navy/60"}`}
+          >
+            My Schedule
+          </button>
+          <button
+            onClick={() => setScopeMode("team")}
+            className={`flex-1 py-2.5 transition ${scopeMode === "team" ? "bg-navy text-white" : "text-navy/60"}`}
+          >
+            Whole Schedule
+          </button>
+        </div>
+
         {loading ? (
           <p className="text-sm text-navy/40">Loading schedule…</p>
         ) : events.length === 0 ? (
-          <p className="text-sm text-navy/40">No upcoming shifts or open shifts for your role.</p>
+          <p className="text-sm text-navy/40">
+            {scopeMode === "mine" ? "No upcoming shifts or open shifts for your role." : "No upcoming shifts scheduled."}
+          </p>
         ) : (
           <div className="employee-calendar">
             <FullCalendar
