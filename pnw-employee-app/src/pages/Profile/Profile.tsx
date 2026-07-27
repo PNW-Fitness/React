@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../lib/AuthContext";
+import { usePermissions } from "../../lib/PermissionsContext";
 import { pushSupported, subscribeToPush, unsubscribeFromPush, isPushSubscribed } from "../../lib/push";
 
 export default function Profile() {
   const { session } = useAuth();
+  const { can } = usePermissions();
+  const canChangePassword = can("profile.change_password");
   const navigate = useNavigate();
   const userId = session?.user?.id;
   const currentEmail = session?.user?.email ?? "";
@@ -165,32 +168,34 @@ export default function Profile() {
         {phoneError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2">{phoneError}</p>}
       </div>
 
-      <div className="bg-white rounded-xl border border-navy/10 p-4">
-        <p className="text-sm font-bold text-navy mb-3">Change Password</p>
-        <input
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          placeholder="New password"
-          className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy mb-2"
-        />
-        <input
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirm new password"
-          className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy mb-2"
-        />
-        <button
-          onClick={handleChangePassword}
-          disabled={passwordSaving || !newPassword}
-          className="text-sm font-bold text-navy bg-gold px-4 py-2 rounded-xl disabled:opacity-50"
-        >
-          {passwordSaving ? "Saving…" : "Update Password"}
-        </button>
-        {passwordMessage && <p className="text-sm text-emerald-700 mt-2">{passwordMessage}</p>}
-        {passwordError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2">{passwordError}</p>}
-      </div>
+      {canChangePassword && (
+        <div className="bg-white rounded-xl border border-navy/10 p-4">
+          <p className="text-sm font-bold text-navy mb-3">Change Password</p>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="New password"
+            className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy mb-2"
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm new password"
+            className="w-full rounded-xl border border-navy/15 px-3 py-2.5 text-sm text-navy mb-2"
+          />
+          <button
+            onClick={handleChangePassword}
+            disabled={passwordSaving || !newPassword}
+            className="text-sm font-bold text-navy bg-gold px-4 py-2 rounded-xl disabled:opacity-50"
+          >
+            {passwordSaving ? "Saving…" : "Update Password"}
+          </button>
+          {passwordMessage && <p className="text-sm text-emerald-700 mt-2">{passwordMessage}</p>}
+          {passwordError && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2">{passwordError}</p>}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-navy/10 p-4 flex items-center justify-between gap-3">
         <div>

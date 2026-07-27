@@ -17,6 +17,7 @@ import {
 import ShiftDetailSheet from "./ShiftDetailSheet";
 import TradeRequestSheet from "./TradeRequestSheet";
 import PendingTradesPanel from "./PendingTradesPanel";
+import AnnouncementPopup from "./AnnouncementPopup";
 
 interface ScheduleEvent extends EventInput {
   extendedProps: { status: Shift["status"] };
@@ -129,6 +130,8 @@ export default function Schedule() {
 
   return (
     <div>
+      <AnnouncementPopup userId={currentUserId} />
+
       {canManageTrades && (
         <PendingTradesPanel
           trades={trades}

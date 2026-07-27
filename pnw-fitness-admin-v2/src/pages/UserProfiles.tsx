@@ -7,11 +7,19 @@ import Input from "../components/form/input/InputField";
 import Button from "../components/ui/button/Button";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../lib/AuthContext";
+import { usePermissions } from "../lib/PermissionsContext";
 
 export default function UserProfiles() {
   const { session } = useAuth();
+  const { can } = usePermissions();
+  const canChangePassword = can("profile.change_password");
   const userId = session?.user?.id;
   const currentEmail = session?.user?.email ?? "";
+
+  const [fullName, setFullName] = useState("");
+  const [fullNameSaved, setFullNameSaved] = useState(false);
+  const [fullNameSaving, setFullNameSaving] = useState(false);
+  const [fullNameError, setFullNameError] = useState<string | null>(null);
 
   const [phone, setPhone] = useState("");
   const [phoneSaved, setPhoneSaved] = useState(false);
@@ -28,11 +36,25 @@ export default function UserProfiles() {
     if (!userId) return;
     supabase
       .from("admin_profiles")
-      .select("phone_number")
+      .select("display_name, phone_number")
       .eq("user_id", userId)
       .maybeSingle()
-      .then(({ data }) => setPhone(data?.phone_number ?? ""));
+      .then(({ data }) => {
+        setFullName(data?.display_name ?? "");
+        setPhone(data?.phone_number ?? "");
+      });
   }, [userId]);
+
+  async function handleSaveFullName() {
+    if (!userId) return;
+    setFullNameSaving(true);
+    setFullNameError(null);
+    setFullNameSaved(false);
+    const { error } = await supabase.from("admin_profiles").update({ display_name: fullName.trim() || null }).eq("user_id", userId);
+    setFullNameSaving(false);
+    if (error) setFullNameError(error.message);
+    else setFullNameSaved(true);
+  }
 
   async function handleSavePhone() {
     if (!userId) return;
@@ -74,6 +96,33 @@ export default function UserProfiles() {
       <PageBreadcrumb pageTitle="Profile" />
 
       <div className="space-y-6">
+        <ComponentCard title="Full Name">
+          <div>
+            <Label>Full name</Label>
+            <Input
+              type="text"
+              value={fullName}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                setFullNameSaved(false);
+              }}
+              placeholder="e.g. Jane Smith"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={handleSaveFullName} disabled={fullNameSaving}>
+              {fullNameSaving ? "Saving…" : "Save"}
+            </Button>
+            {fullNameSaved && <span className="text-sm text-success-600 dark:text-success-400">Saved.</span>}
+          </div>
+          {fullNameError && (
+            <p className="text-sm text-error-600 bg-error-50 border border-error-200 rounded px-3 py-2 dark:bg-error-500/10 dark:border-error-500/30 dark:text-error-400">
+              {fullNameError}
+            </p>
+          )}
+          <p className="text-xs text-gray-400 dark:text-gray-500">Shown to coworkers and managers instead of your username.</p>
+        </ComponentCard>
+
         <ComponentCard title="Username">
           <p className="text-sm text-gray-600 dark:text-gray-300">{currentEmail}</p>
           <p className="text-xs text-gray-400 dark:text-gray-500">
@@ -107,29 +156,31 @@ export default function UserProfiles() {
           )}
         </ComponentCard>
 
-        <ComponentCard title="Change Password">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label>New password</Label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+        {canChangePassword && (
+          <ComponentCard title="Change Password">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>New password</Label>
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              </div>
+              <div>
+                <Label>Confirm new password</Label>
+                <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              </div>
             </div>
-            <div>
-              <Label>Confirm new password</Label>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={handleChangePassword} disabled={passwordSaving || !newPassword}>
+                {passwordSaving ? "Saving…" : "Update Password"}
+              </Button>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={handleChangePassword} disabled={passwordSaving || !newPassword}>
-              {passwordSaving ? "Saving…" : "Update Password"}
-            </Button>
-          </div>
-          {passwordMessage && <p className="text-sm text-success-600 dark:text-success-400">{passwordMessage}</p>}
-          {passwordError && (
-            <p className="text-sm text-error-600 bg-error-50 border border-error-200 rounded px-3 py-2 dark:bg-error-500/10 dark:border-error-500/30 dark:text-error-400">
-              {passwordError}
-            </p>
-          )}
-        </ComponentCard>
+            {passwordMessage && <p className="text-sm text-success-600 dark:text-success-400">{passwordMessage}</p>}
+            {passwordError && (
+              <p className="text-sm text-error-600 bg-error-50 border border-error-200 rounded px-3 py-2 dark:bg-error-500/10 dark:border-error-500/30 dark:text-error-400">
+                {passwordError}
+              </p>
+            )}
+          </ComponentCard>
+        )}
       </div>
     </>
   );
