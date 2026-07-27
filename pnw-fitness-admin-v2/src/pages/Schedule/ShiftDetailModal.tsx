@@ -21,6 +21,7 @@ const STATUS_BADGE: Record<string, "primary" | "warning" | "error" | "success" |
   trade_pending: "error",
   completed: "success",
   no_show: "light",
+  closed: "light",
 };
 
 function formatTime(t: string) {

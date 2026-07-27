@@ -120,7 +120,10 @@ export default function Schedule() {
       s.shift_date >= today &&
       (s.assigned_to === currentUserId || (s.status === "open" && roleMatchesLabel(rbacRoleName, s.role_label))),
   );
-  const teamShifts = shifts.filter((s) => s.shift_date >= today);
+  // Closed shifts (a manager decided an open slot isn't needed, e.g. no
+  // Manager-on-duty required that day) are a record for the admin dashboard
+  // only — never shown to employees here, even in whole-schedule view.
+  const teamShifts = shifts.filter((s) => s.shift_date >= today && s.status !== "closed");
   const displayedShifts = scopeMode === "mine" ? myAndOpenShifts : teamShifts;
   const events = displayedShifts.map((s) => shiftToEvent(s, staff, scopeMode === "team"));
 

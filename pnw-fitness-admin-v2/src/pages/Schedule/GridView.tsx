@@ -98,9 +98,15 @@ export default function GridView({ mode, shifts, staff, weekStart, onShiftClick 
                   <div className="space-y-1">
                     {shiftsFor(row, d).map((s) => {
                       const assignee = staff.find((st) => st.user_id === s.assigned_to);
-                      const color = s.status === "open" ? OPEN_SHIFT_COLOR : staffColor(assignee);
-                      const label =
-                        mode === "employee" ? s.role_label : assignee ? assignee.display_name || assignee.email : "Open";
+                      const isClosed = s.status === "closed";
+                      const color = isClosed ? "#e5e7eb" : s.status === "open" ? OPEN_SHIFT_COLOR : staffColor(assignee);
+                      const label = isClosed
+                        ? `${s.role_label} — Closed`
+                        : mode === "employee"
+                          ? s.role_label
+                          : assignee
+                            ? assignee.display_name || assignee.email
+                            : "Open";
                       return (
                         <button
                           key={s.id}
@@ -108,11 +114,12 @@ export default function GridView({ mode, shifts, staff, weekStart, onShiftClick 
                           className="block w-full text-left text-[11px] leading-tight rounded px-1.5 py-1 transition hover:opacity-90"
                           style={{
                             backgroundColor: color,
-                            color: s.status === "open" ? "#374151" : "#ffffff",
+                            color: s.status === "open" || isClosed ? "#374151" : "#ffffff",
                             border: !s.published ? "1px dashed rgba(0,0,0,0.4)" : "1px solid transparent",
-                            opacity: s.published ? 1 : 0.75,
+                            opacity: isClosed ? 0.55 : s.published ? 1 : 0.75,
                           }}
                         >
+                          {isClosed && "🔒 "}
                           {fmtTime(s.start_time)}-{fmtTime(s.end_time)} {label}
                         </button>
                       );

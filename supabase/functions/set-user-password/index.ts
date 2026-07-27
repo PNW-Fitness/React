@@ -31,9 +31,15 @@ Deno.serve(async (req) => {
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     })
-    const { data: role } = await callerClient.rpc('get_my_role')
-    if (role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Forbidden — admin role required' }), {
+    // get_my_role() / admin_profiles.role predates the RBAC system (roles,
+    // permissions, user_roles) the rest of the app now uses — a Super Admin
+    // under RBAC has no reason to also have the legacy role column set to
+    // 'admin', so that check rejected legitimate admins. users.manage is the
+    // same permission the Users & Roles page itself, and the admin_profiles
+    // RLS policies, already gate user-management actions on.
+    const { data: canManageUsers } = await callerClient.rpc('auth_has_permission', { permission_key: 'users.manage' })
+    if (!canManageUsers) {
+      return new Response(JSON.stringify({ error: 'Forbidden — users.manage permission required' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

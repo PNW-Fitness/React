@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient";
 
-export type ShiftStatus = "scheduled" | "open" | "trade_pending" | "completed" | "no_show";
+export type ShiftStatus = "scheduled" | "open" | "trade_pending" | "completed" | "no_show" | "closed";
 export type TradeStatus = "pending" | "accepted" | "approved" | "denied" | "claimed" | "cancelled";
 
 // Fixed set per Design Addendum §3.1, matched against a staff member's RBAC
@@ -446,5 +446,28 @@ export async function claimShift(shiftId: string, userId: string): Promise<{ err
   if (!error && !data) {
     return { error: { message: "This shift was already claimed by someone else." } };
   }
+  return { error };
+}
+
+// For an open, unassigned shift that turns out not to be needed (e.g. no
+// Manager-on-duty required that day) — closes it instead of deleting it, so
+// there's a record and a manager can reopen it later if plans change.
+// Employees never see a closed shift as open/claimable: Schedule and
+// Marketplace both already filter specifically on status === "open".
+export async function closeShift(shiftId: string): Promise<{ error: ActionError | null }> {
+  const { error } = await supabase
+    .from("staff_shifts")
+    .update({ status: "closed" })
+    .eq("id", shiftId)
+    .eq("status", "open");
+  return { error };
+}
+
+export async function reopenShift(shiftId: string): Promise<{ error: ActionError | null }> {
+  const { error } = await supabase
+    .from("staff_shifts")
+    .update({ status: "open" })
+    .eq("id", shiftId)
+    .eq("status", "closed");
   return { error };
 }

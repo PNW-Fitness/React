@@ -35,21 +35,26 @@ type ViewMode = "calendar" | "employee" | "role";
 type ScopeMode = "team" | "mine";
 
 interface CalendarEvent extends EventInput {
-  extendedProps: { tradePending: boolean; published: boolean };
+  extendedProps: { tradePending: boolean; published: boolean; closed: boolean };
 }
+
+const CLOSED_SHIFT_COLOR = "#e5e7eb"; // gray-200 — lighter than OPEN_SHIFT_COLOR, meant to recede
 
 // Events are colored by the assignee (each staff member picks their own
 // color in Users & Roles), not by status — the manager specifically wants
 // to identify people by color at a glance, Homebase-style. Open shifts get
 // a neutral gray instead of any person's color. A pending trade keeps the
 // assignee's color but gets an amber outline + a small icon, so that signal
-// isn't lost.
+// isn't lost. Closed shifts (an open slot a manager decided isn't needed,
+// e.g. no Manager-on-duty required that day) get an even lighter, faded
+// treatment — still visible to managers as a record, but visually receding.
 function shiftToEvent(shift: Shift, staff: StaffMember[]): CalendarEvent {
   const assignee = staff.find((s) => s.user_id === shift.assigned_to);
-  const assigneeLabel = assignee ? assignee.display_name || assignee.email : "Open";
   const isOpen = shift.status === "open";
+  const isClosed = shift.status === "closed";
   const isTradePending = shift.status === "trade_pending";
-  const color = isOpen ? OPEN_SHIFT_COLOR : staffColor(assignee);
+  const assigneeLabel = isClosed ? "Closed" : assignee ? assignee.display_name || assignee.email : "Open";
+  const color = isClosed ? CLOSED_SHIFT_COLOR : isOpen ? OPEN_SHIFT_COLOR : staffColor(assignee);
   return {
     id: shift.id,
     title: `${shift.role_label} — ${assigneeLabel}`,
@@ -57,8 +62,8 @@ function shiftToEvent(shift: Shift, staff: StaffMember[]): CalendarEvent {
     end: `${shift.shift_date}T${shift.end_time}`,
     backgroundColor: color,
     borderColor: isTradePending ? "#f59e0b" : color,
-    textColor: isOpen ? "#374151" : "#ffffff",
-    extendedProps: { tradePending: isTradePending, published: shift.published },
+    textColor: isOpen || isClosed ? "#374151" : "#ffffff",
+    extendedProps: { tradePending: isTradePending, published: shift.published, closed: isClosed },
   };
 }
 
@@ -71,6 +76,7 @@ function shiftToEvent(shift: Shift, staff: StaffMember[]): CalendarEvent {
 function renderEventContent(eventInfo: EventContentArg) {
   const { backgroundColor, borderColor, textColor } = eventInfo.event;
   const isDraft = eventInfo.event.extendedProps.published === false;
+  const isClosed = eventInfo.event.extendedProps.closed === true;
   return (
     <div
       className="flex items-center gap-1 px-1 py-0.5 rounded-sm overflow-hidden w-full"
@@ -78,11 +84,12 @@ function renderEventContent(eventInfo: EventContentArg) {
         backgroundColor,
         border: `1px ${isDraft ? "dashed" : "solid"} ${borderColor || backgroundColor}`,
         color: textColor,
-        opacity: isDraft ? 0.7 : 1,
+        opacity: isClosed ? 0.55 : isDraft ? 0.7 : 1,
       }}
     >
       {eventInfo.event.extendedProps.tradePending && <span title="Trade pending">⇄</span>}
       {isDraft && <span title="Draft — not published yet">📝</span>}
+      {isClosed && <span title="Closed — not needed">🔒</span>}
       <span className="text-[11px] opacity-90 shrink-0">{eventInfo.timeText}</span>
       <span className="text-xs font-medium truncate">{eventInfo.event.title}</span>
     </div>

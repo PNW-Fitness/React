@@ -49,10 +49,13 @@ function buildWeeks(year: number, month: number): Date[][] {
 export default function PrintScheduleView({ year, month, shifts, staff }: PrintScheduleViewProps) {
   const weeks = buildWeeks(year, month);
 
-  // A printout is meant to be posted for staff to see — draft shifts
-  // haven't been published to them yet, so they're excluded here even
-  // though the manager can see them on screen.
-  const publishedShifts = shifts.filter((s) => s.published);
+  // A printout is meant to be posted for staff to see — draft shifts haven't
+  // been published to them yet, and closed shifts were explicitly marked as
+  // not needed, so both are excluded here even though the manager can see
+  // them on screen. (Without this, a closed shift would print mislabeled as
+  // "Open" since it has no assignee — the whole point of closing it was to
+  // stop it from showing up as something staff need to fill.)
+  const publishedShifts = shifts.filter((s) => s.published && s.status !== "closed");
 
   const shiftsByDate = new Map<string, Shift[]>();
   publishedShifts.forEach((s) => {
@@ -73,9 +76,9 @@ export default function PrintScheduleView({ year, month, shifts, staff }: PrintS
   const hasOpenShift = monthShifts.some((s) => s.status === "open");
 
   return (
-    <div className="print-area hidden print:block p-6">
-      <h1 className="text-2xl font-bold text-black mb-1">PNW Fitness — Staff Schedule</h1>
-      <h2 className="text-lg text-black mb-4">
+    <div className="print-area hidden print:block p-3">
+      <h1 className="text-xl font-bold text-black mb-0.5">PNW Fitness — Staff Schedule</h1>
+      <h2 className="text-base text-black mb-2">
         {MONTH_LABELS[month]} {year}
       </h2>
 
@@ -100,7 +103,7 @@ export default function PrintScheduleView({ year, month, shifts, staff }: PrintS
                   <td
                     key={dateStr}
                     className="border border-gray-400 align-top p-1"
-                    style={{ height: "1.1in", width: "14.28%" }}
+                    style={{ height: "0.95in", width: "14.28%" }}
                   >
                     <div className={`text-xs font-semibold mb-0.5 ${inMonth ? "text-black" : "text-gray-400"}`}>
                       {day.getDate()}
@@ -116,7 +119,7 @@ export default function PrintScheduleView({ year, month, shifts, staff }: PrintS
                             className="text-[9px] leading-tight rounded-sm px-1 py-0.5 text-white"
                             style={{ backgroundColor: color, color: s.status === "open" ? "#374151" : "#ffffff" }}
                           >
-                            {fmtTime(s.start_time)}-{fmtTime(s.end_time)} {s.role_label} — {label}
+                            {fmtTime(s.start_time)}-{fmtTime(s.end_time)} {label}
                           </div>
                         );
                       })}
@@ -129,7 +132,7 @@ export default function PrintScheduleView({ year, month, shifts, staff }: PrintS
         </tbody>
       </table>
 
-      <div className="flex flex-wrap gap-3 mt-4">
+      <div className="flex flex-wrap gap-3 mt-2">
         {legendStaff.map((s) => (
           <div key={s.user_id} className="flex items-center gap-1.5 text-xs text-black">
             <span

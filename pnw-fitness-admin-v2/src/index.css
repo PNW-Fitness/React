@@ -20,12 +20,30 @@ layer(base);
    top so it's the only thing that ends up on paper. .print-area itself
    stays hidden on screen via Tailwind's `hidden print:block`. */
 @media print {
+  html,
+  body {
+    /* visibility:hidden below still leaves every hidden element occupying
+       its normal layout height, so without this the real (invisible)
+       dashboard layout — sidebar, calendar, etc. — still determines the
+       document's total height and prints as a blank trailing page after
+       the actual .print-area content. Collapsing html/body to 0 height
+       fixes that; .print-area still renders fine since it's pulled out
+       via position:absolute against the viewport, not clipped by this. */
+    height: 0;
+    overflow: hidden;
+  }
   body * {
     visibility: hidden;
   }
   .print-area,
   .print-area * {
     visibility: visible;
+    /* Browsers omit background colors/images by default when printing to
+       save ink unless told otherwise — without this the whole schedule
+       prints in outline-only black and white regardless of any inline
+       backgroundColor style. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .print-area {
     position: absolute;

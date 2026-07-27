@@ -12,6 +12,8 @@ import {
   createShift,
   updateShift,
   deleteShift,
+  closeShift,
+  reopenShift,
   checkShiftConflicts,
 } from "../../lib/scheduling";
 
@@ -126,9 +128,11 @@ export default function AddEditShiftModal({
     const { error: err } = shift
       ? await updateShift(shift.id, {
           ...payload,
-          // Reassigning away from trade_pending/open resets it back to scheduled;
-          // leaving it unassigned keeps it open.
-          status: payload.assigned_to ? "scheduled" : "open",
+          // Reassigning away from trade_pending/open/closed resets it back to
+          // scheduled; leaving it unassigned keeps it open — unless it was
+          // closed, in which case an unrelated edit (e.g. a note) shouldn't
+          // silently reopen it. Use the Reopen button for that instead.
+          status: payload.assigned_to ? "scheduled" : shift.status === "closed" ? "closed" : "open",
         })
       : await createShift({ ...payload, created_by: currentUserId });
 
@@ -145,6 +149,34 @@ export default function AddEditShiftModal({
     if (!shift) return;
     setSaving(true);
     const { error: err } = await deleteShift(shift.id);
+    setSaving(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onSaved();
+    onClose();
+  }
+
+  async function handleClose() {
+    if (!shift) return;
+    setSaving(true);
+    setError(null);
+    const { error: err } = await closeShift(shift.id);
+    setSaving(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onSaved();
+    onClose();
+  }
+
+  async function handleReopen() {
+    if (!shift) return;
+    setSaving(true);
+    setError(null);
+    const { error: err } = await reopenShift(shift.id);
     setSaving(false);
     if (err) {
       setError(err.message);
@@ -233,6 +265,24 @@ export default function AddEditShiftModal({
           >
             Cancel
           </button>
+          {shift && shift.status === "open" && (
+            <button
+              onClick={handleClose}
+              disabled={saving}
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 border border-gray-300 dark:border-gray-700 px-4 py-2.5 rounded-lg transition"
+            >
+              Close shift
+            </button>
+          )}
+          {shift && shift.status === "closed" && (
+            <button
+              onClick={handleReopen}
+              disabled={saving}
+              className="text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 px-4 py-2.5 rounded-lg transition"
+            >
+              Reopen shift
+            </button>
+          )}
           {shift && (
             <div className="ml-auto">
               {confirmDelete ? (
